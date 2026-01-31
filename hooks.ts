@@ -1,8 +1,6 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { SoundScheme } from './App';
 
-// Hook para o cronômetro de ataque
 export const useAttackTimer = (initialTime: number = 24) => {
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const [isActive, setIsActive] = useState(false);
@@ -90,7 +88,6 @@ const soundSchemes = {
     }
 }
 
-// Hook para feedback de áudio e vibração
 export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme }: SensoryFeedbackProps) => {
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -106,12 +103,8 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
         document.removeEventListener('click', initAudio, true);
     };
     document.addEventListener('click', initAudio, true);
-
     return () => {
         document.removeEventListener('click', initAudio, true);
-        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-            audioContextRef.current.close().catch(console.error);
-        }
     }
   }, []);
 
@@ -119,79 +112,52 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
     if (!soundEnabled) return;
     const ctx = audioContextRef.current;
     if (!ctx) return;
-    if (ctx.state === 'suspended') {
-      ctx.resume();
-    }
+    if (ctx.state === 'suspended') ctx.resume();
     
     if (type === 'win') {
       const now = ctx.currentTime;
-      const fanfare = [
-        { freq: 523.25, delay: 0, duration: 0.15 },      // C5
-        { freq: 659.25, delay: 0.15, duration: 0.15 },   // E5
-        { freq: 783.99, delay: 0.3, duration: 0.15 },    // G5
-        { freq: 1046.50, delay: 0.45, duration: 0.4 },   // C6 (High C, a nota da vitória!)
+      // Fanfarra alegre (Arpejo Dó Maior Ascendente)
+      const notes = [
+        { f: 523.25, d: 0.15, t: 0 },    // C5
+        { f: 659.25, d: 0.15, t: 0.12 }, // E5
+        { f: 783.99, d: 0.15, t: 0.24 }, // G5
+        { f: 1046.50, d: 0.6, t: 0.36 }, // C6 (Nota Final)
       ];
-      const attackTime = 0.01;
       
-      fanfare.forEach(note => {
-          const startTime = now + note.delay;
+      notes.forEach(note => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.connect(gain);
           gain.connect(ctx.destination);
-          
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(note.freq, startTime);
-          gain.gain.setValueAtTime(0, startTime);
-          gain.gain.linearRampToValueAtTime(0.6, startTime + attackTime);
-          gain.gain.exponentialRampToValueAtTime(0.00001, startTime + note.duration);
-          
-          osc.start(startTime);
-          osc.stop(startTime + note.duration);
+          osc.type = 'triangle'; 
+          osc.frequency.setValueAtTime(note.f, now + note.t);
+          gain.gain.setValueAtTime(0, now + note.t);
+          gain.gain.linearRampToValueAtTime(0.4, now + note.t + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + note.t + note.d);
+          osc.start(now + note.t);
+          osc.stop(now + note.t + note.d);
       });
       return;
     }
     
     const scheme = soundSchemes[soundScheme];
-
     if (type === 'timerEndBeep') {
         const now = ctx.currentTime;
-        if (soundScheme === 'intenso') {
-            const duration = 0.08;
-            const interval = 0.12;
-            const loopCount = 8;
-            for (let i = 0; i < loopCount; i++) {
-                const startTime = now + i * interval;
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(1800, startTime);
-                gain.gain.setValueAtTime(0, startTime);
-                gain.gain.linearRampToValueAtTime(0.6, startTime + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.00001, startTime + duration);
-                osc.start(startTime);
-                osc.stop(startTime + duration);
-            }
-        } else { // 'moderno' e 'classico'
-            const loopCount = 5;
-            const interval = 0.18;
-            const duration = 0.15;
-            for (let i = 0; i < loopCount; i++) {
-                const startTime = ctx.currentTime + i * interval;
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.frequency.value = 1500; // Shrill
-                osc.type = 'sine';
-                gain.gain.setValueAtTime(0, startTime);
-                gain.gain.linearRampToValueAtTime(0.5, startTime + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.00001, startTime + duration);
-                osc.start(startTime);
-                osc.stop(startTime + duration);
-            }
+        const loopCount = soundScheme === 'intenso' ? 8 : 5;
+        const interval = soundScheme === 'intenso' ? 0.12 : 0.18;
+        for (let i = 0; i < loopCount; i++) {
+            const startTime = now + i * interval;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = soundScheme === 'intenso' ? 'sawtooth' : 'sine';
+            osc.frequency.setValueAtTime(1500, startTime);
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.5, startTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.00001, startTime + 0.15);
+            osc.start(startTime);
+            osc.stop(startTime + 0.15);
         }
         return;
     }
@@ -200,17 +166,14 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
     const gainNode = ctx.createGain();
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
-    gainNode.gain.setValueAtTime(0, ctx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.01);
-    
     const params = scheme[type as keyof typeof scheme];
     oscillator.frequency.value = params.freq;
     oscillator.type = params.type;
-    const duration = params.duration;
-    gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + duration);
-
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + params.duration);
     oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + duration);
+    oscillator.stop(ctx.currentTime + params.duration);
   }, [soundEnabled, soundScheme]);
 
   const vibrate = useCallback((pattern: number | number[]) => {
