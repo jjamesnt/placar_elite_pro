@@ -140,8 +140,8 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
   const teamNameRight = isSidesSwitched ? 'Time A' : 'Time B';
 
   return (
-    <div className="h-full w-full p-2 flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-2 relative">
-      <div className="flex-1 flex flex-col min-w-0">
+    <div className="h-full w-full p-2 flex flex-col sm:grid sm:grid-cols-[1fr_min-content_1fr] sm:items-stretch gap-1 sm:gap-4 relative overflow-hidden">
+      <div className="flex flex-col min-w-0 h-full">
         <ScoreCard 
           teamName={teamNameLeft}
           teamData={teamLeft}
@@ -153,7 +153,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
         />
       </div>
 
-      <div className="w-full sm:w-auto sm:min-w-[180px] lg:min-w-[220px] flex-shrink-0">
+      <div className="w-full sm:w-48 lg:w-56 flex-shrink-0 flex flex-col items-center pt-2">
         <CenterConsole 
           timeLeft={attackTimer.timeLeft}
           isTimerActive={attackTimer.isActive}
@@ -166,7 +166,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
         />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex flex-col min-w-0 h-full">
         <ScoreCard 
           teamName={teamNameRight}
           teamData={teamRight}
