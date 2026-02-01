@@ -16,7 +16,6 @@ const NavButton: React.FC<NavButtonProps> = ({ label, icon, isActive, onClick, s
   const activeClasses = 'text-indigo-400';
   const inactiveClasses = 'text-gray-500 hover:text-white';
   
-  // Lógica para separar data e hora se for o subLabel de atualização
   const renderSubLabel = () => {
     if (!subLabel) return null;
     
@@ -24,9 +23,9 @@ const NavButton: React.FC<NavButtonProps> = ({ label, icon, isActive, onClick, s
     if (parts.length === 2) {
       const [date, time] = parts;
       return (
-        <div className="absolute -left-14 top-0 flex flex-col items-end leading-none pointer-events-none hidden sm:flex">
-          <span className="text-[8px] text-gray-400 font-mono mb-0.5">{date}</span>
-          <span className="text-[8px] text-gray-500 font-mono">{time}</span>
+        <div className="absolute -left-[42px] top-[2px] flex flex-col items-end leading-[0.7rem] pointer-events-none select-none">
+          <span className="text-[7px] sm:text-[8px] text-gray-400 font-mono">{date}</span>
+          <span className="text-[7px] sm:text-[8px] text-gray-500 font-mono">{time}</span>
         </div>
       );
     }
@@ -44,15 +43,10 @@ const NavButton: React.FC<NavButtonProps> = ({ label, icon, isActive, onClick, s
       className={`relative flex-1 flex flex-col items-center justify-center p-2 transition-colors duration-200 ease-in-out transform active:scale-95 ${isActive ? activeClasses : inactiveClasses}`}
     >
       <div className="relative">
-        {icon}
         {renderSubLabel()}
+        {icon}
       </div>
       <span className="text-xs font-medium mt-1">{label}</span>
-      {subLabel && (
-        <span className="text-[7px] text-gray-500 font-mono sm:hidden mt-0.5">
-          {subLabel.replace(' ', ' • ')}
-        </span>
-      )}
     </button>
   );
 };
@@ -74,59 +68,58 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
       setIsFullscreen(isFull);
     };
     
-    document.addEventListener('fullscreenchange', handleFsChange);
-    document.addEventListener('webkitfullscreenchange', handleFsChange);
-    document.addEventListener('mozfullscreenchange', handleFsChange);
-    document.addEventListener('MSFullscreenChange', handleFsChange);
+    const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+    events.forEach(event => document.addEventListener(event, handleFsChange));
     
     return () => {
-      document.removeEventListener('fullscreenchange', handleFsChange);
-      document.removeEventListener('webkitfullscreenchange', handleFsChange);
-      document.removeEventListener('mozfullscreenchange', handleFsChange);
-      document.removeEventListener('MSFullscreenChange', handleFsChange);
+      events.forEach(event => document.removeEventListener(event, handleFsChange));
     };
   }, []);
 
-  const toggleFullscreen = () => {
-    const doc = document as any;
-    const element = document.documentElement as any;
+  const toggleFullscreen = async () => {
+    try {
+      const doc = document as any;
+      const element = document.documentElement as any;
 
-    const isCurrentlyFull = !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement || doc.webkitIsFullScreen);
+      const isCurrentlyFull = !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement || doc.webkitIsFullScreen);
 
-    if (!isCurrentlyFull) {
-      // Tenta todas as variações possíveis de requestFullscreen
-      if (element.requestFullscreen) {
-        element.requestFullscreen();
-      } else if (element.webkitRequestFullscreen) {
-        element.webkitRequestFullscreen();
-      } else if (element.webkitEnterFullscreen) {
-        // Específico para Safari mobile em alguns contextos
-        element.webkitEnterFullscreen();
-      } else if (element.mozRequestFullScreen) {
-        element.mozRequestFullScreen();
-      } else if (element.msRequestFullscreen) {
-        element.msRequestFullscreen();
+      if (!isCurrentlyFull) {
+        if (element.requestFullscreen) {
+          await element.requestFullscreen();
+        } else if (element.webkitRequestFullscreen) {
+          await element.webkitRequestFullscreen();
+        } else if (element.webkitEnterFullscreen) {
+          await element.webkitEnterFullscreen();
+        } else if (element.mozRequestFullScreen) {
+          await element.mozRequestFullScreen();
+        } else if (element.msRequestFullscreen) {
+          await element.msRequestFullscreen();
+        } else {
+          alert("O modo tela cheia não é suportado por este navegador ou dispositivo. No iPhone, adicione o app à 'Tela de Início' para usar em tela cheia.");
+        }
+      } else {
+        if (doc.exitFullscreen) {
+          await doc.exitFullscreen();
+        } else if (doc.webkitExitFullscreen) {
+          await doc.webkitExitFullscreen();
+        } else if (doc.mozCancelFullScreen) {
+          await doc.mozCancelFullScreen();
+        } else if (doc.msExitFullscreen) {
+          await doc.msExitFullscreen();
+        }
       }
-    } else {
-      if (doc.exitFullscreen) {
-        doc.exitFullscreen();
-      } else if (doc.webkitExitFullscreen) {
-        doc.webkitExitFullscreen();
-      } else if (doc.mozCancelFullScreen) {
-        doc.mozCancelFullScreen();
-      } else if (doc.msExitFullscreen) {
-        doc.msExitFullscreen();
-      }
+    } catch (err) {
+      console.error("Erro ao alternar tela cheia:", err);
     }
   };
 
   return (
     <header className="relative w-full bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 z-50">
-      <div className="absolute top-1/2 left-4 -translate-y-1/2 flex items-center gap-2 text-gray-400 hidden lg:flex">
+      <div className="absolute top-1/2 left-4 -translate-y-1/2 flex items-center gap-2 text-gray-400 hidden lg:flex pointer-events-none">
         <ShieldIcon />
         <h1 className="font-bold text-sm">Placar Elite Pro</h1>
       </div>
-      <nav className="max-w-2xl mx-auto flex justify-around items-center px-2">
+      <nav className="max-w-2xl mx-auto flex justify-around items-center px-1 sm:px-4">
         <NavButton 
           label="Placar"
           icon={<ClipboardListIcon />}
@@ -155,7 +148,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
         <button
           onClick={toggleFullscreen}
           className="flex-1 flex flex-col items-center justify-center p-2 text-gray-500 hover:text-white transition-colors duration-200 transform active:scale-95"
-          title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+          aria-label={isFullscreen ? "Sair da Tela Cheia" : "Entrar em Tela Cheia"}
         >
           {isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
           <span className="text-xs font-medium mt-1">{isFullscreen ? "Sair" : "Focar"}</span>
