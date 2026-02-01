@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import OrientationLock from './components/OrientationLock';
 import Navigation, { View } from './components/Navigation';
 import Placar from './views/Placar';
@@ -20,6 +20,16 @@ const App: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [soundScheme, setSoundScheme] = useState<SoundScheme>('moderno');
+  const [lastUpdate, setLastUpdate] = useState<string>('--/-- --:--');
+
+  useEffect(() => {
+    if (matches.length > 0) {
+      const lastMatch = matches[0];
+      const date = new Date(lastMatch.timestamp);
+      const formatted = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+      setLastUpdate(formatted);
+    }
+  }, [matches]);
 
   const handleSaveGame = useCallback((match: Omit<Match, 'id' | 'timestamp'>) => {
     const newMatch: Match = {
@@ -55,7 +65,7 @@ const App: React.FC = () => {
     <>
       <OrientationLock />
       <div className="h-screen w-screen bg-gray-900 text-white font-sans flex flex-col">
-        <Navigation currentView={currentView} onNavigate={setCurrentView} />
+        <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} />
         <main className="flex-1 overflow-y-auto">
           {renderView()}
         </main>
