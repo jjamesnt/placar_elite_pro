@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { ClipboardListIcon, UsersIcon, TrophyIcon, CogIcon, ShieldIcon } from './icons';
+import React, { useState, useEffect } from 'react';
+import { ClipboardListIcon, UsersIcon, TrophyIcon, CogIcon, ShieldIcon, MaximizeIcon, MinimizeIcon } from './icons';
 
 export type View = 'placar' | 'atletas' | 'ranking' | 'config';
 
@@ -33,13 +33,33 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate }) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Erro ao entrar em tela cheia: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   return (
-    <header className="relative w-full bg-gray-900/80 backdrop-blur-sm border-b border-gray-700">
-      <div className="absolute top-1/2 left-4 -translate-y-1/2 flex items-center gap-2 text-gray-400 hidden sm:flex">
+    <header className="relative w-full bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 z-50">
+      <div className="absolute top-1/2 left-4 -translate-y-1/2 flex items-center gap-2 text-gray-400 hidden lg:flex">
         <ShieldIcon />
         <h1 className="font-bold text-sm">Placar Elite Pro</h1>
       </div>
-      <nav className="max-w-md mx-auto flex justify-around items-center">
+      <nav className="max-w-2xl mx-auto flex justify-around items-center">
         <NavButton 
           label="Placar"
           icon={<ClipboardListIcon />}
@@ -64,6 +84,14 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate }) => {
           isActive={currentView === 'config'}
           onClick={() => onNavigate('config')}
         />
+        <button
+          onClick={toggleFullscreen}
+          className="flex-1 flex flex-col items-center justify-center p-2 text-gray-500 hover:text-white transition-colors duration-200 transform active:scale-95"
+          title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+        >
+          {isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
+          <span className="text-xs font-medium mt-1">{isFullscreen ? "Sair" : "Focar"}</span>
+        </button>
       </nav>
     </header>
   );

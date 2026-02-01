@@ -61,7 +61,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
     setter(prev => ({ ...prev, score: newScore }));
     playSound('point');
     vibrate(50);
-    attackTimer.reset(); // Zera o cronômetro, não inicia
+    attackTimer.reset();
   }, [playSound, vibrate, attackTimer, gameStartTime]);
 
   const handlePlayerSelect = useCallback((setter: React.Dispatch<React.SetStateAction<Team>>, player: Player, index: number) => {
@@ -140,8 +140,8 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
   const teamNameRight = isSidesSwitched ? 'Time A' : 'Time B';
 
   return (
-    <div className="h-full w-full p-1 sm:p-2 flex flex-col sm:flex-row gap-1 sm:gap-2 relative sm:items-start">
-      <div className="flex-1 min-h-0">
+    <div className="h-full w-full p-2 flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-2 relative">
+      <div className="flex-1 flex flex-col min-w-0">
         <ScoreCard 
           teamName={teamNameLeft}
           teamData={teamLeft}
@@ -153,7 +153,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
         />
       </div>
 
-      <div className="w-full sm:w-auto sm:max-w-xs">
+      <div className="w-full sm:w-auto sm:min-w-[180px] lg:min-w-[220px] flex-shrink-0">
         <CenterConsole 
           timeLeft={attackTimer.timeLeft}
           isTimerActive={attackTimer.isActive}
@@ -166,7 +166,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
         />
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 flex flex-col min-w-0">
         <ScoreCard 
           teamName={teamNameRight}
           teamData={teamRight}
@@ -179,7 +179,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
       </div>
 
       {toastMessage && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-700 text-white px-6 py-3 rounded-lg shadow-lg transition-opacity duration-300 z-50">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-700/90 text-white px-6 py-3 rounded-lg shadow-xl backdrop-blur-md z-50">
           {toastMessage}
         </div>
       )}
