@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import OrientationLock from './components/OrientationLock';
 import Navigation, { View } from './components/Navigation';
@@ -11,12 +12,16 @@ import { MOCK_PLAYERS, MOCK_MATCHES } from './data';
 export type SoundScheme = 'moderno' | 'classico' | 'intenso';
 
 const App: React.FC = () => {
-  // Persistence Loading
   const [currentView, setCurrentView] = useState<View>('placar');
   
   const [players, setPlayers] = useState<Player[]>(() => {
     const saved = localStorage.getItem('elite_players');
     return saved ? JSON.parse(saved) : MOCK_PLAYERS;
+  });
+
+  const [deletedPlayers, setDeletedPlayers] = useState<Player[]>(() => {
+    const saved = localStorage.getItem('elite_deleted_players');
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [matches, setMatches] = useState<Match[]>(() => {
@@ -32,8 +37,8 @@ const App: React.FC = () => {
   
   const [lastUpdate, setLastUpdate] = useState<string>('--/-- --:--');
 
-  // Persistence Saving
   useEffect(() => { localStorage.setItem('elite_players', JSON.stringify(players)); }, [players]);
+  useEffect(() => { localStorage.setItem('elite_deleted_players', JSON.stringify(deletedPlayers)); }, [deletedPlayers]);
   useEffect(() => { localStorage.setItem('elite_matches', JSON.stringify(matches)); }, [matches]);
   useEffect(() => { localStorage.setItem('elite_winScore', String(winScore)); }, [winScore]);
   useEffect(() => { localStorage.setItem('elite_attackTime', String(attackTime)); }, [attackTime]);
@@ -60,13 +65,14 @@ const App: React.FC = () => {
   }, []);
 
   const renderView = () => {
+    const allKnownPlayers = [...players, ...deletedPlayers];
     switch (currentView) {
       case 'placar':
         return <Placar allPlayers={players} onSaveGame={handleSaveGame} winScore={winScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} />;
       case 'atletas':
-        return <Atletas players={players} setPlayers={setPlayers} />;
+        return <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} />;
       case 'ranking':
-        return <Ranking matches={matches} players={players} />;
+        return <Ranking matches={matches} players={allKnownPlayers} />;
       case 'config':
         return <Config 
                   winScore={winScore} setWinScore={setWinScore} 

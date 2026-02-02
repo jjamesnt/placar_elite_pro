@@ -87,11 +87,11 @@ const Config: React.FC<ConfigProps> = ({ winScore, setWinScore, attackTime, setA
           </div>
         </div>
         
-        <div className="bg-gray-800/50 rounded-2xl p-3 text-center">
-           <h2 className="text-lg font-semibold text-cyan-400 mb-2">Identidade e Suporte</h2>
-           <p className="text-gray-300 text-xs">Versão 1.0</p>
-           <p className="text-gray-400 mt-1 text-xs">Desenvolvido por James Rizo</p>
-           <p className="text-gray-400 text-xs">Contato: (31) 98412-1190</p>
+        <div className="bg-gray-800/50 rounded-2xl p-5 text-center border border-indigo-500/10">
+           <h2 className="text-lg font-black text-indigo-400 mb-2 uppercase tracking-widest">Suporte Técnico</h2>
+           <p className="text-gray-300 text-xs font-bold uppercase mb-1">Versão 1.0 Stable</p>
+           <p className="text-gray-400 mt-1 text-sm font-mono tracking-tighter">Desenvolvido por James Rizo</p>
+           <p className="text-indigo-400 font-black mt-2 text-base">(31) 98421-1900</p>
         </div>
       </div>
     </div>

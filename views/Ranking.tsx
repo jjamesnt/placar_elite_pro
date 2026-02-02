@@ -63,6 +63,9 @@ const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
     });
 
     return Array.from(playerDailyStats.entries()).map(([id, dailyMap]) => {
+      const player = players.find(p => p.id === id);
+      if (!player) return null; 
+
       let totalWins = 0;
       let totalGames = 0;
       let zeroWinsDays = 0;
@@ -78,7 +81,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
       const winRate = totalGames > 0 ? (totalWins / totalGames) * 100 : 0;
 
       return {
-        player: players.find(p => p.id === id)!,
+        player,
         wins: totalWins,
         games: totalGames,
         days,
@@ -87,7 +90,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
         zeroWinsDays
       };
     })
-    .filter(s => s.days > 0)
+    .filter((s): s is NonNullable<typeof s> => s !== null && s.days > 0)
     .sort((a, b) => b.letalidade - a.letalidade || b.wins - a.wins);
   }, [filteredMatches, players]);
 
@@ -113,93 +116,117 @@ const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
 
     const grad = ctx.createLinearGradient(0, 0, 0, height);
     grad.addColorStop(0, '#020617');
-    grad.addColorStop(0.5, '#0f172a');
+    grad.addColorStop(0.3, '#0f172a');
     grad.addColorStop(1, '#020617');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
     const centerX = width / 2;
-    
-    // Topo Story: Apenas Ranking e Data/Período
     ctx.textAlign = 'center';
+
+    // 1. Logo
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'black 100px sans-serif';
-    const dateLabel = filter === 'Mensal' 
-      ? viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-      : viewDate.toLocaleDateString('pt-BR');
-    
+    ctx.font = 'bold 32px sans-serif';
+    ctx.fillText('PLACAR ELITE PRO', centerX, 80);
+
+    // 2. Título Central
+    ctx.fillStyle = '#fbbf24';
+    let baseFontSize = 95;
+    ctx.font = `900 ${baseFontSize}px sans-serif`;
     const titleText = filter === 'Hoje' ? 'RANKING DO DIA' : `RANKING ${filter.toUpperCase()}`;
-    ctx.fillText(titleText, centerX, 180);
     
-    ctx.fillStyle = '#818cf8';
-    ctx.font = 'bold 54px sans-serif';
-    ctx.fillText(dateLabel, centerX, 265);
+    let textWidth = ctx.measureText(titleText).width;
+    const maxWidth = width - 160;
+    if (textWidth > maxWidth) {
+      const newSize = Math.floor(baseFontSize * maxWidth / textWidth);
+      ctx.font = `900 ${newSize}px sans-serif`;
+    }
+    ctx.fillText(titleText, centerX, 280);
+    
+    // 3. Data e Linha
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 65px sans-serif';
+    const dateLabel = filter === 'Mensal' 
+      ? viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()
+      : viewDate.toLocaleDateString('pt-BR');
+    ctx.fillText(dateLabel, centerX, 360);
+    
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(centerX - 100, 410, 200, 6);
 
-    // Marca d'água no rodapé
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.font = 'bold 24px sans-serif';
-    ctx.fillText('PLACAR ELITE PRO • v1.0', centerX, height - 80);
-
-    const podiumBaseY = isStory ? 950 : 850;
+    const podiumBaseY = isStory ? 1150 : 920;
     
     const drawPodium = (data: typeof stats[0], pos: 1|2|3, x: number, w: number, h: number, color: string) => {
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
-      ctx.roundRect(x - w/2, podiumBaseY - h, w, h, 40);
+      ctx.roundRect(x - w/2, podiumBaseY - h, w, h, 45);
       ctx.fill();
       ctx.strokeStyle = color;
-      ctx.lineWidth = 8;
+      ctx.lineWidth = 10;
       ctx.stroke();
 
       const cardCenterX = x;
       const cardTopY = podiumBaseY - h;
 
       ctx.fillStyle = color;
-      ctx.font = 'bold 110px sans-serif';
-      ctx.fillText(`${pos}º`, cardCenterX, cardTopY + 140);
+      ctx.font = 'bold 120px sans-serif';
+      ctx.fillText(`${pos}º`, cardCenterX, cardTopY + 130); 
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 44px sans-serif';
-      ctx.fillText(data.player.name.toUpperCase().substring(0, 14), cardCenterX, cardTopY + 230);
+      let nameFontSize = 44;
+      ctx.font = `bold ${nameFontSize}px sans-serif`;
+      const nameText = data.player.name.toUpperCase();
+      let nameWidth = ctx.measureText(nameText).width;
+      if (nameWidth > w - 40) {
+        nameFontSize = Math.floor(nameFontSize * (w - 40) / nameWidth);
+        ctx.font = `bold ${nameFontSize}px sans-serif`;
+      }
+      ctx.fillText(nameText, cardCenterX, cardTopY + 210); 
 
       ctx.fillStyle = color;
-      ctx.font = 'bold 80px sans-serif';
-      ctx.fillText(data.letalidade.toFixed(2), cardCenterX, cardTopY + 320);
+      ctx.font = 'bold 95px sans-serif';
+      ctx.fillText(data.letalidade.toFixed(2), cardCenterX, cardTopY + 320); 
       
       ctx.fillStyle = '#94a3b8';
-      ctx.font = 'bold 28px sans-serif';
-      ctx.fillText('LETALIDADE', cardCenterX, cardTopY + 365);
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('LETALIDADE', cardCenterX, cardTopY + 370); 
       
       ctx.fillStyle = color;
-      ctx.font = 'bold 42px sans-serif';
-      ctx.fillText(`${data.winRate.toFixed(0)}%`, cardCenterX, cardTopY + 425);
+      ctx.font = 'bold 45px sans-serif';
+      ctx.fillText(`${data.winRate.toFixed(0)}%`, cardCenterX, cardTopY + 430); 
     };
 
-    if (podium[1]) drawPodium(podium[1], 2, centerX - 330, 310, 480, '#94a3b8');
-    if (podium[2]) drawPodium(podium[2], 3, centerX + 330, 310, 420, '#d97706');
-    if (podium[0]) drawPodium(podium[0], 1, centerX, 370, 600, '#fbbf24');
+    if (podium[1]) drawPodium(podium[1], 2, centerX - 340, 320, 560, '#94a3b8');
+    if (podium[2]) drawPodium(podium[2], 3, centerX + 340, 320, 500, '#d97706');
+    if (podium[0]) drawPodium(podium[0], 1, centerX, 380, 700, '#fbbf24');
 
-    const tableTopY = podiumBaseY + 150;
+    const tableTopY = isStory ? podiumBaseY + 80 : podiumBaseY + 20;
     ctx.textAlign = 'left';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = 'bold 30px sans-serif';
+    ctx.font = 'bold 32px sans-serif';
     ctx.fillText('ATLETA', 100, tableTopY);
     ctx.textAlign = 'center';
     ctx.fillText('VIT', width - 480, tableTopY);
     ctx.fillText('S.P.', width - 300, tableTopY);
     ctx.fillText('LETALIDADE', width - 120, tableTopY);
 
-    stats.slice(0, isStory ? 10 : 25).forEach((s, i) => {
-      const rowY = tableTopY + 100 + (i * 85);
+    stats.slice(0, isStory ? 5 : 25).forEach((s, i) => {
+      const rowY = tableTopY + 100 + (i * 90);
       if (i % 2 === 0) {
         ctx.fillStyle = 'rgba(255,255,255,0.03)';
-        ctx.fillRect(60, rowY - 60, width - 120, 85);
+        ctx.fillRect(60, rowY - 65, width - 120, 90);
       }
       ctx.textAlign = 'left';
       ctx.fillStyle = i < 3 ? '#fbbf24' : '#ffffff';
-      ctx.font = 'bold 38px sans-serif';
+      ctx.font = 'bold 40px sans-serif';
       const name = s.wins === 0 ? `${s.player.name} 😢` : s.player.name;
-      ctx.fillText(`${i + 1}º ${name.substring(0, 18)}`, 80, rowY);
+      
+      let displayName = name;
+      if (ctx.measureText(displayName).width > width - 700) {
+        displayName = name.substring(0, 18) + "...";
+      }
+      ctx.fillText(`${i + 1}º ${displayName}`, 80, rowY);
+      
       ctx.textAlign = 'center';
       ctx.fillStyle = '#94a3b8';
       ctx.fillText(s.wins.toString(), width - 480, rowY);
@@ -212,6 +239,17 @@ const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
     setIsStoryMode(isStory);
   };
 
+  const handlePrint = () => {
+    setShowReportSelector(false);
+    const originalTitle = document.title;
+    document.title = `Placar Elite Pro - ${filter}`;
+    
+    setTimeout(() => {
+      window.print();
+      document.title = originalTitle;
+    }, 500);
+  };
+
   const currentPeriodLabel = useMemo(() => {
     if (filter === 'Hoje') return viewDate.toLocaleDateString('pt-BR');
     if (filter === 'Mensal') return viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -221,13 +259,12 @@ const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
 
   return (
     <div className="w-full flex flex-col gap-3 p-2 sm:p-4 overflow-x-hidden animate-in fade-in duration-500">
-      {/* Navegação e Filtros */}
       <div className="flex flex-col items-center gap-3 print:hidden">
         <div className="flex bg-gray-800/90 backdrop-blur rounded-2xl p-1.5 shadow-2xl w-full max-w-xl border border-gray-700/50">
           {(['Hoje', 'Semanal', 'Mensal', 'Anual', 'Total'] as Filter[]).map(f => (
             <button 
               key={f} onClick={() => { setFilter(f); setViewDate(new Date()); }}
-              className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${filter === f ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${filter === f ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
             >
               {f.toUpperCase()}
             </button>
@@ -237,140 +274,102 @@ const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
         {filter !== 'Total' && (
           <div className="flex items-center gap-4 bg-gray-800/40 px-4 py-2 rounded-full border border-gray-700/30">
             <button onClick={() => navigateDate(-1)} className="text-indigo-400 hover:text-white p-2 text-xl active:scale-90 transition-transform">◀</button>
-            <span className="text-sm font-black text-gray-200 capitalize w-44 text-center">{currentPeriodLabel}</span>
+            <span className="text-2xl font-black text-gray-200 capitalize w-64 text-center tracking-tighter">{currentPeriodLabel}</span>
             <button onClick={() => navigateDate(1)} className="text-indigo-400 hover:text-white p-2 text-xl active:scale-90 transition-transform">▶</button>
           </div>
         )}
 
         <div className="flex gap-3">
-          <button onClick={() => generateExportImage(true)} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-indigo-600 to-purple-700 text-white rounded-xl text-[10px] font-black shadow-xl hover:scale-105 transition-transform active:scale-95">
-            <Share2Icon className="w-4 h-4" /> EXPORTAR STORY
+          <button onClick={() => generateExportImage(true)} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-indigo-600 to-purple-700 text-white rounded-xl text-[10px] font-black shadow-xl hover:scale-105 transition-transform active:scale-95 uppercase">
+            <Share2Icon className="w-4 h-4" /> Exportar Story
           </button>
-          <button onClick={() => setShowReportSelector(true)} className="flex items-center gap-2 px-5 py-2.5 bg-gray-700 text-white rounded-xl text-[10px] font-black shadow-xl hover:bg-gray-600 transition-colors">
-            <FileDownIcon className="w-4 h-4" /> RELATÓRIO PDF
+          <button onClick={() => setShowReportSelector(true)} className="flex items-center gap-2 px-5 py-2.5 bg-gray-700 text-white rounded-xl text-[10px] font-black shadow-xl hover:bg-gray-600 transition-colors uppercase">
+            <FileDownIcon className="w-4 h-4" /> Relatório PDF
           </button>
         </div>
       </div>
 
-      {/* Tabela Principal */}
-      <div className="bg-gray-800/40 rounded-3xl p-3 border border-gray-700/50 shadow-inner overflow-hidden mt-4">
+      <div className="hidden print:block text-center mb-8 border-b-2 border-black pb-4">
+          <h1 className="text-4xl font-black uppercase tracking-tighter">Relatório Elite Pro</h1>
+          <p className="text-xl font-bold mt-2">Ranking {filter}: {currentPeriodLabel}</p>
+          <p className="text-sm text-gray-500 mt-1">Gerado pelo App Elite Pro em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</p>
+      </div>
+
+      <div className="bg-gray-800/40 rounded-3xl p-3 border border-gray-700/50 shadow-inner mt-4 print:border-none">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="text-gray-500 font-black uppercase tracking-widest border-b border-gray-700/50">
+          <table className="w-full text-left text-xs sm:text-sm">
+            <thead className="text-gray-500 font-black uppercase tracking-widest border-b border-gray-700/50 print:text-black print:border-black">
               <tr>
                 <th className="px-3 py-4">#</th>
                 <th className="px-3 py-4">ATLETA</th>
                 <th className="px-3 py-4 text-center">VITÓRIAS</th>
                 <th className="px-3 py-4 text-center">SEM PONTUAR</th>
-                <th className="px-3 py-4 text-center text-indigo-400">LETALIDADE (%)</th>
+                <th className="px-3 py-4 text-center text-indigo-400 print:text-black">LETALIDADE (%)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700/20">
+            <tbody className="divide-y divide-gray-700/20 print:divide-none">
               {stats.map((s, i) => (
-                <tr key={s.player.id} className={`${i < 3 ? 'bg-indigo-500/10' : ''} hover:bg-white/5 transition-colors`}>
-                  <td className="px-3 py-4 font-mono font-bold text-gray-500">
-                    <span className={i < 3 ? 'text-indigo-400 font-black' : ''}>{i + 1}º</span>
+                <tr key={s.player.id} className={`${i < 3 ? 'bg-indigo-500/10' : ''} hover:bg-white/5 transition-colors print:bg-transparent`}>
+                  <td className="px-3 py-4 font-mono font-bold text-gray-500 print:text-black">
+                    <span className={i < 3 ? 'text-indigo-400 font-black text-lg' : ''}>{i + 1}º</span>
                   </td>
-                  <td className={`px-3 py-4 font-black flex items-center gap-2 ${i < 3 ? 'text-white scale-105 origin-left' : 'text-gray-300'}`}>
-                    {i === 0 && <span className="text-yellow-400">👑</span>}
-                    <span className="truncate max-w-[120px] sm:max-w-none">{s.player.name}</span>
-                    {s.wins === 0 && <span title="Sem vitórias no período">😢</span>}
+                  <td className={`px-3 py-4 font-black ${i < 3 ? 'text-white' : 'text-gray-300'} print:text-black print:font-bold`}>
+                    <div className="flex items-center gap-2 print:block">
+                       {i === 0 && <span className="text-yellow-400 text-lg">👑</span>}
+                       <span className="truncate">{s.player.name}</span>
+                       {s.wins === 0 && <span title="Sem vitórias no período">😢</span>}
+                    </div>
                   </td>
-                  <td className="px-3 py-4 text-center font-bold text-gray-400">{s.wins}</td>
-                  <td className="px-3 py-4 text-center font-bold text-red-500/60">
+                  <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black">{s.wins}</td>
+                  <td className="px-3 py-4 text-center font-bold text-red-500/60 print:text-black">
                     {s.zeroWinsDays > 0 ? `${s.zeroWinsDays}d` : '-'}
                   </td>
                   <td className="px-3 py-4 text-center">
                     <div className="flex flex-col items-center">
-                      <span className={`font-mono font-black ${i < 3 ? 'text-indigo-400' : 'text-gray-300'}`}>
+                      <span className={`font-mono font-black ${i < 3 ? 'text-indigo-400 text-lg' : 'text-gray-300 text-base'} print:text-black`}>
                         {s.letalidade.toFixed(2)}
                       </span>
-                      <span className="text-[9px] text-gray-500 font-black">{s.winRate.toFixed(0)}%</span>
+                      <span className="text-[9px] text-gray-500 font-black print:text-black/60">{s.winRate.toFixed(0)}%</span>
                     </div>
                   </td>
                 </tr>
               ))}
+              {stats.length === 0 && (
+                <tr>
+                   <td colSpan={5} className="text-center py-20 text-gray-500 italic uppercase tracking-widest text-[10px] print:text-black">Nenhum dado registrado para o período {filter}.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Detalhes Mensais */}
-      {filter === 'Mensal' && filteredMatches.length > 0 && (
-        <div className="mt-6 bg-gray-900/50 rounded-3xl p-5 border border-indigo-500/20">
-          <h3 className="text-xs font-black text-indigo-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
-            Histórico de Resultados
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {Array.from(new Set(filteredMatches.map(m => new Date(m.timestamp).toLocaleDateString()))).map(date => {
-              const dayMatches = filteredMatches.filter(m => new Date(m.timestamp).toLocaleDateString() === date);
-              return (
-                <div key={date} className="bg-gray-800/60 p-4 rounded-2xl border border-gray-700/50 hover:border-indigo-500/40 transition-colors shadow-lg">
-                  <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-3">
-                    <span className="text-[11px] font-black text-gray-100">{date}</span>
-                    <span className="text-[9px] bg-indigo-600/40 text-indigo-300 px-3 py-1 rounded-full font-black uppercase tracking-wider">
-                      {dayMatches.length} JOGOS
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    {dayMatches.map(m => (
-                      <div key={m.id} className="grid grid-cols-[1fr_auto_1fr] items-center text-[10px] gap-2">
-                        <div className={`truncate font-bold ${m.winner === 'A' ? 'text-white' : 'text-gray-500'}`}>
-                          {m.teamA.players.map(p => p.name).join(' & ')}
-                        </div>
-                        <div className="flex items-center gap-2 bg-gray-900/80 px-3 py-1 rounded-lg font-mono font-black shadow-inner">
-                          <span className={m.winner === 'A' ? 'text-indigo-400' : 'text-gray-600'}>{m.teamA.score}</span>
-                          <span className="text-gray-700">X</span>
-                          <span className={m.winner === 'B' ? 'text-orange-400' : 'text-gray-600'}>{m.teamB.score}</span>
-                        </div>
-                        <div className={`truncate text-right font-bold ${m.winner === 'B' ? 'text-white' : 'text-gray-500'}`}>
-                          {m.teamB.players.map(p => p.name).join(' & ')}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Modal Seletor de Período do Relatório */}
       {showReportSelector && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-6" onClick={() => setShowReportSelector(false)}>
-          <div className="bg-gray-800 border border-gray-700 rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <h2 className="text-2xl font-black text-white text-center mb-2">Relatório PDF</h2>
-            <p className="text-gray-400 text-center text-sm mb-8">Selecione o período desejado para o documento.</p>
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6 print:hidden" onClick={() => setShowReportSelector(false)}>
+          <div className="bg-gray-900 border border-indigo-500/20 rounded-[3rem] p-10 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <h2 className="text-3xl font-black text-white text-center mb-2 tracking-tighter uppercase">Gerar Relatório PDF</h2>
+            <p className="text-gray-500 text-center text-xs mb-10 font-bold uppercase tracking-widest">Baseado no período: <strong>{filter} ({currentPeriodLabel})</strong></p>
             
-            <div className="grid grid-cols-2 gap-4">
-              {(['Hoje', 'Semanal', 'Mensal', 'Anual'] as Filter[]).map(f => (
-                <button
-                  key={f}
-                  onClick={() => {
-                    setFilter(f);
-                    setShowReportSelector(false);
-                    setTimeout(() => window.print(), 500);
-                  }}
-                  className="bg-gray-700/50 hover:bg-indigo-600 border border-gray-600 hover:border-indigo-400 text-white p-6 rounded-[2rem] flex flex-col items-center gap-2 transition-all active:scale-95 group"
-                >
-                  <span className="text-lg font-black">{f.toUpperCase()}</span>
-                </button>
-              ))}
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={handlePrint}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-8 rounded-[2rem] flex flex-col items-center gap-2 transition-all active:scale-95 shadow-xl"
+              >
+                <span className="text-2xl font-black tracking-tighter uppercase">Imprimir Relatório</span>
+                <span className="text-[10px] font-bold opacity-70">ABRIR CONFIGURAÇÕES DO NAVEGADOR</span>
+              </button>
+              
+              <button 
+                onClick={() => setShowReportSelector(false)}
+                className="w-full p-5 bg-white/5 text-gray-500 rounded-3xl font-black hover:text-white transition-colors uppercase tracking-[0.3em] text-[10px]"
+              >
+                Voltar
+              </button>
             </div>
-            
-            <button 
-              onClick={() => setShowReportSelector(false)}
-              className="w-full mt-8 p-4 bg-gray-600/30 text-gray-400 rounded-2xl font-black hover:text-white transition-colors uppercase tracking-widest text-xs"
-            >
-              FECHAR
-            </button>
           </div>
         </div>
       )}
 
-      {/* Modais de Exportação */}
       {exportImageUrl && (isStoryMode ? (
         <StoryPreviewModal imageUrl={exportImageUrl} onClose={() => setExportImageUrl(null)} />
       ) : (

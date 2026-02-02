@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -32,7 +33,7 @@
       .animate-rotate-device {
         animation: rotate-device 3s ease-in-out infinite;
       }
-      /* Custom Scrollbar for better aesthetics */
+      /* Custom Scrollbar */
       ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
@@ -46,6 +47,82 @@
       }
       ::-webkit-scrollbar-thumb:hover {
         background: #4b5563;
+      }
+
+      /* PRINT STYLES */
+      @media print {
+        @page {
+          size: A4 portrait;
+          margin: 1.5cm;
+        }
+        body {
+          background: white !important;
+          color: black !important;
+          overflow: visible !important;
+          padding: 0 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        /* Oculta terminantemente qualquer overlay ou elemento de UI */
+        header, nav, .print\:hidden, button, .no-print, .story-preview-modal, .landscape\:hidden, [class*="OrientationLock"] {
+          display: none !important;
+        }
+        main {
+          overflow: visible !important;
+          display: block !important;
+          position: static !important;
+        }
+        #root {
+          height: auto !important;
+          display: block !important;
+        }
+        .bg-gray-900, .bg-gray-800, .bg-gray-800\/40, .bg-gray-700 {
+          background-color: transparent !important;
+          color: black !important;
+          border-color: transparent !important;
+        }
+        table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          margin-top: 30px;
+          border: 1px solid #000 !important;
+        }
+        th {
+          background-color: #f3f4f6 !important;
+          border-bottom: 2px solid black !important;
+          color: black !important;
+          padding: 12px 10px !important;
+          text-align: center;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+        /* Zebra Striping e Divisões - IMPORTANTE PARA LEITURA */
+        tr:nth-child(even) td {
+          background-color: #f9fafb !important;
+        }
+        tr:nth-child(odd) td {
+          background-color: #ffffff !important;
+        }
+        td {
+          border-bottom: 1px solid #eee !important;
+          color: black !important;
+          padding: 14px 10px !important;
+          vertical-align: middle;
+          /* CORREÇÃO: Remove flexbox para impedir quebras de linha indesejadas */
+          display: table-cell !important;
+        }
+        .print\:border-none {
+          border: none !important;
+        }
+        .text-indigo-400, .text-gray-500, .text-gray-400, .text-gray-300 {
+          color: black !important;
+        }
+        .text-red-500\/60 {
+          color: #b91c1c !important;
+        }
+        .text-yellow-400 {
+          color: #d97706 !important;
+        }
       }
     </style>
   <script type="importmap">

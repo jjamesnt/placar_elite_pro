@@ -64,7 +64,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
         else if (element.webkitRequestFullscreen) await element.webkitRequestFullscreen();
       } else {
         if (doc.exitFullscreen) await doc.exitFullscreen();
-        else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
       }
     } catch (err) {
       console.error("Erro ao alternar tela cheia:", err);
@@ -74,14 +73,14 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
   return (
     <header className="relative w-full bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 z-50">
       <div className="flex items-center justify-between px-4 h-14 sm:h-16">
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-[150px]">
           <div className="flex items-center gap-1.5 text-indigo-400">
             <ShieldIcon />
-            <h1 className="font-black text-[12px] sm:text-sm uppercase tracking-wider">Placar Elite Pro</h1>
+            <h1 className="font-black text-[12px] sm:text-[13px] uppercase tracking-wider">Placar Elite Pro</h1>
           </div>
-          <div className="flex items-center gap-2 ml-6 -mt-1">
-            <span className="text-[8px] sm:text-[10px] text-gray-500 font-bold tracking-widest whitespace-nowrap uppercase">Versão 1.0</span>
-            <span className="text-[8px] sm:text-[10px] text-gray-400 font-mono whitespace-nowrap">{lastUpdate}</span>
+          <div className="flex items-center gap-1 ml-6 -mt-1 h-3">
+            <span className="text-[7px] sm:text-[9px] text-gray-500 font-bold tracking-widest uppercase">Versão 1.0</span>
+            <span className="text-[7px] sm:text-[9px] text-gray-400 font-mono tracking-tighter">{lastUpdate}</span>
           </div>
         </div>
 
@@ -113,7 +112,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
           <button
             onClick={toggleFullscreen}
             className="flex flex-col items-center justify-center p-2 text-gray-500 hover:text-white transition-colors duration-200 transform active:scale-95"
-            aria-label={isFullscreen ? "Sair da Tela Cheia" : "Entrar em Tela Cheia"}
           >
             {isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
             <span className="text-[10px] sm:text-xs font-medium mt-1 uppercase tracking-tighter">{isFullscreen ? "Sair" : "Focar"}</span>
