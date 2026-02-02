@@ -10,9 +10,10 @@ type Filter = 'Hoje' | 'Semanal' | 'Mensal' | 'Anual' | 'Total';
 interface RankingProps {
   matches: Match[];
   players: Player[];
+  arenaName?: string;
 }
 
-const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
+const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
   const [filter, setFilter] = useState<Filter>('Hoje');
   const [viewDate, setViewDate] = useState(new Date());
   const [exportImageUrl, setExportImageUrl] = useState<string | null>(null);
@@ -127,7 +128,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
     // 1. Logo
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 32px sans-serif';
-    ctx.fillText('PLACAR ELITE PRO', centerX, 80);
+    ctx.fillText(arenaName ? `ARENA ${arenaName.toUpperCase()}` : 'PLACAR ELITE PRO', centerX, 80);
 
     // 2. Título Central
     ctx.fillStyle = '#fbbf24';
@@ -242,7 +243,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
   const handlePrint = () => {
     setShowReportSelector(false);
     const originalTitle = document.title;
-    document.title = `Placar Elite Pro - ${filter}`;
+    document.title = `Ranking ${arenaName || 'Elite Pro'} - ${filter}`;
     
     setTimeout(() => {
       window.print();
@@ -290,9 +291,9 @@ const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
       </div>
 
       <div className="hidden print:block text-center mb-8 border-b-2 border-black pb-4">
-          <h1 className="text-4xl font-black uppercase tracking-tighter">Relatório Elite Pro</h1>
+          <h1 className="text-4xl font-black uppercase tracking-tighter">Relatório {arenaName || 'Elite Pro'}</h1>
           <p className="text-xl font-bold mt-2">Ranking {filter}: {currentPeriodLabel}</p>
-          <p className="text-sm text-gray-500 mt-1">Gerado pelo App Elite Pro em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</p>
+          <p className="text-sm text-gray-500 mt-1">Gerado em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</p>
       </div>
 
       <div className="bg-gray-800/40 rounded-3xl p-3 border border-gray-700/50 shadow-inner mt-4 print:border-none">

@@ -4,6 +4,11 @@ export interface Player {
   name: string;
 }
 
+export interface Arena {
+  id: string;
+  name: string;
+}
+
 export interface Team {
   players: (Player | undefined)[];
   score: number;

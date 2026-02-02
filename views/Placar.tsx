@@ -5,7 +5,6 @@ import { SoundScheme } from '../App';
 import { useAttackTimer, useSensoryFeedback } from '../hooks';
 import ScoreCard from '../components/ScoreCard';
 import CenterConsole from '../components/CenterConsole';
-import { RefreshCwIcon } from '../components/icons';
 
 interface PlacarProps {
   allPlayers: Player[];
@@ -15,9 +14,10 @@ interface PlacarProps {
   soundEnabled: boolean;
   vibrationEnabled: boolean;
   soundScheme: SoundScheme;
+  arenaName?: string;
 }
 
-const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme }) => {
+const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, arenaName }) => {
   const [teamA, setTeamA] = useState<Team>({ players: [undefined, undefined], score: 0 });
   const [teamB, setTeamB] = useState<Team>({ players: [undefined, undefined], score: 0 });
   const [servingTeam, setServingTeam] = useState<'A' | 'B'>('A');
@@ -193,7 +193,10 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
       </div>
 
       {/* Painel Central */}
-      <div className="w-full sm:w-40 lg:w-44 flex-shrink-0 flex flex-col items-center h-full">
+      <div className="w-full sm:w-40 lg:w-44 flex-shrink-0 flex flex-col items-center h-full justify-center">
+        <div className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-4 text-center">
+            {arenaName}
+        </div>
         <CenterConsole 
           timeLeft={attackTimer.timeLeft}
           isTimerActive={attackTimer.isActive}
@@ -224,7 +227,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
         />
       </div>
 
-      {/* Toasts - Mais discretos */}
+      {/* Toasts */}
       {toastMessage && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white px-4 py-2 rounded-lg shadow-xl backdrop-blur-md z-50 font-black uppercase tracking-widest text-[8px] animate-in slide-in-from-bottom-2 duration-300">
           {toastMessage}

@@ -33,9 +33,10 @@ interface NavigationProps {
   currentView: View;
   onNavigate: (view: View) => void;
   lastUpdate: string;
+  arenaName?: string;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUpdate }) => {
+const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUpdate, arenaName }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -73,14 +74,22 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
   return (
     <header className="relative w-full bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 z-50">
       <div className="flex items-center justify-between px-4 h-14 sm:h-16">
-        <div className="flex flex-col min-w-[150px]">
-          <div className="flex items-center gap-1.5 text-indigo-400">
+        {/* Seção do Título e Arena ajustada conforme screenshot */}
+        <div className="flex flex-col min-w-[160px] sm:min-w-[200px]">
+          <div className="flex items-center gap-1.5 text-white">
             <ShieldIcon />
-            <h1 className="font-black text-[12px] sm:text-[13px] uppercase tracking-wider">Placar Elite Pro</h1>
+            <h1 className="font-black text-[14px] sm:text-[16px] uppercase tracking-tighter leading-none">Placar Elite Pro</h1>
           </div>
-          <div className="flex items-center gap-1 ml-6 -mt-1 h-3">
-            <span className="text-[7px] sm:text-[9px] text-gray-500 font-bold tracking-widest uppercase">Versão 1.0</span>
-            <span className="text-[7px] sm:text-[9px] text-gray-400 font-mono tracking-tighter">{lastUpdate}</span>
+          <div className="flex items-center gap-2 mt-0.5 ml-0.5">
+            {arenaName && (
+              <span className="text-[8px] sm:text-[10px] text-indigo-400 font-black tracking-wider uppercase whitespace-nowrap">
+                {arenaName}
+              </span>
+            )}
+            <div className="w-px h-2 bg-gray-700 mx-0.5"></div>
+            <span className="text-[8px] sm:text-[10px] text-gray-500 font-mono tracking-tighter">
+              {lastUpdate}
+            </span>
           </div>
         </div>
 
@@ -120,7 +129,9 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
             className="flex flex-col items-center justify-center p-2 text-gray-500 hover:text-white transition-colors duration-200 transform active:scale-95"
           >
             {isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
-            <span className="text-[10px] sm:text-xs font-medium mt-1 uppercase tracking-tighter">{isFullscreen ? "Sair" : "Focar"}</span>
+            <span className="text-[10px] sm:text-xs font-medium mt-1 uppercase tracking-tighter">
+              {isFullscreen ? "Sair" : "Focar"}
+            </span>
           </button>
         </nav>
       </div>

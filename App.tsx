@@ -7,53 +7,78 @@ import Atletas from './views/Atletas';
 import Ranking from './views/Ranking';
 import Historico from './views/Historico';
 import Config from './views/Config';
-import { Player, Match } from './types';
+import { Player, Match, Arena } from './types';
 import { MOCK_PLAYERS, MOCK_MATCHES } from './data';
 
 export type SoundScheme = 'moderno' | 'classico' | 'intenso';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('placar');
-  
-  const [players, setPlayers] = useState<Player[]>(() => {
-    const saved = localStorage.getItem('elite_players');
-    return saved ? JSON.parse(saved) : MOCK_PLAYERS;
-  });
-
-  const [deletedPlayers, setDeletedPlayers] = useState<Player[]>(() => {
-    const saved = localStorage.getItem('elite_deleted_players');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [matches, setMatches] = useState<Match[]>(() => {
-    const saved = localStorage.getItem('elite_matches');
-    return saved ? JSON.parse(saved).map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })) : MOCK_MATCHES;
-  });
-
-  const [winScore, setWinScore] = useState(() => Number(localStorage.getItem('elite_winScore')) || 15);
-  const [attackTime, setAttackTime] = useState(() => Number(localStorage.getItem('elite_attackTime')) || 24);
-  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('elite_soundEnabled') !== 'false');
-  const [vibrationEnabled, setVibrationEnabled] = useState(() => localStorage.getItem('elite_vibrationEnabled') !== 'false');
-  const [soundScheme, setSoundScheme] = useState<SoundScheme>(() => (localStorage.getItem('elite_soundScheme') as SoundScheme) || 'moderno');
-  
   const [lastUpdate, setLastUpdate] = useState<string>('--/-- --:--');
 
-  // Data persistence
-  useEffect(() => { localStorage.setItem('elite_players', JSON.stringify(players)); }, [players]);
-  useEffect(() => { localStorage.setItem('elite_deleted_players', JSON.stringify(deletedPlayers)); }, [deletedPlayers]);
-  useEffect(() => { localStorage.setItem('elite_matches', JSON.stringify(matches)); }, [matches]);
-  useEffect(() => { localStorage.setItem('elite_winScore', String(winScore)); }, [winScore]);
-  useEffect(() => { localStorage.setItem('elite_attackTime', String(attackTime)); }, [attackTime]);
-  useEffect(() => { localStorage.setItem('elite_soundEnabled', String(soundEnabled)); }, [soundEnabled]);
-  useEffect(() => { localStorage.setItem('elite_vibrationEnabled', String(vibrationEnabled)); }, [vibrationEnabled]);
-  useEffect(() => { localStorage.setItem('elite_soundScheme', soundScheme); }, [soundScheme]);
+  // Gestão de Arenas
+  const [arenas, setArenas] = useState<Arena[]>(() => {
+    const saved = localStorage.getItem('elite_arenas');
+    return saved ? JSON.parse(saved) : [{ id: 'default', name: 'Arena Principal' }];
+  });
 
-  // Update last update time whenever data changes
+  const [currentArenaId, setCurrentArenaId] = useState<string>(() => {
+    return localStorage.getItem('elite_current_arena_id') || 'default';
+  });
+
+  // Dados Dinâmicos baseados na Arena
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [deletedPlayers, setDeletedPlayers] = useState<Player[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [winScore, setWinScore] = useState(15);
+  const [attackTime, setAttackTime] = useState(24);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [vibrationEnabled, setVibrationEnabled] = useState(true);
+  const [soundScheme, setSoundScheme] = useState<SoundScheme>('moderno');
+
+  // Carregar dados quando a Arena muda
   useEffect(() => {
+    const prefix = `elite_arena_${currentArenaId}_`;
+    
+    const savedPlayers = localStorage.getItem(`${prefix}players`);
+    setPlayers(savedPlayers ? JSON.parse(savedPlayers) : (currentArenaId === 'default' ? MOCK_PLAYERS : []));
+
+    const savedDeleted = localStorage.getItem(`${prefix}deleted_players`);
+    setDeletedPlayers(savedDeleted ? JSON.parse(savedDeleted) : []);
+
+    const savedMatches = localStorage.getItem(`${prefix}matches`);
+    setMatches(savedMatches ? JSON.parse(savedMatches).map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })) : (currentArenaId === 'default' ? MOCK_MATCHES : []));
+
+    setWinScore(Number(localStorage.getItem(`${prefix}winScore`)) || 15);
+    setAttackTime(Number(localStorage.getItem(`${prefix}attackTime`)) || 24);
+    setSoundEnabled(localStorage.getItem(`${prefix}soundEnabled`) !== 'false');
+    setVibrationEnabled(localStorage.getItem(`${prefix}vibrationEnabled`) !== 'false');
+    setSoundScheme((localStorage.getItem(`${prefix}soundScheme`) as SoundScheme) || 'moderno');
+
+    localStorage.setItem('elite_current_arena_id', currentArenaId);
+  }, [currentArenaId]);
+
+  // Salvar Arenas
+  useEffect(() => {
+    localStorage.setItem('elite_arenas', JSON.stringify(arenas));
+  }, [arenas]);
+
+  // Persistência de Dados da Arena Ativa
+  useEffect(() => {
+    const prefix = `elite_arena_${currentArenaId}_`;
+    localStorage.setItem(`${prefix}players`, JSON.stringify(players));
+    localStorage.setItem(`${prefix}deleted_players`, JSON.stringify(deletedPlayers));
+    localStorage.setItem(`${prefix}matches`, JSON.stringify(matches));
+    localStorage.setItem(`${prefix}winScore`, String(winScore));
+    localStorage.setItem(`${prefix}attackTime`, String(attackTime));
+    localStorage.setItem(`${prefix}soundEnabled`, String(soundEnabled));
+    localStorage.setItem(`${prefix}vibrationEnabled`, String(vibrationEnabled));
+    localStorage.setItem(`${prefix}soundScheme`, soundScheme);
+
     const now = new Date();
     const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     setLastUpdate(formattedDate);
-  }, [players, deletedPlayers, matches, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme]);
+  }, [players, deletedPlayers, matches, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, currentArenaId]);
 
   const handleSaveGame = useCallback((match: Omit<Match, 'id' | 'timestamp'>) => {
     const newMatch: Match = {
@@ -65,16 +90,18 @@ const App: React.FC = () => {
   }, []);
 
   const renderView = () => {
+    const currentArenaName = arenas.find(a => a.id === currentArenaId)?.name || 'Arena';
+    
     switch (currentView) {
       case 'placar':
-        return <Placar allPlayers={players} onSaveGame={handleSaveGame} winScore={winScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} />;
+        return <Placar allPlayers={players} onSaveGame={handleSaveGame} winScore={winScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} arenaName={currentArenaName} />;
       case 'historico':
         return <Historico matches={matches} setMatches={setMatches} />;
       case 'atletas':
         return <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} />;
       case 'ranking':
         const allPlayersForRanking = [...players, ...deletedPlayers];
-        return <Ranking matches={matches} players={allPlayersForRanking} />;
+        return <Ranking matches={matches} players={allPlayersForRanking} arenaName={currentArenaName} />;
       case 'config':
         return (
           <Config
@@ -94,6 +121,10 @@ const App: React.FC = () => {
             setVibrationEnabled={setVibrationEnabled}
             soundScheme={soundScheme}
             setSoundScheme={setSoundScheme}
+            arenas={arenas}
+            setArenas={setArenas}
+            currentArenaId={currentArenaId}
+            setCurrentArenaId={setCurrentArenaId}
           />
         );
       default:
@@ -105,7 +136,7 @@ const App: React.FC = () => {
     <>
       <OrientationLock />
       <div className="h-screen w-screen flex flex-col bg-gray-900 text-white font-sans overflow-hidden">
-        <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} />
+        <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} arenaName={arenas.find(a => a.id === currentArenaId)?.name} />
         <main className="flex-1 overflow-y-auto">
           {renderView()}
         </main>
