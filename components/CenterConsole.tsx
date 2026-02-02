@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { RefreshCwIcon, SaveIcon, RepeatIcon, PlayIcon, PauseIcon } from './icons';
+import { RefreshCwIcon, SaveIcon, RepeatIcon, PlayIcon, PauseIcon, RotateCcwIcon } from './icons';
 
 interface CenterConsoleProps {
   timeLeft: number;
@@ -10,10 +9,12 @@ interface CenterConsoleProps {
   onResetGame: () => void;
   onSaveGame: () => void;
   onSwitchSides: () => void;
+  onUndo: () => void;
   isGameWon: boolean;
+  canUndo: boolean;
 }
 
-const CenterConsole: React.FC<CenterConsoleProps> = ({ timeLeft, isTimerActive, onToggleTimer, onResetTimer, onResetGame, onSaveGame, onSwitchSides, isGameWon }) => {
+const CenterConsole: React.FC<CenterConsoleProps> = ({ timeLeft, isTimerActive, onToggleTimer, onResetTimer, onResetGame, onSaveGame, onSwitchSides, onUndo, isGameWon, canUndo }) => {
   const timerColor = timeLeft <= 10 && timeLeft > 0 ? 'text-red-500 animate-pulse' : 'text-yellow-400';
   
   return (
@@ -28,9 +29,19 @@ const CenterConsole: React.FC<CenterConsoleProps> = ({ timeLeft, isTimerActive, 
           {String(timeLeft).padStart(2, '0')}
         </div>
         {!isGameWon && (
-            <button onClick={onToggleTimer} className="mt-1 p-2 sm:p-3 bg-gray-600 text-white rounded-full active:scale-95 transition-transform hover:bg-gray-500 shadow-md">
-                {isTimerActive ? <PauseIcon /> : <PlayIcon />}
-            </button>
+            <div className="flex gap-2 mt-1">
+               <button onClick={onToggleTimer} className="p-2 sm:p-3 bg-gray-600 text-white rounded-full active:scale-95 transition-transform hover:bg-gray-500 shadow-md">
+                  {isTimerActive ? <PauseIcon /> : <PlayIcon />}
+              </button>
+              <button 
+                onClick={onUndo} 
+                disabled={!canUndo}
+                className="p-2 sm:p-3 bg-gray-700 text-white rounded-full active:scale-95 transition-transform hover:bg-gray-600 shadow-md disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Desfazer última ação"
+              >
+                  <RotateCcwIcon />
+              </button>
+            </div>
         )}
       </div>
 

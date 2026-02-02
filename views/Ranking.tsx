@@ -1,7 +1,9 @@
+
 import React, { useState, useMemo } from 'react';
 import { Match, Player } from '../types';
 import { FileDownIcon, Share2Icon } from '../components/icons';
 import StoryPreviewModal from '../components/StoryPreviewModal';
+import ExportPreviewModal from '../components/ExportPreviewModal';
 
 type Filter = 'Hoje' | 'Semanal' | 'Mensal' | 'Anual' | 'Total';
 
@@ -10,392 +12,371 @@ interface RankingProps {
   players: Player[];
 }
 
-const getRankingTitle = (filter: Filter) => {
-    switch (filter) {
-        case 'Hoje': return `Ranking do Dia`;
-        case 'Semanal': return 'Ranking Semanal';
-        case 'Mensal': return 'Ranking Mensal';
-        case 'Anual': return 'Ranking Anual';
-        case 'Total': return 'Ranking Geral';
-        default: return 'Ranking';
-    }
-}
-
-const getReportTitleFragment = (filter: Filter) => {
-    switch (filter) {
-        case 'Hoje': return `do Dia`;
-        case 'Semanal': return 'Semanal';
-        case 'Mensal': return 'Mensal';
-        case 'Anual': return 'Anual';
-        case 'Total': return 'Geral';
-        default: return '';
-    }
-}
-
-const generateReportSVG = (individualRanking: any[], partnershipRanking: any[], filter: Filter) => {
-  const reportTitle = `Relatório ${getReportTitleFragment(filter)} - Placar Elite Pro`;
-  const date = new Date().toLocaleDateString('pt-BR');
-  const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-
-  const renderIndividualRows = () => {
-    if (!individualRanking || individualRanking.length === 0) {
-      return `<text x="400" y="320" font-size="16" fill="#666" text-anchor="middle">Nenhum dado para o período.</text>`;
-    }
-    return individualRanking.map((p, i) => {
-      const y = 305 + i * 35;
-      return `
-        <g class="td">
-          <text x="70" y="${y}" text-anchor="middle">${i + 1}</text>
-          <text x="120" y="${y}">${p.player.name}</text>
-          <text x="495" y="${y}" text-anchor="middle">${p.wins}</text>
-          <text x="595" y="${y}" text-anchor="middle">${p.games}</text>
-          <text x="695" y="${y}" text-anchor="middle">${p.efficiency.toFixed(0)}%</text>
-        </g>
-        <line x1="50" y1="${y + 10}" x2="750" y2="${y + 10}" stroke="#eee" />
-      `;
-    }).join('');
-  };
-  
-  const partnershipSectionStart = 280 + (Math.max(1, individualRanking.length) * 35) + 80;
-  const partnershipHeaderY = partnershipSectionStart + 50;
-  const partnershipRowsStartY = partnershipHeaderY + 45;
-
-  const renderPartnershipRows = () => {
-    if (!partnershipRanking || partnershipRanking.length === 0) {
-      return `<text x="400" y="${partnershipRowsStartY + 20}" font-size="16" fill="#666" text-anchor="middle">Nenhum dado para o período.</text>`;
-    }
-    return partnershipRanking.map((p, i) => {
-      const y = partnershipRowsStartY + i * 35;
-      const playerNames = p.players.map((pl: Player) => pl.name).join(' & ');
-      const displayName = playerNames.length > 30 ? `${playerNames.substring(0, 27)}...` : playerNames;
-      return `
-        <g class="td">
-          <text x="70" y="${y}" text-anchor="middle">${i + 1}</text>
-          <text x="120" y="${y}">${displayName}</text>
-          <text x="495" y="${y}" text-anchor="middle">${p.wins}</text>
-          <text x="595" y="${y}" text-anchor="middle">${p.games}</text>
-          <text x="695" y="${y}" text-anchor="middle">${p.efficiency.toFixed(1)}%</text>
-        </g>
-        <line x1="50" y1="${y + 10}" x2="750" y2="${y + 10}" stroke="#eee" />
-      `;
-    }).join('');
-  };
-
-  const finalHeight = partnershipRowsStartY + (Math.max(1, partnershipRanking.length) * 35) + 100;
-
-  return `
-    <svg width="800" height="${finalHeight}" viewBox="0 0 800 ${finalHeight}" xmlns="http://www.w3.org/2000/svg" style="font-family: ${FONT_FAMILY};">
-      <style>
-        .title { font-size: 32px; fill: #2563eb; text-anchor: middle; font-weight: bold; }
-        .date { font-size: 24px; fill: #2563eb; text-anchor: middle; }
-        .subtitle { font-size: 28px; fill: #2563eb; text-anchor: middle; font-weight: 500; }
-        .th { font-size: 16px; fill: #666; font-weight: bold; }
-        .td { font-size: 16px; fill: #111; }
-      </style>
-      <rect width="100%" height="100%" fill="white" />
-      
-      <text x="400" y="80" class="title">${reportTitle}</text>
-      <text x="400" y="120" class="date">${date}</text>
-      
-      <text x="400" y="220" class="subtitle">Ranking Individual</text>
-      <g class="th">
-          <text x="70" y="265" text-anchor="middle">#</text>
-          <text x="120" y="265" text-anchor="start">Nome</text>
-          <text x="495" y="265" text-anchor="middle">V</text>
-          <text x="595" y="265" text-anchor="middle">J</text>
-          <text x="695" y="265" text-anchor="middle">%</text>
-      </g>
-      <line x1="50" y1="245" x2="750" y2="245" stroke="#ccc" />
-      <line x1="50" y1="275" x2="750" y2="275" stroke="#ccc" />
-      ${renderIndividualRows()}
-      
-      <text x="400" y="${partnershipSectionStart}" class="subtitle">Ranking de Duplas</text>
-      <g class="th">
-          <text x="70" y="${partnershipHeaderY}" text-anchor="middle">#</text>
-          <text x="120" y="${partnershipHeaderY}" text-anchor="start">Dupla</text>
-          <text x="495" y="${partnershipHeaderY}" text-anchor="middle">V</text>
-          <text x="595" y="${partnershipHeaderY}" text-anchor="middle">J</text>
-          <text x="695" y="${partnershipHeaderY}" text-anchor="middle">% Efic.</text>
-      </g>
-      <line x1="50" y1="${partnershipSectionStart + 25}" x2="750" y2="${partnershipSectionStart + 25}" stroke="#ccc" />
-      <line x1="50" y1="${partnershipHeaderY + 15}" x2="750" y2="${partnershipHeaderY + 15}" stroke="#ccc" />
-      ${renderPartnershipRows()}
-
-      <text x="400" y="${finalHeight - 40}" font-size="14" fill="#aaa" text-anchor="middle">Gerado por Placar Elite Pro</text>
-    </svg>
-  `;
-}
-
-const generateStorySVG = (individualRanking: any[], filter: Filter) => {
-  const players = individualRanking;
-  const playerCount = players.length;
-
-  const getTitle = () => {
-    switch(filter) {
-        case 'Hoje': return 'RANKING DO DIA';
-        case 'Semanal': return 'RANKING SEMANAL';
-        case 'Mensal': return 'RANKING MENSAL';
-        case 'Anual': return 'RANKING ANUAL';
-        case 'Total': return 'RANKING GERAL';
-    }
-  }
-
-  const minWins = playerCount > 1 ? players[players.length - 1].wins : -1;
-
-  const header = `
-    <g transform="translate(540, 165)">
-        <g transform="translate(-315, 0)">
-            <g transform="translate(0, -42) scale(3.5)">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="#a5b4fc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </g>
-            <text text-anchor="start" dominant-baseline="middle" x="100" y="0" font-family="sans-serif" font-size="70" fill="white" font-weight="bold">Placar Elite Pro</text>
-        </g>
-    </g>
-    <text x="540" y="400" font-family="sans-serif" font-size="100" fill="#facc15" text-anchor="middle" font-weight="bold">${getTitle()}</text>
-    <text x="540" y="480" font-family="sans-serif" font-size="50" fill="white" text-anchor="middle">${new Date().toLocaleDateString('pt-BR')}</text>
-  `;
-
-  const headerHeight = 520;
-  const footerHeight = 100;
-  const contentHeight = 1920 - headerHeight - footerHeight;
-  const contentStartY = headerHeight;
-
-  let playerLines = '';
-
-  if (playerCount > 0) {
-      const rowHeight = contentHeight / playerCount;
-      const cardPaddingY = Math.min(20, rowHeight * 0.1);
-      const cardHeight = rowHeight - (cardPaddingY * 2);
-      const scaleFactor = Math.sqrt(Math.min(1, 7 / playerCount));
-      const mainFontSize = Math.max(20, 55 * scaleFactor);
-      const subFontSize = Math.max(16, 40 * scaleFactor);
-      const cardFills = ['url(#gold)', 'url(#silver)', 'url(#bronze)'];
-      const strokeColors = ['#FBBF24', '#D1D5DB', '#D97706'];
-
-      playerLines = players.map((p, i) => {
-          const cardY = contentStartY + (i * rowHeight) + cardPaddingY;
-          const textY = cardY + cardHeight / 2;
-          const textCenterX = 540;
-          const fill = i < 3 ? cardFills[i] : 'rgba(255,255,255,0.05)';
-          const stroke = i < 3 ? `stroke="${strokeColors[i]}" stroke-width="2"` : '';
-          let rankDisplay;
-          if (i < 3) {
-            const medals = ['🥇', '🥈', '🥉'];
-            rankDisplay = `<text x="120" y="${textY + mainFontSize * 0.35}" font-size="${mainFontSize * 1.5}" text-anchor="middle">${medals[i]}</text>`;
-          } else {
-            rankDisplay = `<text x="120" y="${textY + mainFontSize * 0.35}" font-size="${mainFontSize * 0.9}" fill="#cbd5e1" text-anchor="middle" font-weight="bold">${i + 1}.</text>`;
-          }
-          const isLoser = playerCount > 1 && p.wins === minWins;
-          const nameWithEmoji = isLoser ? `${p.player.name} 😥` : p.player.name;
-          return `
-            <rect x="40" y="${cardY}" width="1000" height="${cardHeight}" rx="25" fill="${fill}" ${stroke} />
-            ${rankDisplay}
-            <text x="${textCenterX}" y="${textY}" dy="-${mainFontSize * 0.3}" font-family="sans-serif" font-size="${mainFontSize}" fill="#f3f4f6" text-anchor="middle" font-weight="bold">${nameWithEmoji}</text>
-            <text x="${textCenterX}" y="${textY}" dy="${mainFontSize * 0.9}" font-family="sans-serif" font-size="${subFontSize}" fill="#a5b4fc" text-anchor="middle">${p.wins}V / ${p.games}J (${p.efficiency.toFixed(0)}%)</text>
-          `;
-      }).join('');
-  } else {
-     playerLines = `<text x="540" y="960" font-size="80" fill="#9ca3af" text-anchor="middle">Nenhum dado para o período.</text>`;
-  }
-
-  return `
-    <svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-      <defs>
-        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#1e3a8a;" /><stop offset="100%" style="stop-color:#111827;" /></linearGradient>
-        <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FDE047" stop-opacity="0.3"/><stop offset="100%" stop-color="#FDE047" stop-opacity="0.05"/></linearGradient>
-        <linearGradient id="silver" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#E5E7EB" stop-opacity="0.3"/><stop offset="100%" stop-color="#E5E7EB" stop-opacity="0.05"/></linearGradient>
-        <linearGradient id="bronze" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#F97316" stop-opacity="0.3"/><stop offset="100%" stop-color="#F97316" stop-opacity="0.05"/></linearGradient>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#bg)" />
-      ${header}
-      ${playerLines}
-      <text x="540" y="1850" font-size="40" fill="#9ca3af" text-anchor="middle">Gerado por Placar Elite Pro</text>
-    </svg>
-  `;
-};
-
 const Ranking: React.FC<RankingProps> = ({ matches, players }) => {
   const [filter, setFilter] = useState<Filter>('Hoje');
-  const [storyImageUrl, setStoryImageUrl] = useState<string | null>(null);
+  const [viewDate, setViewDate] = useState(new Date());
+  const [exportImageUrl, setExportImageUrl] = useState<string | null>(null);
+  const [isStoryMode, setIsStoryMode] = useState(false);
+  const [showReportSelector, setShowReportSelector] = useState(false);
 
   const filteredMatches = useMemo(() => {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     return matches.filter(match => {
       const matchDate = new Date(match.timestamp);
+      const isSameDay = matchDate.toDateString() === viewDate.toDateString();
+      const isSameMonth = matchDate.getMonth() === viewDate.getMonth() && matchDate.getFullYear() === viewDate.getFullYear();
+      const isSameYear = matchDate.getFullYear() === viewDate.getFullYear();
+
       switch (filter) {
-        case 'Hoje': return matchDate >= startOfToday;
+        case 'Hoje': return isSameDay;
         case 'Semanal': {
-          const lastWeek = new Date(startOfToday);
-          lastWeek.setDate(startOfToday.getDate() - 7);
-          return matchDate >= lastWeek;
+          const startOfWeek = new Date(viewDate);
+          startOfWeek.setDate(viewDate.getDate() - viewDate.getDay());
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(startOfWeek.getDate() + 6);
+          return matchDate >= startOfWeek && matchDate <= endOfWeek;
         }
-        case 'Mensal': {
-          const lastMonth = new Date(startOfToday);
-          lastMonth.setMonth(startOfToday.getMonth() - 1);
-          return matchDate >= lastMonth;
-        }
-        case 'Anual': {
-            const lastYear = new Date(startOfToday);
-            lastYear.setFullYear(startOfToday.getFullYear() - 1);
-            return matchDate >= lastYear;
-        }
+        case 'Mensal': return isSameMonth;
+        case 'Anual': return isSameYear;
         case 'Total': return true;
         default: return true;
       }
     });
-  }, [matches, filter]);
+  }, [matches, filter, viewDate]);
 
-  const calculateRankings = (filteredMatches: Match[], players: Player[]) => {
-      const individualStats = new Map<string, { wins: number, games: number, totalDuration: number, activeDays: Set<string> }>();
-      players.forEach(p => individualStats.set(p.id, { wins: 0, games: 0, totalDuration: 0, activeDays: new Set() }));
-      filteredMatches.forEach(match => {
-        const allMatchPlayers = [...match.teamA.players, ...match.teamB.players];
-        const winningTeam = match.winner === 'A' ? match.teamA : match.teamB;
-        allMatchPlayers.forEach(p => {
-          const pStats = individualStats.get(p.id);
-          if (pStats) {
-            pStats.games += 1;
-            pStats.totalDuration += match.duration;
-            pStats.activeDays.add(new Date(match.timestamp).toDateString());
-            if (winningTeam.players.some(wp => wp.id === p.id)) pStats.wins += 1;
-          }
+  const stats = useMemo(() => {
+    const playerDailyStats = new Map<string, Map<string, { wins: number, games: number }>>();
+    
+    filteredMatches.forEach(match => {
+      const winningTeam = match.winner === 'A' ? match.teamA : match.teamB;
+      const dateKey = new Date(match.timestamp).toDateString();
+      
+      [match.teamA, match.teamB].forEach(team => {
+        team.players.forEach(p => {
+          if (!playerDailyStats.has(p.id)) playerDailyStats.set(p.id, new Map());
+          const daily = playerDailyStats.get(p.id)!;
+          if (!daily.has(dateKey)) daily.set(dateKey, { wins: 0, games: 0 });
+          const dStats = daily.get(dateKey)!;
+          dStats.games += 1;
+          if (winningTeam.players.some(wp => wp.id === p.id)) dStats.wins += 1;
         });
       });
-      const individualRanking = Array.from(individualStats.entries())
-        .map(([id, data]) => ({ player: players.find(p => p.id === id)!, ...data, efficiency: data.games > 0 ? (data.wins / data.games) * 100 : 0, avgTime: data.games > 0 ? data.totalDuration / data.games : 0}))
-        .filter(s => s.games > 0).sort((a, b) => b.wins - a.wins || b.efficiency - a.efficiency);
-      const partnershipStats = new Map<string, { players: Player[], wins: number, games: number }>();
-      filteredMatches.forEach(match => {
-          [match.teamA, match.teamB].forEach(team => {
-              if (team.players.length !== 2) return;
-              const [p1, p2] = [...team.players].sort((a,b) => a.id.localeCompare(b.id));
-              const key = `${p1.id}-${p2.id}`;
-              if (!partnershipStats.has(key)) partnershipStats.set(key, { players: [p1, p2], wins: 0, games: 0 });
-              const pairStats = partnershipStats.get(key)!;
-              pairStats.games += 1;
-              const winningTeam = match.winner === 'A' ? match.teamA : match.teamB;
-              if (winningTeam.players.some(p => p.id === p1.id) && winningTeam.players.some(p => p.id === p2.id)) pairStats.wins += 1;
-          });
+    });
+
+    return Array.from(playerDailyStats.entries()).map(([id, dailyMap]) => {
+      let totalWins = 0;
+      let totalGames = 0;
+      let zeroWinsDays = 0;
+      const days = dailyMap.size;
+      
+      dailyMap.forEach(d => {
+        totalWins += d.wins;
+        totalGames += d.games;
+        if (d.wins === 0) zeroWinsDays += 1;
       });
-      const partnershipRanking = Array.from(partnershipStats.values())
-          .map(data => ({ ...data, efficiency: data.games > 0 ? (data.wins / data.games) * 100 : 0 }))
-          .sort((a, b) => b.wins - a.wins || b.efficiency - a.efficiency).slice(0, 10);
-      return { individualRanking, partnershipRanking };
-  }
 
-  const { individualRanking, partnershipRanking } = useMemo(() => calculateRankings(filteredMatches, players), [filteredMatches, players]);
-  
-  const handleExport = () => {
-    const svgString = generateReportSVG(individualRanking, partnershipRanking, filter);
-    const title = getRankingTitle(filter);
-    const reportHtml = `
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${title}</title>
-          <style>
-            body { margin: 0; padding: 1rem; background-color: #f3f4f6; display: flex; justify-content: center; font-family: sans-serif; }
-            .report-container { background-color: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-radius: 0.5rem; padding: 1rem; max-width: 800px; width: 100%; }
-          </style>
-        </head>
-        <body><div class="report-container">${svgString}</div></body>
-      </html>
-    `;
-    const blob = new Blob([reportHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const newWindow = window.open(url, '_blank');
-    if (!newWindow) alert('Não foi possível abrir o relatório. Por favor, desative o bloqueador de pop-ups.');
+      const letalidade = totalWins / (days || 1);
+      const winRate = totalGames > 0 ? (totalWins / totalGames) * 100 : 0;
+
+      return {
+        player: players.find(p => p.id === id)!,
+        wins: totalWins,
+        games: totalGames,
+        days,
+        letalidade,
+        winRate,
+        zeroWinsDays
+      };
+    })
+    .filter(s => s.days > 0)
+    .sort((a, b) => b.letalidade - a.letalidade || b.wins - a.wins);
+  }, [filteredMatches, players]);
+
+  const podium = stats.slice(0, 3);
+
+  const navigateDate = (amount: number) => {
+    const newDate = new Date(viewDate);
+    if (filter === 'Mensal') newDate.setMonth(viewDate.getMonth() + amount);
+    else if (filter === 'Anual') newDate.setFullYear(viewDate.getFullYear() + amount);
+    else newDate.setDate(viewDate.getDate() + amount);
+    setViewDate(newDate);
   };
 
-  const handleGenerateStory = () => {
-    const svgString = generateStorySVG(individualRanking, filter);
-    const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1080;
-      canvas.height = 1920;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0, 1080, 1920);
-      setStoryImageUrl(canvas.toDataURL('image/png'));
+  const generateExportImage = async (isStory: boolean) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = isStory ? 1080 : 1200;
+    const height = isStory ? 1920 : 1600;
+    canvas.width = width;
+    canvas.height = height;
+
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, '#020617');
+    grad.addColorStop(0.5, '#0f172a');
+    grad.addColorStop(1, '#020617');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    const centerX = width / 2;
+    
+    // Topo Story: Apenas Ranking e Data/Período
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'black 100px sans-serif';
+    const dateLabel = filter === 'Mensal' 
+      ? viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+      : viewDate.toLocaleDateString('pt-BR');
+    
+    const titleText = filter === 'Hoje' ? 'RANKING DO DIA' : `RANKING ${filter.toUpperCase()}`;
+    ctx.fillText(titleText, centerX, 180);
+    
+    ctx.fillStyle = '#818cf8';
+    ctx.font = 'bold 54px sans-serif';
+    ctx.fillText(dateLabel, centerX, 265);
+
+    // Marca d'água no rodapé
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText('PLACAR ELITE PRO • v1.0', centerX, height - 80);
+
+    const podiumBaseY = isStory ? 950 : 850;
+    
+    const drawPodium = (data: typeof stats[0], pos: 1|2|3, x: number, w: number, h: number, color: string) => {
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(x - w/2, podiumBaseY - h, w, h, 40);
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 8;
+      ctx.stroke();
+
+      const cardCenterX = x;
+      const cardTopY = podiumBaseY - h;
+
+      ctx.fillStyle = color;
+      ctx.font = 'bold 110px sans-serif';
+      ctx.fillText(`${pos}º`, cardCenterX, cardTopY + 140);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 44px sans-serif';
+      ctx.fillText(data.player.name.toUpperCase().substring(0, 14), cardCenterX, cardTopY + 230);
+
+      ctx.fillStyle = color;
+      ctx.font = 'bold 80px sans-serif';
+      ctx.fillText(data.letalidade.toFixed(2), cardCenterX, cardTopY + 320);
+      
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.fillText('LETALIDADE', cardCenterX, cardTopY + 365);
+      
+      ctx.fillStyle = color;
+      ctx.font = 'bold 42px sans-serif';
+      ctx.fillText(`${data.winRate.toFixed(0)}%`, cardCenterX, cardTopY + 425);
     };
-    img.src = svgDataUrl;
+
+    if (podium[1]) drawPodium(podium[1], 2, centerX - 330, 310, 480, '#94a3b8');
+    if (podium[2]) drawPodium(podium[2], 3, centerX + 330, 310, 420, '#d97706');
+    if (podium[0]) drawPodium(podium[0], 1, centerX, 370, 600, '#fbbf24');
+
+    const tableTopY = podiumBaseY + 150;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText('ATLETA', 100, tableTopY);
+    ctx.textAlign = 'center';
+    ctx.fillText('VIT', width - 480, tableTopY);
+    ctx.fillText('S.P.', width - 300, tableTopY);
+    ctx.fillText('LETALIDADE', width - 120, tableTopY);
+
+    stats.slice(0, isStory ? 10 : 25).forEach((s, i) => {
+      const rowY = tableTopY + 100 + (i * 85);
+      if (i % 2 === 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.fillRect(60, rowY - 60, width - 120, 85);
+      }
+      ctx.textAlign = 'left';
+      ctx.fillStyle = i < 3 ? '#fbbf24' : '#ffffff';
+      ctx.font = 'bold 38px sans-serif';
+      const name = s.wins === 0 ? `${s.player.name} 😢` : s.player.name;
+      ctx.fillText(`${i + 1}º ${name.substring(0, 18)}`, 80, rowY);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(s.wins.toString(), width - 480, rowY);
+      ctx.fillText(`${s.zeroWinsDays}d`, width - 300, rowY);
+      ctx.fillStyle = i < 3 ? '#fbbf24' : '#818cf8';
+      ctx.fillText(`${s.letalidade.toFixed(2)} (${s.winRate.toFixed(0)}%)`, width - 120, rowY);
+    });
+
+    setExportImageUrl(canvas.toDataURL('image/png'));
+    setIsStoryMode(isStory);
   };
+
+  const currentPeriodLabel = useMemo(() => {
+    if (filter === 'Hoje') return viewDate.toLocaleDateString('pt-BR');
+    if (filter === 'Mensal') return viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    if (filter === 'Anual') return viewDate.getFullYear().toString();
+    return filter;
+  }, [filter, viewDate]);
 
   return (
-    <>
-      <div className="w-full p-4 flex flex-col">
-        <h1 className="text-2xl font-bold text-center text-gray-100 mb-3">Ranking Elite Pro</h1>
-        <div className="flex justify-center items-center gap-1 sm:gap-2 mb-3 bg-gray-800 p-1 rounded-xl max-w-lg mx-auto">
+    <div className="w-full flex flex-col gap-3 p-2 sm:p-4 overflow-x-hidden animate-in fade-in duration-500">
+      {/* Navegação e Filtros */}
+      <div className="flex flex-col items-center gap-3 print:hidden">
+        <div className="flex bg-gray-800/90 backdrop-blur rounded-2xl p-1.5 shadow-2xl w-full max-w-xl border border-gray-700/50">
           {(['Hoje', 'Semanal', 'Mensal', 'Anual', 'Total'] as Filter[]).map(f => (
             <button 
-              key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1 text-xs sm:text-sm font-semibold rounded-lg transition-colors ${filter === f ? 'bg-indigo-500 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+              key={f} onClick={() => { setFilter(f); setViewDate(new Date()); }}
+              className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${filter === f ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
             >
-              {f}
+              {f.toUpperCase()}
             </button>
           ))}
         </div>
-        <div className="flex justify-center items-center gap-4 mb-4">
-          <button onClick={handleExport} className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md transition-transform active:scale-95"><FileDownIcon /> Ranking</button>
-          <button onClick={handleGenerateStory} className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-md transition-transform active:scale-95"><Share2Icon /> Story</button>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-gray-800/50 rounded-2xl p-4">
-            <h2 className="text-xl font-semibold text-cyan-400 mb-3">Ranking Individual</h2>
-            <div className="overflow-y-auto max-h-[50vh]">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="sticky top-0 bg-gray-800">
-                  <tr>
-                    <th className="p-2">#</th><th className="p-2">Nome</th><th className="p-2">V</th><th className="p-2">J</th><th className="p-2">%</th><th className="p-2 hidden sm:table-cell">Dias</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {individualRanking.map((p, i) => (
-                    <tr key={p.player.id} className="hover:bg-gray-700/50">
-                      <td className="p-2 font-mono">{i + 1}</td>
-                      <td className="p-2 font-semibold">{p.player.name}</td>
-                      <td className="p-2">{p.wins}</td>
-                      <td className="p-2">{p.games}</td>
-                      <td className="p-2 text-green-400">{`${p.efficiency.toFixed(0)}%`}</td>
-                      <td className="p-2 hidden sm:table-cell">{p.activeDays.size}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+
+        {filter !== 'Total' && (
+          <div className="flex items-center gap-4 bg-gray-800/40 px-4 py-2 rounded-full border border-gray-700/30">
+            <button onClick={() => navigateDate(-1)} className="text-indigo-400 hover:text-white p-2 text-xl active:scale-90 transition-transform">◀</button>
+            <span className="text-sm font-black text-gray-200 capitalize w-44 text-center">{currentPeriodLabel}</span>
+            <button onClick={() => navigateDate(1)} className="text-indigo-400 hover:text-white p-2 text-xl active:scale-90 transition-transform">▶</button>
           </div>
-          <div className="bg-gray-800/50 rounded-2xl p-4">
-            <h2 className="text-xl font-semibold text-cyan-400 mb-3">Ranking de Duplas</h2>
-            <div className="overflow-y-auto max-h-[50vh]">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="sticky top-0 bg-gray-800">
-                  <tr>
-                    <th className="p-2">#</th><th className="p-2">Dupla</th><th className="p-2">V</th><th className="p-2">J</th><th className="p-2">% Efic.</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {partnershipRanking.map((pair, i) => (
-                    <tr key={pair.players.map(p=>p.id).join('-')} className="hover:bg-gray-700/50">
-                      <td className="p-2 font-mono">{i + 1}</td>
-                      <td className="p-2 font-semibold">{pair.players.map(p => p.name).join(' & ')}</td>
-                      <td className="p-2">{pair.wins}</td>
-                      <td className="p-2">{pair.games}</td>
-                      <td className="p-2 text-green-400">{`${pair.efficiency.toFixed(1)}%`}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={() => generateExportImage(true)} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-indigo-600 to-purple-700 text-white rounded-xl text-[10px] font-black shadow-xl hover:scale-105 transition-transform active:scale-95">
+            <Share2Icon className="w-4 h-4" /> EXPORTAR STORY
+          </button>
+          <button onClick={() => setShowReportSelector(true)} className="flex items-center gap-2 px-5 py-2.5 bg-gray-700 text-white rounded-xl text-[10px] font-black shadow-xl hover:bg-gray-600 transition-colors">
+            <FileDownIcon className="w-4 h-4" /> RELATÓRIO PDF
+          </button>
         </div>
       </div>
-      {storyImageUrl && <StoryPreviewModal imageUrl={storyImageUrl} onClose={() => setStoryImageUrl(null)} />}
-    </>
+
+      {/* Tabela Principal */}
+      <div className="bg-gray-800/40 rounded-3xl p-3 border border-gray-700/50 shadow-inner overflow-hidden mt-4">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="text-gray-500 font-black uppercase tracking-widest border-b border-gray-700/50">
+              <tr>
+                <th className="px-3 py-4">#</th>
+                <th className="px-3 py-4">ATLETA</th>
+                <th className="px-3 py-4 text-center">VITÓRIAS</th>
+                <th className="px-3 py-4 text-center">SEM PONTUAR</th>
+                <th className="px-3 py-4 text-center text-indigo-400">LETALIDADE (%)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-700/20">
+              {stats.map((s, i) => (
+                <tr key={s.player.id} className={`${i < 3 ? 'bg-indigo-500/10' : ''} hover:bg-white/5 transition-colors`}>
+                  <td className="px-3 py-4 font-mono font-bold text-gray-500">
+                    <span className={i < 3 ? 'text-indigo-400 font-black' : ''}>{i + 1}º</span>
+                  </td>
+                  <td className={`px-3 py-4 font-black flex items-center gap-2 ${i < 3 ? 'text-white scale-105 origin-left' : 'text-gray-300'}`}>
+                    {i === 0 && <span className="text-yellow-400">👑</span>}
+                    <span className="truncate max-w-[120px] sm:max-w-none">{s.player.name}</span>
+                    {s.wins === 0 && <span title="Sem vitórias no período">😢</span>}
+                  </td>
+                  <td className="px-3 py-4 text-center font-bold text-gray-400">{s.wins}</td>
+                  <td className="px-3 py-4 text-center font-bold text-red-500/60">
+                    {s.zeroWinsDays > 0 ? `${s.zeroWinsDays}d` : '-'}
+                  </td>
+                  <td className="px-3 py-4 text-center">
+                    <div className="flex flex-col items-center">
+                      <span className={`font-mono font-black ${i < 3 ? 'text-indigo-400' : 'text-gray-300'}`}>
+                        {s.letalidade.toFixed(2)}
+                      </span>
+                      <span className="text-[9px] text-gray-500 font-black">{s.winRate.toFixed(0)}%</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Detalhes Mensais */}
+      {filter === 'Mensal' && filteredMatches.length > 0 && (
+        <div className="mt-6 bg-gray-900/50 rounded-3xl p-5 border border-indigo-500/20">
+          <h3 className="text-xs font-black text-indigo-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
+            Histórico de Resultados
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {Array.from(new Set(filteredMatches.map(m => new Date(m.timestamp).toLocaleDateString()))).map(date => {
+              const dayMatches = filteredMatches.filter(m => new Date(m.timestamp).toLocaleDateString() === date);
+              return (
+                <div key={date} className="bg-gray-800/60 p-4 rounded-2xl border border-gray-700/50 hover:border-indigo-500/40 transition-colors shadow-lg">
+                  <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-3">
+                    <span className="text-[11px] font-black text-gray-100">{date}</span>
+                    <span className="text-[9px] bg-indigo-600/40 text-indigo-300 px-3 py-1 rounded-full font-black uppercase tracking-wider">
+                      {dayMatches.length} JOGOS
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {dayMatches.map(m => (
+                      <div key={m.id} className="grid grid-cols-[1fr_auto_1fr] items-center text-[10px] gap-2">
+                        <div className={`truncate font-bold ${m.winner === 'A' ? 'text-white' : 'text-gray-500'}`}>
+                          {m.teamA.players.map(p => p.name).join(' & ')}
+                        </div>
+                        <div className="flex items-center gap-2 bg-gray-900/80 px-3 py-1 rounded-lg font-mono font-black shadow-inner">
+                          <span className={m.winner === 'A' ? 'text-indigo-400' : 'text-gray-600'}>{m.teamA.score}</span>
+                          <span className="text-gray-700">X</span>
+                          <span className={m.winner === 'B' ? 'text-orange-400' : 'text-gray-600'}>{m.teamB.score}</span>
+                        </div>
+                        <div className={`truncate text-right font-bold ${m.winner === 'B' ? 'text-white' : 'text-gray-500'}`}>
+                          {m.teamB.players.map(p => p.name).join(' & ')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Seletor de Período do Relatório */}
+      {showReportSelector && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-6" onClick={() => setShowReportSelector(false)}>
+          <div className="bg-gray-800 border border-gray-700 rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <h2 className="text-2xl font-black text-white text-center mb-2">Relatório PDF</h2>
+            <p className="text-gray-400 text-center text-sm mb-8">Selecione o período desejado para o documento.</p>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {(['Hoje', 'Semanal', 'Mensal', 'Anual'] as Filter[]).map(f => (
+                <button
+                  key={f}
+                  onClick={() => {
+                    setFilter(f);
+                    setShowReportSelector(false);
+                    setTimeout(() => window.print(), 500);
+                  }}
+                  className="bg-gray-700/50 hover:bg-indigo-600 border border-gray-600 hover:border-indigo-400 text-white p-6 rounded-[2rem] flex flex-col items-center gap-2 transition-all active:scale-95 group"
+                >
+                  <span className="text-lg font-black">{f.toUpperCase()}</span>
+                </button>
+              ))}
+            </div>
+            
+            <button 
+              onClick={() => setShowReportSelector(false)}
+              className="w-full mt-8 p-4 bg-gray-600/30 text-gray-400 rounded-2xl font-black hover:text-white transition-colors uppercase tracking-widest text-xs"
+            >
+              FECHAR
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modais de Exportação */}
+      {exportImageUrl && (isStoryMode ? (
+        <StoryPreviewModal imageUrl={exportImageUrl} onClose={() => setExportImageUrl(null)} />
+      ) : (
+        <ExportPreviewModal imageUrl={exportImageUrl} title={`Ranking ${filter}`} onClose={() => setExportImageUrl(null)} />
+      ))}
+    </div>
   );
 };
 

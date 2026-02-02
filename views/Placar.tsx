@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Player, Team, Match } from '../types';
 import { SoundScheme } from '../App';
@@ -19,6 +18,7 @@ interface PlacarProps {
 const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme }) => {
   const [teamA, setTeamA] = useState<Team>({ players: [undefined, undefined], score: 0 });
   const [teamB, setTeamB] = useState<Team>({ players: [undefined, undefined], score: 0 });
+  const [history, setHistory] = useState<{ teamA: Team; teamB: Team }[]>([]);
   const [isSidesSwitched, setIsSidesSwitched] = useState(false);
   const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
@@ -55,6 +55,9 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
   }, [attackTimer.timeLeft, attackTimer.isActive, playSound, vibrate]);
   
   const handleScoreChange = useCallback((setter: React.Dispatch<React.SetStateAction<Team>>, newScore: number) => {
+    // Push current state to history before updating
+    setHistory(prev => [...prev, { teamA: { ...teamA }, teamB: { ...teamB } }].slice(-10));
+    
     if (!gameStartTime && newScore > 0) {
       setGameStartTime(new Date());
     }
@@ -62,7 +65,18 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
     playSound('point');
     vibrate(50);
     attackTimer.reset();
-  }, [playSound, vibrate, attackTimer, gameStartTime]);
+  }, [playSound, vibrate, attackTimer, gameStartTime, teamA, teamB]);
+
+  const handleUndo = useCallback(() => {
+    if (history.length > 0) {
+      const lastState = history[history.length - 1];
+      setTeamA(lastState.teamA);
+      setTeamB(lastState.teamB);
+      setHistory(prev => prev.slice(0, -1));
+      playSound('error');
+      vibrate(50);
+    }
+  }, [history, playSound, vibrate]);
 
   const handlePlayerSelect = useCallback((setter: React.Dispatch<React.SetStateAction<Team>>, player: Player, index: number) => {
     setter(prev => {
@@ -75,6 +89,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
   const resetGame = useCallback((fullReset = false) => {
     setTeamA(prev => ({ ...prev, score: 0 }));
     setTeamB(prev => ({ ...prev, score: 0 }));
+    setHistory([]);
     setGameStartTime(null);
     attackTimer.reset();
     vibrate([100, 50, 100]);
@@ -162,7 +177,9 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
           onResetGame={() => resetGame(false)}
           onSaveGame={saveGame}
           onSwitchSides={switchSides}
+          onUndo={handleUndo}
           isGameWon={isGameWon}
+          canUndo={history.length > 0}
         />
       </div>
 
