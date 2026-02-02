@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { ClipboardListIcon, UsersIcon, TrophyIcon, CogIcon, ShieldIcon, MaximizeIcon, MinimizeIcon } from './icons';
+import { ClipboardListIcon, UsersIcon, TrophyIcon, CogIcon, ShieldIcon, MaximizeIcon, MinimizeIcon, HistoryIcon } from './icons';
 
-export type View = 'placar' | 'atletas' | 'ranking' | 'config';
+export type View = 'placar' | 'atletas' | 'ranking' | 'historico' | 'config';
 
 interface NavButtonProps {
   label: string;
@@ -90,6 +90,12 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
             icon={<ClipboardListIcon />}
             isActive={currentView === 'placar'}
             onClick={() => onNavigate('placar')}
+          />
+          <NavButton 
+            label="Histórico"
+            icon={<HistoryIcon />}
+            isActive={currentView === 'historico'}
+            onClick={() => onNavigate('historico')}
           />
           <NavButton 
             label="Atletas"

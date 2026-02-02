@@ -5,6 +5,7 @@ import Navigation, { View } from './components/Navigation';
 import Placar from './views/Placar';
 import Atletas from './views/Atletas';
 import Ranking from './views/Ranking';
+import Historico from './views/Historico';
 import Config from './views/Config';
 import { Player, Match } from './types';
 import { MOCK_PLAYERS, MOCK_MATCHES } from './data';
@@ -37,6 +38,7 @@ const App: React.FC = () => {
   
   const [lastUpdate, setLastUpdate] = useState<string>('--/-- --:--');
 
+  // Data persistence
   useEffect(() => { localStorage.setItem('elite_players', JSON.stringify(players)); }, [players]);
   useEffect(() => { localStorage.setItem('elite_deleted_players', JSON.stringify(deletedPlayers)); }, [deletedPlayers]);
   useEffect(() => { localStorage.setItem('elite_matches', JSON.stringify(matches)); }, [matches]);
@@ -46,14 +48,12 @@ const App: React.FC = () => {
   useEffect(() => { localStorage.setItem('elite_vibrationEnabled', String(vibrationEnabled)); }, [vibrationEnabled]);
   useEffect(() => { localStorage.setItem('elite_soundScheme', soundScheme); }, [soundScheme]);
 
+  // Update last update time whenever data changes
   useEffect(() => {
-    if (matches.length > 0) {
-      const lastMatch = matches[0];
-      const date = new Date(lastMatch.timestamp);
-      const formatted = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-      setLastUpdate(formatted);
-    }
-  }, [matches]);
+    const now = new Date();
+    const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setLastUpdate(formattedDate);
+  }, [players, deletedPlayers, matches, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme]);
 
   const handleSaveGame = useCallback((match: Omit<Match, 'id' | 'timestamp'>) => {
     const newMatch: Match = {
@@ -65,31 +65,46 @@ const App: React.FC = () => {
   }, []);
 
   const renderView = () => {
-    const allKnownPlayers = [...players, ...deletedPlayers];
     switch (currentView) {
       case 'placar':
         return <Placar allPlayers={players} onSaveGame={handleSaveGame} winScore={winScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} />;
+      case 'historico':
+        return <Historico matches={matches} setMatches={setMatches} />;
       case 'atletas':
         return <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} />;
       case 'ranking':
-        return <Ranking matches={matches} players={allKnownPlayers} />;
+        const allPlayersForRanking = [...players, ...deletedPlayers];
+        return <Ranking matches={matches} players={allPlayersForRanking} />;
       case 'config':
-        return <Config 
-                  winScore={winScore} setWinScore={setWinScore} 
-                  attackTime={attackTime} setAttackTime={setAttackTime}
-                  soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled}
-                  vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled}
-                  soundScheme={soundScheme} setSoundScheme={setSoundScheme}
-                />;
+        return (
+          <Config
+            players={players}
+            setPlayers={setPlayers}
+            deletedPlayers={deletedPlayers}
+            setDeletedPlayers={setDeletedPlayers}
+            matches={matches}
+            setMatches={setMatches}
+            winScore={winScore}
+            setWinScore={setWinScore}
+            attackTime={attackTime}
+            setAttackTime={setAttackTime}
+            soundEnabled={soundEnabled}
+            setSoundEnabled={setSoundEnabled}
+            vibrationEnabled={vibrationEnabled}
+            setVibrationEnabled={setVibrationEnabled}
+            soundScheme={soundScheme}
+            setSoundScheme={setSoundScheme}
+          />
+        );
       default:
-        return <Placar allPlayers={players} onSaveGame={handleSaveGame} winScore={winScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} />;
+        return null;
     }
   };
 
   return (
     <>
       <OrientationLock />
-      <div className="h-screen w-screen bg-gray-900 text-white font-sans flex flex-col">
+      <div className="h-screen w-screen flex flex-col bg-gray-900 text-white font-sans overflow-hidden">
         <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} />
         <main className="flex-1 overflow-y-auto">
           {renderView()}

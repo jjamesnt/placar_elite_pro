@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Player, Team, Match } from '../types';
 import { SoundScheme } from '../App';
 import { useAttackTimer, useSensoryFeedback } from '../hooks';
 import ScoreCard from '../components/ScoreCard';
 import CenterConsole from '../components/CenterConsole';
+import { RefreshCwIcon } from '../components/icons';
 
 interface PlacarProps {
   allPlayers: Player[];
@@ -18,10 +20,12 @@ interface PlacarProps {
 const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme }) => {
   const [teamA, setTeamA] = useState<Team>({ players: [undefined, undefined], score: 0 });
   const [teamB, setTeamB] = useState<Team>({ players: [undefined, undefined], score: 0 });
-  const [history, setHistory] = useState<{ teamA: Team; teamB: Team }[]>([]);
+  const [servingTeam, setServingTeam] = useState<'A' | 'B'>('A');
+  const [history, setHistory] = useState<{ teamA: Team; teamB: Team; servingTeam: 'A' | 'B' }[]>([]);
   const [isSidesSwitched, setIsSidesSwitched] = useState(false);
   const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const { playSound, vibrate } = useSensoryFeedback({ soundEnabled, vibrationEnabled, soundScheme });
   const attackTimer = useAttackTimer(attackTime);
@@ -54,31 +58,40 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
     }
   }, [attackTimer.timeLeft, attackTimer.isActive, playSound, vibrate]);
   
-  const handleScoreChange = useCallback((setter: React.Dispatch<React.SetStateAction<Team>>, newScore: number) => {
-    // Push current state to history before updating
-    setHistory(prev => [...prev, { teamA: { ...teamA }, teamB: { ...teamB } }].slice(-10));
+  const handleScoreChange = useCallback((setter: 'A' | 'B', newScore: number) => {
+    setHistory(prev => [...prev, { teamA: { ...teamA }, teamB: { ...teamB }, servingTeam }].slice(-10));
     
     if (!gameStartTime && newScore > 0) {
       setGameStartTime(new Date());
     }
-    setter(prev => ({ ...prev, score: newScore }));
+
+    if (setter === 'A') {
+        setTeamA(prev => ({ ...prev, score: newScore }));
+        if (newScore > teamA.score) setServingTeam('A');
+    } else {
+        setTeamB(prev => ({ ...prev, score: newScore }));
+        if (newScore > teamB.score) setServingTeam('B');
+    }
+
     playSound('point');
     vibrate(50);
     attackTimer.reset();
-  }, [playSound, vibrate, attackTimer, gameStartTime, teamA, teamB]);
+  }, [playSound, vibrate, attackTimer, gameStartTime, teamA, teamB, servingTeam]);
 
   const handleUndo = useCallback(() => {
     if (history.length > 0) {
       const lastState = history[history.length - 1];
       setTeamA(lastState.teamA);
       setTeamB(lastState.teamB);
+      setServingTeam(lastState.servingTeam);
       setHistory(prev => prev.slice(0, -1));
       playSound('error');
       vibrate(50);
     }
   }, [history, playSound, vibrate]);
 
-  const handlePlayerSelect = useCallback((setter: React.Dispatch<React.SetStateAction<Team>>, player: Player, index: number) => {
+  const handlePlayerSelect = useCallback((team: 'A' | 'B', player: Player, index: number) => {
+    const setter = team === 'A' ? setTeamA : setTeamB;
     setter(prev => {
         const newPlayers = [...prev.players];
         newPlayers[index] = player;
@@ -89,8 +102,10 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
   const resetGame = useCallback((fullReset = false) => {
     setTeamA(prev => ({ ...prev, score: 0 }));
     setTeamB(prev => ({ ...prev, score: 0 }));
+    setServingTeam('A');
     setHistory([]);
     setGameStartTime(null);
+    setShowResetConfirm(false);
     attackTimer.reset();
     vibrate([100, 50, 100]);
     playSound('error');
@@ -102,14 +117,14 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
 
   const saveGame = useCallback(() => {
     if (!isGameWon) {
-      setToastMessage("A partida precisa ser finalizada para salvar.");
+      setToastMessage("Partida em andamento. Finalize para salvar.");
       playSound('error');
       vibrate(100);
       return;
     }
 
     if (!teamA.players.every(p => p) || !teamB.players.every(p => p)) {
-      setToastMessage("Selecione os 4 jogadores para salvar.");
+      setToastMessage("Selecione os 4 atletas.");
       playSound('error');
       vibrate(100);
       return;
@@ -125,7 +140,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
     } as Omit<Match, 'id' | 'timestamp'>;
     
     onSaveGame(matchData);
-    setToastMessage("Partida salva com sucesso!");
+    setToastMessage("Vitória registrada!");
     resetGame(true);
 
   }, [isGameWon, teamA, teamB, onSaveGame, resetGame, gameStartTime, playSound, vibrate]);
@@ -146,59 +161,89 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
     }
   }, [attackTimer, playSound]);
 
+  const toggleServe = useCallback(() => {
+      setServingTeam(prev => prev === 'A' ? 'B' : 'A');
+      vibrate(40);
+  }, [vibrate]);
+
+  const teamLeftKey = isSidesSwitched ? 'B' : 'A';
+  const teamRightKey = isSidesSwitched ? 'A' : 'B';
+
   const teamLeft = isSidesSwitched ? teamB : teamA;
-  const setTeamLeft = isSidesSwitched ? setTeamB : setTeamA;
   const teamNameLeft = isSidesSwitched ? 'Time B' : 'Time A';
 
   const teamRight = isSidesSwitched ? teamA : teamB;
-  const setTeamRight = isSidesSwitched ? setTeamA : setTeamB;
   const teamNameRight = isSidesSwitched ? 'Time A' : 'Time B';
 
   return (
-    <div className="h-full w-full p-2 flex flex-col sm:grid sm:grid-cols-[1fr_min-content_1fr] sm:items-stretch gap-1 sm:gap-4 relative overflow-hidden">
-      <div className="flex flex-col min-w-0 h-full">
+    <div className="h-full w-full p-1.5 flex flex-col sm:grid sm:grid-cols-[1fr_min-content_1fr] sm:items-stretch gap-1.5 relative overflow-hidden bg-gray-900">
+      
+      {/* Time da Esquerda */}
+      <div className="flex flex-col min-w-0 h-full min-h-0 overflow-hidden">
         <ScoreCard 
           teamName={teamNameLeft}
           teamData={teamLeft}
-          onScoreChange={(score) => handleScoreChange(setTeamLeft, score)}
-          onPlayerSelect={(player, index) => handlePlayerSelect(setTeamLeft, player, index)}
+          onScoreChange={(score) => handleScoreChange(teamLeftKey, score)}
+          onPlayerSelect={(player, index) => handlePlayerSelect(teamLeftKey, player, index)}
           allPlayers={allPlayers}
           isGameWon={isGameWon}
           isLeft={true}
+          isServing={servingTeam === teamLeftKey}
         />
       </div>
 
-      <div className="w-full sm:w-48 lg:w-56 flex-shrink-0 flex flex-col items-center pt-2">
+      {/* Painel Central */}
+      <div className="w-full sm:w-40 lg:w-44 flex-shrink-0 flex flex-col items-center h-full">
         <CenterConsole 
           timeLeft={attackTimer.timeLeft}
           isTimerActive={attackTimer.isActive}
           onToggleTimer={handleToggleTimer}
           onResetTimer={attackTimer.reset}
-          onResetGame={() => resetGame(false)}
+          onResetGame={() => setShowResetConfirm(true)}
           onSaveGame={saveGame}
           onSwitchSides={switchSides}
           onUndo={handleUndo}
           isGameWon={isGameWon}
           canUndo={history.length > 0}
+          servingTeam={servingTeam}
+          onToggleServe={toggleServe}
         />
       </div>
 
-      <div className="flex flex-col min-w-0 h-full">
+      {/* Time da Direita */}
+      <div className="flex flex-col min-w-0 h-full min-h-0 overflow-hidden">
         <ScoreCard 
           teamName={teamNameRight}
           teamData={teamRight}
-          onScoreChange={(score) => handleScoreChange(setTeamRight, score)}
-          onPlayerSelect={(player, index) => handlePlayerSelect(setTeamRight, player, index)}
+          onScoreChange={(score) => handleScoreChange(teamRightKey, score)}
+          onPlayerSelect={(player, index) => handlePlayerSelect(teamRightKey, player, index)}
           allPlayers={allPlayers}
           isGameWon={isGameWon}
           isLeft={false}
+          isServing={servingTeam === teamRightKey}
         />
       </div>
 
+      {/* Toasts - Mais discretos */}
       {toastMessage && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-700/90 text-white px-6 py-3 rounded-lg shadow-xl backdrop-blur-md z-50">
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white px-4 py-2 rounded-lg shadow-xl backdrop-blur-md z-50 font-black uppercase tracking-widest text-[8px] animate-in slide-in-from-bottom-2 duration-300">
           {toastMessage}
         </div>
+      )}
+
+      {showResetConfirm && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowResetConfirm(false)}>
+              <div className="bg-gray-900 border border-yellow-500/20 rounded-[1.5rem] p-6 w-full max-w-xs shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+                  <h2 className="text-lg font-black text-white text-center mb-1 uppercase tracking-tighter">Zerar?</h2>
+                  <p className="text-gray-400 text-center mb-6 leading-relaxed text-[10px] uppercase font-bold">
+                      Limpar placar atual.
+                  </p>
+                  <div className="flex gap-2">
+                      <button onClick={() => setShowResetConfirm(false)} className="flex-1 p-3 bg-gray-800 text-gray-400 rounded-lg font-black uppercase text-[9px] tracking-widest">Sair</button>
+                      <button onClick={() => resetGame(false)} className="flex-1 p-3 bg-yellow-600 text-gray-900 rounded-lg font-black uppercase text-[9px] tracking-widest">Zerar</button>
+                  </div>
+              </div>
+          </div>
       )}
     </div>
   );
