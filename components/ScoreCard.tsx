@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Player, Team } from '../types';
+import { Player, Team, ArenaColor } from '../types';
 import { PlusIcon, MinusIcon, ZapIcon } from './icons';
 
 interface ScoreCardProps {
@@ -12,10 +12,21 @@ interface ScoreCardProps {
   isGameWon: boolean;
   isLeft: boolean;
   isServing: boolean;
+  arenaColor?: ArenaColor;
 }
 
-const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange, onPlayerSelect, allPlayers, isGameWon, isLeft, isServing }) => {
+const THEME_CONFIG: Record<ArenaColor, { gradient: string; border: string; text: string; shadow: string; bg: string }> = {
+  indigo: { gradient: 'from-indigo-500 to-cyan-400', border: 'border-indigo-400/30', text: 'text-indigo-400', shadow: 'shadow-indigo-500/50', bg: 'bg-indigo-600/90' },
+  blue: { gradient: 'from-blue-500 to-indigo-400', border: 'border-blue-400/30', text: 'text-blue-400', shadow: 'shadow-blue-500/50', bg: 'bg-blue-600/90' },
+  emerald: { gradient: 'from-emerald-500 to-teal-400', border: 'border-emerald-400/30', text: 'text-emerald-400', shadow: 'shadow-emerald-500/50', bg: 'bg-emerald-600/90' },
+  amber: { gradient: 'from-amber-500 to-orange-400', border: 'border-amber-400/30', text: 'text-amber-400', shadow: 'shadow-amber-500/50', bg: 'bg-amber-600/90' },
+  rose: { gradient: 'from-rose-500 to-pink-400', border: 'border-rose-400/30', text: 'text-rose-400', shadow: 'shadow-rose-500/50', bg: 'bg-rose-600/90' },
+  violet: { gradient: 'from-violet-500 to-purple-400', border: 'border-violet-400/30', text: 'text-violet-400', shadow: 'shadow-violet-500/50', bg: 'bg-violet-600/90' }
+};
+
+const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange, onPlayerSelect, allPlayers, isGameWon, isLeft, isServing, arenaColor = 'indigo' }) => {
   const [animate, setAnimate] = useState(false);
+  const theme = THEME_CONFIG[arenaColor];
 
   useEffect(() => {
     if (teamData.score > 0) {
@@ -32,62 +43,53 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
     if (!isGameWon && teamData.score > 0) onScoreChange(teamData.score - 1);
   };
 
-  const teamColor = isLeft ? 'from-blue-500 to-cyan-400' : 'from-red-500 to-orange-400';
-  const borderColor = isLeft ? 'border-cyan-400/40' : 'border-orange-400/40';
-  const servingColor = isLeft ? 'text-cyan-400 shadow-cyan-500/50' : 'text-orange-400 shadow-orange-500/50';
+  const teamColor = isLeft ? theme.gradient : 'from-red-500 to-orange-400';
+  const borderColor = isLeft ? theme.border : 'border-orange-400/30';
+  const servingColor = isLeft ? `${theme.text} ${theme.shadow}` : 'text-orange-400 shadow-orange-500/50';
+  const buttonBg = isLeft ? theme.bg : 'bg-red-600/90';
 
   return (
-    <div className={`relative flex flex-col bg-gray-800/40 backdrop-blur-xl rounded-[1.25rem] shadow-2xl p-2 sm:p-3 border-t-2 transition-all duration-500 h-full min-h-0 ${borderColor} ${isServing ? 'ring-1 ring-white/10' : ''}`}>
+    <div className={`relative flex flex-col bg-black/40 backdrop-blur-3xl rounded-[1.2rem] sm:rounded-[1.5rem] p-2 border-t border-white/5 shadow-2xl h-full min-h-0 ${borderColor} ${isServing ? 'ring-1 ring-white/10' : ''} overflow-hidden`}>
       
       {/* Indicador de Saque */}
-      <div className={`absolute top-1.5 ${isLeft ? 'right-3' : 'left-3'} transition-opacity duration-300 z-10 ${isServing ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`absolute top-1.5 ${isLeft ? 'right-2' : 'left-2'} transition-opacity duration-300 z-10 ${isServing ? 'opacity-100' : 'opacity-0'}`}>
           <div className={`flex flex-col items-center gap-0 ${servingColor}`}>
-             <ZapIcon className="w-3.5 h-3.5 animate-pulse" />
-             <span className="text-[6px] font-black uppercase tracking-tighter">Saque</span>
+             <ZapIcon className="w-2.5 h-2.5 animate-pulse" />
+             <span className="text-[5px] font-black uppercase tracking-tighter">Saque</span>
           </div>
       </div>
 
-      <h2 className="text-[10px] font-black text-center text-gray-500 uppercase tracking-[0.2em] flex-shrink-0 mb-0.5">{teamName}</h2>
+      <h2 className="text-[7px] sm:text-[9px] font-black text-center text-white/20 uppercase tracking-[0.3em] mb-1">{teamName}</h2>
       
-      {/* Score display - Diminuído um pouco para dar mais respiro ao layout */}
-      <div className="flex-1 flex items-center justify-center relative min-h-0 py-1 overflow-hidden">
+      {/* Placar: Dimensão dinâmica vh para não vazar em modo paisagem */}
+      <div 
+        className="flex-1 flex items-center justify-center relative min-h-0 cursor-pointer select-none active:scale-[0.98] transition-transform"
+        onClick={handleIncrement}
+      >
           <span className={`
-            block text-[4rem] sm:text-7xl md:text-8xl lg:text-9xl font-mono font-black bg-clip-text text-transparent bg-gradient-to-br transition-all duration-300 leading-[0.9]
+            block text-[22vh] sm:text-[26vh] font-mono font-black bg-clip-text text-transparent bg-gradient-to-br leading-[0.8] transition-all duration-300
             ${teamColor} 
-            ${animate ? 'scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'scale-100'}
+            ${animate ? 'scale-105' : 'scale-100'}
           `}>
               {String(teamData.score).padStart(2, '0')}
           </span>
-          {animate && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-24 h-24 bg-white/10 rounded-full blur-3xl animate-ping"></div>
-              </div>
-          )}
       </div>
 
-      <div className="flex-shrink-0 mt-0.5">
-          {/* Score buttons */}
-          <div className="grid grid-cols-2 gap-1.5 mb-2">
-               <button 
-                  onClick={handleDecrement} 
-                  disabled={isGameWon || teamData.score === 0} 
-                  className="flex items-center justify-center py-2 bg-gray-700/20 rounded-lg text-gray-600 disabled:opacity-5 active:scale-95 transition-all hover:bg-gray-600/30 border border-white/5"
-              >
-                  <MinusIcon className="w-4 h-4" />
+      {/* Controles e Atletas: Empilhamento Vertical solicitado */}
+      <div className="mt-1 flex flex-col gap-1.5 flex-shrink-0">
+          <div className="grid grid-cols-2 gap-1.5">
+               <button onClick={(e) => { e.stopPropagation(); handleDecrement(); }} disabled={isGameWon || teamData.score === 0} className="flex items-center justify-center py-1.5 sm:py-2 bg-white/5 rounded-lg text-gray-500 disabled:opacity-5 active:scale-95 transition-all">
+                  <MinusIcon className="w-3.5 h-3.5" />
               </button>
-              <button 
-                  onClick={handleIncrement} 
-                  disabled={isGameWon} 
-                  className={`flex items-center justify-center py-2 rounded-lg text-white disabled:opacity-5 active:scale-95 transition-all shadow-lg border border-white/10 ${isLeft ? 'bg-blue-600/90 hover:bg-blue-600' : 'bg-red-600/90 hover:bg-red-600'}`}
-              >
-                  <PlusIcon className="w-4 h-4" />
+              <button onClick={(e) => { e.stopPropagation(); handleIncrement(); }} disabled={isGameWon} className={`flex items-center justify-center py-1.5 sm:py-2 rounded-lg text-white disabled:opacity-5 active:scale-95 transition-all shadow-lg ${buttonBg}`}>
+                  <PlusIcon className="w-3.5 h-3.5" />
               </button>
           </div>
           
-          {/* Player selectors - Aumentados para melhor usabilidade e visibilidade */}
-          <div className="grid grid-cols-1 gap-1.5">
+          {/* Campos de Atletas: Empilhados um sobre o outro */}
+          <div className="flex flex-col gap-1">
             {[0, 1].map(index => (
-              <div key={index} className="relative group">
+              <div key={index} className="relative w-full">
                 <select 
                   value={teamData.players[index]?.id || ''}
                   onChange={(e) => {
@@ -95,18 +97,13 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
                     if (selectedPlayer) onPlayerSelect(selectedPlayer, index);
                   }}
                   disabled={isGameWon}
-                  className="w-full pl-3 pr-8 py-2.5 bg-gray-900/40 text-gray-300 rounded-lg text-[10px] sm:text-xs font-bold appearance-none border border-white/10 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-20 transition-all group-hover:bg-gray-900/60"
+                  className="w-full px-2 py-1.5 bg-black/60 text-white rounded-md text-[7px] font-black appearance-none border border-white/5 focus:outline-none focus:border-indigo-500/50 transition-all uppercase tracking-tighter truncate"
                 >
-                  <option value="" disabled>{`Selecionar Atleta ${index + 1}`}</option>
+                  <option value="" disabled>{`Atleta ${index + 1}`}</option>
                   {allPlayers.map(player => (
-                    <option key={player.id} value={player.id}>
-                      {player.name}
-                    </option>
+                    <option key={player.id} value={player.id}>{player.name}</option>
                   ))}
                 </select>
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-600">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M19 9l-7 7-7-7" /></svg>
-                </div>
               </div>
             ))}
           </div>

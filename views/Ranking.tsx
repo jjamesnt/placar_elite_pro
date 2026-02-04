@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Match, Player } from '../types';
+import { Match, Player, ArenaColor } from '../types';
 import { FileDownIcon, Share2Icon } from '../components/icons';
 import StoryPreviewModal from '../components/StoryPreviewModal';
 import ExportPreviewModal from '../components/ExportPreviewModal';
@@ -11,14 +11,29 @@ interface RankingProps {
   matches: Match[];
   players: Player[];
   arenaName?: string;
+  arenaColor?: ArenaColor;
 }
 
-const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
+const THEME_HEX: Record<ArenaColor, string> = {
+  indigo: '#6366f1', blue: '#3b82f6', emerald: '#10b981', amber: '#f59e0b', rose: '#f43f5e', violet: '#8b5cf6'
+};
+
+const THEME_TEXT_CLASSES: Record<ArenaColor, string> = {
+  indigo: 'text-indigo-400', blue: 'text-blue-400', emerald: 'text-emerald-400', amber: 'text-amber-400', rose: 'text-rose-400', violet: 'text-violet-400'
+};
+
+const THEME_BG_CLASSES: Record<ArenaColor, string> = {
+  indigo: 'bg-indigo-600', blue: 'bg-blue-600', emerald: 'bg-emerald-600', amber: 'bg-amber-600', rose: 'bg-rose-600', violet: 'bg-violet-600'
+};
+
+const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaColor = 'indigo' }) => {
   const [filter, setFilter] = useState<Filter>('Hoje');
   const [viewDate, setViewDate] = useState(new Date());
   const [exportImageUrl, setExportImageUrl] = useState<string | null>(null);
   const [isStoryMode, setIsStoryMode] = useState(false);
   const [showReportSelector, setShowReportSelector] = useState(false);
+
+  const themeHex = THEME_HEX[arenaColor];
 
   const filteredMatches = useMemo(() => {
     return matches.filter(match => {
@@ -131,7 +146,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
     ctx.fillText(arenaName ? `ARENA ${arenaName.toUpperCase()}` : 'PLACAR ELITE PRO', centerX, 80);
 
     // 2. Título Central
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = themeHex;
     let baseFontSize = 95;
     ctx.font = `900 ${baseFontSize}px sans-serif`;
     const titleText = filter === 'Hoje' ? 'RANKING DO DIA' : `RANKING ${filter.toUpperCase()}`;
@@ -152,7 +167,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
       : viewDate.toLocaleDateString('pt-BR');
     ctx.fillText(dateLabel, centerX, 360);
     
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = themeHex;
     ctx.fillRect(centerX - 100, 410, 200, 6);
 
     const podiumBaseY = isStory ? 1150 : 920;
@@ -199,7 +214,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
 
     if (podium[1]) drawPodium(podium[1], 2, centerX - 340, 320, 560, '#94a3b8');
     if (podium[2]) drawPodium(podium[2], 3, centerX + 340, 320, 500, '#d97706');
-    if (podium[0]) drawPodium(podium[0], 1, centerX, 380, 700, '#fbbf24');
+    if (podium[0]) drawPodium(podium[0], 1, centerX, 380, 700, themeHex);
 
     const tableTopY = isStory ? podiumBaseY + 80 : podiumBaseY + 20;
     ctx.textAlign = 'left';
@@ -218,7 +233,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
         ctx.fillRect(60, rowY - 65, width - 120, 90);
       }
       ctx.textAlign = 'left';
-      ctx.fillStyle = i < 3 ? '#fbbf24' : '#ffffff';
+      ctx.fillStyle = i < 3 ? themeHex : '#ffffff';
       ctx.font = 'bold 40px sans-serif';
       const name = s.wins === 0 ? `${s.player.name} 😢` : s.player.name;
       
@@ -232,7 +247,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
       ctx.fillStyle = '#94a3b8';
       ctx.fillText(s.wins.toString(), width - 480, rowY);
       ctx.fillText(`${s.zeroWinsDays}d`, width - 300, rowY);
-      ctx.fillStyle = i < 3 ? '#fbbf24' : '#818cf8';
+      ctx.fillStyle = i < 3 ? themeHex : '#818cf8';
       ctx.fillText(`${s.letalidade.toFixed(2)} (${s.winRate.toFixed(0)}%)`, width - 120, rowY);
     });
 
@@ -243,7 +258,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
   const handlePrint = () => {
     setShowReportSelector(false);
     const originalTitle = document.title;
-    document.title = `Ranking ${arenaName || 'Elite Pro'} - ${filter}`;
+    document.title = `Ranking ${arenaName || 'Placar Elite Pro'} - ${filter}`;
     
     setTimeout(() => {
       window.print();
@@ -265,7 +280,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
           {(['Hoje', 'Semanal', 'Mensal', 'Anual', 'Total'] as Filter[]).map(f => (
             <button 
               key={f} onClick={() => { setFilter(f); setViewDate(new Date()); }}
-              className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${filter === f ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+              className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${filter === f ? `${THEME_BG_CLASSES[arenaColor]} text-white shadow-lg` : 'text-gray-500 hover:text-white'}`}
             >
               {f.toUpperCase()}
             </button>
@@ -274,14 +289,14 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
 
         {filter !== 'Total' && (
           <div className="flex items-center gap-4 bg-gray-800/40 px-4 py-2 rounded-full border border-gray-700/30">
-            <button onClick={() => navigateDate(-1)} className="text-indigo-400 hover:text-white p-2 text-xl active:scale-90 transition-transform">◀</button>
+            <button onClick={() => navigateDate(-1)} className={`${THEME_TEXT_CLASSES[arenaColor]} hover:text-white p-2 text-xl active:scale-90 transition-transform`}>◀</button>
             <span className="text-2xl font-black text-gray-200 capitalize w-64 text-center tracking-tighter">{currentPeriodLabel}</span>
-            <button onClick={() => navigateDate(1)} className="text-indigo-400 hover:text-white p-2 text-xl active:scale-90 transition-transform">▶</button>
+            <button onClick={() => navigateDate(1)} className={`${THEME_TEXT_CLASSES[arenaColor]} hover:text-white p-2 text-xl active:scale-90 transition-transform`}>▶</button>
           </div>
         )}
 
         <div className="flex gap-3">
-          <button onClick={() => generateExportImage(true)} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-indigo-600 to-purple-700 text-white rounded-xl text-[10px] font-black shadow-xl hover:scale-105 transition-transform active:scale-95 uppercase">
+          <button onClick={() => generateExportImage(true)} className={`flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-${arenaColor}-600 to-indigo-700 text-white rounded-xl text-[10px] font-black shadow-xl hover:scale-105 transition-transform active:scale-95 uppercase`}>
             <Share2Icon className="w-4 h-4" /> Exportar Story
           </button>
           <button onClick={() => setShowReportSelector(true)} className="flex items-center gap-2 px-5 py-2.5 bg-gray-700 text-white rounded-xl text-[10px] font-black shadow-xl hover:bg-gray-600 transition-colors uppercase">
@@ -291,7 +306,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
       </div>
 
       <div className="hidden print:block text-center mb-8 border-b-2 border-black pb-4">
-          <h1 className="text-4xl font-black uppercase tracking-tighter">Relatório {arenaName || 'Elite Pro'}</h1>
+          <h1 className="text-4xl font-black uppercase tracking-tighter">Relatório {arenaName || 'Placar Elite Pro'}</h1>
           <p className="text-xl font-bold mt-2">Ranking {filter}: {currentPeriodLabel}</p>
           <p className="text-sm text-gray-500 mt-1">Gerado em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</p>
       </div>
@@ -305,14 +320,14 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
                 <th className="px-3 py-4">ATLETA</th>
                 <th className="px-3 py-4 text-center">VITÓRIAS</th>
                 <th className="px-3 py-4 text-center">SEM PONTUAR</th>
-                <th className="px-3 py-4 text-center text-indigo-400 print:text-black">LETALIDADE (%)</th>
+                <th className={`px-3 py-4 text-center print:text-black ${THEME_TEXT_CLASSES[arenaColor]}`}>LETALIDADE (%)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700/20 print:divide-none">
               {stats.map((s, i) => (
                 <tr key={s.player.id} className={`${i < 3 ? 'bg-indigo-500/10' : ''} hover:bg-white/5 transition-colors print:bg-transparent`}>
                   <td className="px-3 py-4 font-mono font-bold text-gray-500 print:text-black">
-                    <span className={i < 3 ? 'text-indigo-400 font-black text-lg' : ''}>{i + 1}º</span>
+                    <span className={i < 3 ? `${THEME_TEXT_CLASSES[arenaColor]} font-black text-lg` : ''}>{i + 1}º</span>
                   </td>
                   <td className={`px-3 py-4 font-black ${i < 3 ? 'text-white' : 'text-gray-300'} print:text-black print:font-bold`}>
                     <div className="flex items-center gap-2 print:block">
@@ -327,7 +342,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
                   </td>
                   <td className="px-3 py-4 text-center">
                     <div className="flex flex-col items-center">
-                      <span className={`font-mono font-black ${i < 3 ? 'text-indigo-400 text-lg' : 'text-gray-300 text-base'} print:text-black`}>
+                      <span className={`font-mono font-black ${i < 3 ? `${THEME_TEXT_CLASSES[arenaColor]} text-lg` : 'text-gray-300 text-base'} print:text-black`}>
                         {s.letalidade.toFixed(2)}
                       </span>
                       <span className="text-[9px] text-gray-500 font-black print:text-black/60">{s.winRate.toFixed(0)}%</span>
@@ -354,7 +369,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName }) => {
             <div className="flex flex-col gap-4">
               <button
                 onClick={handlePrint}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-8 rounded-[2rem] flex flex-col items-center gap-2 transition-all active:scale-95 shadow-xl"
+                className={`w-full ${THEME_BG_CLASSES[arenaColor]} hover:opacity-90 text-white py-8 rounded-[2rem] flex flex-col items-center gap-2 transition-all active:scale-95 shadow-xl`}
               >
                 <span className="text-2xl font-black tracking-tighter uppercase">Imprimir Relatório</span>
                 <span className="text-[10px] font-bold opacity-70">ABRIR CONFIGURAÇÕES DO NAVEGADOR</span>

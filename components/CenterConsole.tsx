@@ -1,5 +1,7 @@
+
 import React from 'react';
-import { RefreshCwIcon, SaveIcon, RepeatIcon, PlayIcon, PauseIcon, RotateCcwIcon, ZapIcon } from './icons';
+import { RefreshCwIcon, SaveIcon, PlayIcon, PauseIcon, RotateCcwIcon, ZapIcon, RepeatIcon } from './icons';
+import { ArenaColor } from '../types';
 
 interface CenterConsoleProps {
   timeLeft: number;
@@ -14,92 +16,89 @@ interface CenterConsoleProps {
   canUndo: boolean;
   servingTeam: 'A' | 'B';
   onToggleServe: () => void;
+  arenaColor?: ArenaColor;
 }
+
+const THEME_ACCENTS: Record<string, { bg: string; text: string; border: string; iconBg: string }> = {
+  indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/20', iconBg: 'bg-indigo-500' },
+  blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', iconBg: 'bg-blue-500' },
+  emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', iconBg: 'bg-emerald-500' },
+  amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-400/20', iconBg: 'bg-amber-500' },
+  rose: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20', iconBg: 'bg-rose-500' },
+  violet: { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/20', iconBg: 'bg-violet-500' }
+};
 
 const CenterConsole: React.FC<CenterConsoleProps> = ({ 
     timeLeft, isTimerActive, onToggleTimer, onResetTimer, onResetGame, 
-    onSaveGame, onSwitchSides, onUndo, isGameWon, canUndo, 
-    servingTeam, onToggleServe 
+    onSaveGame, onSwitchSides, isGameWon, 
+    servingTeam, onToggleServe, arenaColor = 'indigo'
 }) => {
   const timerColor = timeLeft <= 10 && timeLeft > 0 ? 'text-red-500 animate-pulse' : 'text-yellow-400';
+  const theme = THEME_ACCENTS[arenaColor];
   
   return (
-    <div className="flex flex-col items-center px-1 py-1 w-full max-w-[180px] mx-auto h-full justify-between">
+    <div className="flex flex-col items-center gap-1.5 w-full h-full justify-between py-1">
       
-      {/* Bloco do Cronômetro - Mais compacto */}
-      <div className="text-center w-full">
-        <h3 className="text-gray-600 uppercase tracking-[0.2em] mb-0.5 text-[7px] font-black">Posse</h3>
-        <div className="bg-black/30 rounded-xl p-2 border border-white/5 shadow-inner">
-            <div 
-              className={`font-mono text-4xl lg:text-5xl font-black transition-colors ${timerColor} leading-none mb-2`}
-            >
+      {/* Cronômetro Posse: Maximização da área central */}
+      <div className="w-full flex-[1.4] flex flex-col">
+        <div className="bg-black/60 backdrop-blur-3xl rounded-[1.2rem] p-3 border border-white/10 shadow-xl flex flex-col items-center w-full h-full justify-center relative overflow-hidden">
+            <span className="text-[6px] font-black uppercase tracking-[0.5em] text-white/10 mb-1">CRONÔMETRO POSSE</span>
+            <div className={`font-mono text-5xl sm:text-7xl font-black transition-all duration-300 ${timerColor} leading-none mb-3`}>
               {String(timeLeft).padStart(2, '0')}
             </div>
             {!isGameWon && (
-                <div className="flex justify-center gap-1.5">
-                   <button onClick={onToggleTimer} className={`p-2.5 rounded-lg transition-all active:scale-90 shadow-lg ${isTimerActive ? 'bg-orange-600/20 text-orange-500' : 'bg-green-600/20 text-green-500'}`}>
-                      {isTimerActive ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4" />}
+                <div className="flex gap-3">
+                   <button onClick={onToggleTimer} className={`p-2 rounded-xl transition-all active:scale-90 shadow-md ${isTimerActive ? 'bg-orange-600/30 text-orange-400 border border-orange-500/20' : 'bg-green-600/30 text-green-400 border border-green-500/20'}`}>
+                      {isTimerActive ? <PauseIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
                   </button>
-                  <button onClick={onResetTimer} className="p-2.5 bg-gray-800 text-gray-500 rounded-lg active:scale-90 transition-all hover:text-white">
-                      <RotateCcwIcon className="w-4 h-4" />
+                  <button onClick={onResetTimer} className="p-2 bg-white/5 text-gray-600 rounded-xl active:scale-90 transition-all border border-white/5">
+                      <RotateCcwIcon className="w-5 h-5" />
                   </button>
                 </div>
             )}
         </div>
       </div>
 
-      {/* Controle de Saque - Horizontalmente mais fino */}
-      <div className="w-full mt-1.5">
+      {/* Ações Consolidadas */}
+      <div className="flex flex-col gap-1.5 w-full flex-shrink-0">
          <button 
-            onClick={onToggleServe}
-            disabled={isGameWon}
-            className="w-full flex items-center justify-between px-2.5 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg border border-indigo-500/20 transition-all active:scale-95 disabled:opacity-20"
+            onClick={onToggleServe} 
+            disabled={isGameWon} 
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all active:scale-95 disabled:opacity-20 shadow-md ${theme.bg} ${theme.text} ${theme.border}`}
          >
-            <span className="text-[7px] font-black uppercase tracking-widest">Alternar Saque</span>
-            <div className={`p-1 rounded bg-indigo-500 text-white shadow shadow-indigo-500/20 transition-transform duration-500 ${servingTeam === 'B' ? 'rotate-180' : ''}`}>
-                <ZapIcon className="w-3 h-3" />
+            <span className="text-[7px] font-black uppercase tracking-widest hidden sm:block">Alternar Saque</span>
+            <div className={`p-1.5 rounded-lg text-white shadow-lg transition-transform duration-500 mx-auto sm:mx-0 ${theme.iconBg} ${servingTeam === 'B' ? 'rotate-180' : ''}`}>
+                <ZapIcon className="w-3.5 h-3.5" />
             </div>
          </button>
-      </div>
 
-      {/* Ações de Jogo - Grid ultra denso */}
-      <div className="flex flex-col gap-1.5 w-full mt-1.5">
-        <div className="grid grid-cols-2 gap-1.5">
+         <div className="grid grid-cols-2 gap-1.5 w-full">
             <button 
                 onClick={onSwitchSides} 
-                disabled={isGameWon}
-                className="flex flex-col items-center justify-center py-1.5 bg-gray-800/60 hover:bg-gray-700 text-gray-500 rounded-lg transition-all active:scale-95 disabled:opacity-20 border border-white/5"
+                className="py-2.5 bg-white/5 text-gray-400 rounded-xl active:scale-90 flex flex-col items-center justify-center border border-white/5 transition-all shadow-md group hover:text-indigo-400"
             >
-              <RepeatIcon className="w-3.5 h-3.5 mb-0.5" />
-              <span className="text-[6px] font-black uppercase tracking-tighter">Virar</span>
+                <RepeatIcon className="w-4 h-4" />
+                <span className="text-[6px] uppercase font-black tracking-widest mt-0.5">Virar</span>
             </button>
             <button 
-                onClick={onUndo} 
-                disabled={!canUndo}
-                className="flex flex-col items-center justify-center py-1.5 bg-gray-800/60 hover:bg-gray-700 text-gray-500 rounded-lg transition-all active:scale-95 disabled:opacity-20 border border-white/5"
+                onClick={onResetGame} 
+                className="py-2.5 bg-white/5 text-gray-500 hover:text-red-400 rounded-xl active:scale-90 flex flex-col items-center justify-center border border-white/5 transition-all shadow-md"
             >
-                <RotateCcwIcon className="w-3.5 h-3.5 mb-0.5" />
-                <span className="text-[6px] font-black uppercase tracking-tighter">Voltar</span>
+                <RefreshCwIcon className="w-4 h-4" />
+                <span className="text-[6px] uppercase font-black tracking-widest mt-0.5">Zerar</span>
             </button>
-        </div>
+         </div>
 
-        <button 
+         <button 
             onClick={onSaveGame} 
-            className={`flex items-center justify-center py-2.5 bg-green-600/90 hover:bg-green-600 text-white font-black rounded-lg transition-all active:scale-95 text-[9px] uppercase tracking-widest shadow-lg shadow-green-900/10 ${isGameWon ? 'animate-pulse ring-1 ring-white/20' : ''}`}
+            className={`w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl transition-all active:scale-95 text-[9px] uppercase tracking-[0.3em] shadow-xl border border-white/10 ${isGameWon ? 'animate-bounce' : ''}`}
         >
-          <SaveIcon className="w-3.5 h-3.5 mr-1" /> Salvar
-        </button>
-        
-        <button 
-            onClick={onResetGame} 
-            className="flex items-center justify-center py-1 text-red-500/30 hover:text-red-500 transition-colors text-[6px] font-black uppercase tracking-[0.2em]"
-        >
-          Resetar Jogo
+          Salvar Partida
         </button>
       </div>
+
     </div>
   );
 };
 
-// Fix: Add default export for the CenterConsole component
 export default CenterConsole;

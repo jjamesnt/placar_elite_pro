@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Player, Team, Match } from '../types';
+import { Player, Team, Match, Arena } from '../types';
 import { SoundScheme } from '../App';
 import { useAttackTimer, useSensoryFeedback } from '../hooks';
 import ScoreCard from '../components/ScoreCard';
 import CenterConsole from '../components/CenterConsole';
+// Import RefreshCwIcon from icons
+import { RefreshCwIcon } from '../components/icons';
 
 interface PlacarProps {
   allPlayers: Player[];
@@ -14,10 +16,10 @@ interface PlacarProps {
   soundEnabled: boolean;
   vibrationEnabled: boolean;
   soundScheme: SoundScheme;
-  arenaName?: string;
+  currentArena: Arena;
 }
 
-const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, arenaName }) => {
+const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, currentArena }) => {
   const [teamA, setTeamA] = useState<Team>({ players: [undefined, undefined], score: 0 });
   const [teamB, setTeamB] = useState<Team>({ players: [undefined, undefined], score: 0 });
   const [servingTeam, setServingTeam] = useState<'A' | 'B'>('A');
@@ -176,10 +178,10 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
   const teamNameRight = isSidesSwitched ? 'Time A' : 'Time B';
 
   return (
-    <div className="h-full w-full p-1.5 flex flex-col sm:grid sm:grid-cols-[1fr_min-content_1fr] sm:items-stretch gap-1.5 relative overflow-hidden bg-gray-900">
+    <div className="h-full w-full p-1 sm:p-2 grid grid-cols-[1.2fr_1fr_1.2fr] gap-1 sm:gap-3 relative overflow-hidden bg-transparent">
       
-      {/* Time da Esquerda */}
-      <div className="flex flex-col min-w-0 h-full min-h-0 overflow-hidden">
+      {/* Time Esquerda */}
+      <div className="min-h-0 h-full overflow-hidden">
         <ScoreCard 
           teamName={teamNameLeft}
           teamData={teamLeft}
@@ -189,14 +191,12 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
           isGameWon={isGameWon}
           isLeft={true}
           isServing={servingTeam === teamLeftKey}
+          arenaColor={currentArena.color}
         />
       </div>
 
-      {/* Painel Central */}
-      <div className="w-full sm:w-40 lg:w-44 flex-shrink-0 flex flex-col items-center h-full justify-center">
-        <div className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-4 text-center">
-            {arenaName}
-        </div>
+      {/* Painel Central: Largura aumentada para harmonia */}
+      <div className="w-full sm:w-56 flex-shrink-0 flex items-center justify-center min-h-0 overflow-hidden">
         <CenterConsole 
           timeLeft={attackTimer.timeLeft}
           isTimerActive={attackTimer.isActive}
@@ -210,11 +210,12 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
           canUndo={history.length > 0}
           servingTeam={servingTeam}
           onToggleServe={toggleServe}
+          arenaColor={currentArena.color}
         />
       </div>
 
-      {/* Time da Direita */}
-      <div className="flex flex-col min-w-0 h-full min-h-0 overflow-hidden">
+      {/* Time Direita */}
+      <div className="min-h-0 h-full overflow-hidden">
         <ScoreCard 
           teamName={teamNameRight}
           teamData={teamRight}
@@ -224,26 +225,31 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
           isGameWon={isGameWon}
           isLeft={false}
           isServing={servingTeam === teamRightKey}
+          arenaColor={currentArena.color}
         />
       </div>
 
-      {/* Toasts */}
+      {/* Toast */}
       {toastMessage && (
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white px-4 py-2 rounded-lg shadow-xl backdrop-blur-md z-50 font-black uppercase tracking-widest text-[8px] animate-in slide-in-from-bottom-2 duration-300">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white px-4 py-2 rounded-full shadow-2xl backdrop-blur-md z-[100] font-black uppercase tracking-widest text-[8px] animate-in slide-in-from-bottom-2">
           {toastMessage}
         </div>
       )}
 
+      {/* Modal de Confirmação Reforçado */}
       {showResetConfirm && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowResetConfirm(false)}>
-              <div className="bg-gray-900 border border-yellow-500/20 rounded-[1.5rem] p-6 w-full max-w-xs shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-                  <h2 className="text-lg font-black text-white text-center mb-1 uppercase tracking-tighter">Zerar?</h2>
-                  <p className="text-gray-400 text-center mb-6 leading-relaxed text-[10px] uppercase font-bold">
-                      Limpar placar atual.
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-4" onClick={() => setShowResetConfirm(false)}>
+              <div className="bg-[#090e1a] border border-white/10 rounded-[2rem] p-8 w-full max-w-[300px] shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+                  <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 mx-auto">
+                     <RefreshCwIcon className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-xl font-black text-white text-center mb-1 uppercase tracking-tighter">Zerar Placar?</h2>
+                  <p className="text-white/30 text-center mb-8 leading-relaxed text-[8px] uppercase font-bold tracking-widest">
+                      O progresso atual será perdido permanentemente.
                   </p>
-                  <div className="flex gap-2">
-                      <button onClick={() => setShowResetConfirm(false)} className="flex-1 p-3 bg-gray-800 text-gray-400 rounded-lg font-black uppercase text-[9px] tracking-widest">Sair</button>
-                      <button onClick={() => resetGame(false)} className="flex-1 p-3 bg-yellow-600 text-gray-900 rounded-lg font-black uppercase text-[9px] tracking-widest">Zerar</button>
+                  <div className="flex flex-col gap-3">
+                      <button onClick={() => resetGame(false)} className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20">Confirmar</button>
+                      <button onClick={() => setShowResetConfirm(false)} className="w-full py-4 bg-white/5 text-white/40 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:text-white transition-colors">Voltar</button>
                   </div>
               </div>
           </div>

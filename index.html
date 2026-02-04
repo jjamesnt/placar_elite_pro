@@ -63,7 +63,6 @@
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
-        /* Oculta terminantemente qualquer overlay ou elemento de UI */
         header, nav, .print\:hidden, button, .no-print, .story-preview-modal, .landscape\:hidden, [class*="OrientationLock"] {
           display: none !important;
         }
@@ -96,7 +95,6 @@
           font-weight: 900;
           text-transform: uppercase;
         }
-        /* Zebra Striping e Divisões - IMPORTANTE PARA LEITURA */
         tr:nth-child(even) td {
           background-color: #f9fafb !important;
         }
@@ -108,20 +106,7 @@
           color: black !important;
           padding: 14px 10px !important;
           vertical-align: middle;
-          /* CORREÇÃO: Remove flexbox para impedir quebras de linha indesejadas */
           display: table-cell !important;
-        }
-        .print\:border-none {
-          border: none !important;
-        }
-        .text-indigo-400, .text-gray-500, .text-gray-400, .text-gray-300 {
-          color: black !important;
-        }
-        .text-red-500\/60 {
-          color: #b91c1c !important;
-        }
-        .text-yellow-400 {
-          color: #d97706 !important;
         }
       }
     </style>
@@ -132,7 +117,8 @@
     "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
     "react": "https://esm.sh/react@19.2.4",
     "react/": "https://esm.sh/react@19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai"
+    "@google/genai": "https://esm.sh/@google/genai",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.45.1"
   }
 }
 </script>
