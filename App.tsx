@@ -70,7 +70,6 @@ const App: React.FC = () => {
 
   const checkLicense = useCallback(async (userId: string, email: string) => {
     try {
-      // O trigger no banco já garantiu que a licença existe
       const { data, error } = await supabase
         .from('user_licenses')
         .select('*')
@@ -83,16 +82,18 @@ const App: React.FC = () => {
           setShowWelcome(true);
         }
       } else {
-        // Fallback caso o trigger falhe (segurança extra)
+        // Fallback de segurança: Sempre cria como INATIVO (false) a menos que seja o James
+        const isMaster = email.toLowerCase() === 'jjamesnt@gmail.com';
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 30);
-        const isMaster = email.toLowerCase() === 'jjamesnt@gmail.com';
+        
         const { data: newLicense } = await supabase.from('user_licenses').insert([{
             user_id: userId,
             email: email.toLowerCase(),
-            is_active: isMaster,
+            is_active: isMaster, // Apenas o James entra Ativo por padrão
             expires_at: expiry.toISOString()
         }]).select().single();
+        
         if (newLicense) setUserLicense(newLicense);
       }
     } catch (err) {
@@ -209,10 +210,12 @@ const App: React.FC = () => {
   if (!session) return <><Background color="indigo" /><Login onLogin={() => {}} /></>;
   if (mustChangePassword) return <ChangePassword onComplete={() => setMustChangePassword(false)} />;
 
+  // CRÍTICO: Se o e-mail não for o Master, ele PRECISA ter uma licença e ela PRECISA estar ativa.
+  const isMaster = session?.user?.email?.toLowerCase() === 'jjamesnt@gmail.com';
   const isExpired = userLicense && new Date(userLicense.expires_at).getTime() < Date.now();
-  const isBlocked = userLicense && !userLicense.is_active;
+  const isBlocked = !isMaster && (!userLicense || !userLicense.is_active);
 
-  if (userLicense && (isBlocked || isExpired)) {
+  if (isBlocked || (userLicense && isExpired)) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center p-8 bg-[#030712] text-center">
         <Background color="rose" />
@@ -221,8 +224,8 @@ const App: React.FC = () => {
         </div>
         <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-4">{isBlocked ? 'Aguardando Aprovação' : 'Acesso Expirado'}</h1>
         <p className="text-white/40 max-w-md font-bold uppercase tracking-widest text-[10px] leading-relaxed mb-10">
-          {isBlocked ? 'Sua conta foi criada, mas o administrador mestre ainda não ativou sua licença.' : 'Seu período de licença expirou. Renove seu plano para continuar.'}
-          <br /><br /> Fale com o suporte para liberação.
+          {isBlocked ? 'Sua solicitação de acesso foi enviada. O administrador mestre analisará seu perfil para ativação da licença.' : 'Seu período de licença expirou. Renove seu plano para continuar tendo acesso total aos recursos.'}
+          <br /><br /> Fale com o suporte para liberação imediata.
         </p>
         <div className="flex flex-col gap-4 w-full max-w-xs">
           <a href="https://wa.me/5531988124233" target="_blank" className="px-10 py-5 bg-rose-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95 text-center">Falar com Suporte</a>
