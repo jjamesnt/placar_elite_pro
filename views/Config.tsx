@@ -35,13 +35,12 @@ const Config: React.FC<ConfigProps> = ({
   const handleUpdate = () => { if(editingArena && editingArena.name.trim()) { onUpdateArena(editingArena.id, editingArena.name.trim(), editingArena.color || 'indigo'); setEditingArena(null); } };
 
   const handleLocalBackup = () => {
-    alert("Função de Back-up Local: Os dados sincronizados com a nuvem já estão protegidos. Esta função exportará um arquivo JSON com as configurações e histórico locais em breve.");
+    alert("Função de Back-up Local: Os dados sincronizados com a nuvem já estão protegidos.");
   };
 
   return (
     <div className="w-full max-w-lg mx-auto p-4 space-y-8 pb-32">
       
-      {/* Gestão de Arenas */}
       <section className="space-y-1">
         <div className="flex items-center justify-between px-1 mb-4">
           <div className="flex items-center gap-2">
@@ -93,7 +92,6 @@ const Config: React.FC<ConfigProps> = ({
             </div>
           ))}
 
-          {/* Adicionar Arena */}
           <div className="mt-6 pt-4 border-t border-white/5">
             <div className="flex items-center gap-2 p-1 bg-white/[0.03] rounded-2xl focus-within:bg-white/[0.07] transition-all">
               <div className="flex gap-1.5 pl-3">
@@ -123,7 +121,6 @@ const Config: React.FC<ConfigProps> = ({
         </div>
       </section>
 
-      {/* Parâmetros e Versão */}
       <section className="bg-white/[0.02] rounded-3xl p-6 border border-white/5 space-y-6">
         <div className="flex items-center justify-between">
           <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Pontuação Alvo</span>
@@ -158,24 +155,29 @@ const Config: React.FC<ConfigProps> = ({
           </div>
         </div>
 
-        {/* Botão Back-up Local Solicitado */}
-        <div className="pt-4 border-t border-white/5">
+        <div className="pt-4 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button 
             onClick={handleLocalBackup}
-            className="w-full py-4 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 rounded-2xl font-black uppercase text-[9px] tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95"
+            className="w-full py-4 bg-white/5 hover:bg-white/10 text-white/40 border border-white/5 rounded-2xl font-black uppercase text-[9px] tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95"
           >
             <UploadCloudIcon className="w-4 h-4" />
-            Back-up Local
+            Backup
           </button>
+          <a 
+            href="https://wa.me/5531984211900"
+            target="_blank"
+            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black uppercase text-[9px] tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl shadow-emerald-900/20"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            Suporte
+          </a>
         </div>
 
-        {/* Versão Integrada */}
         <div className="pt-4 flex justify-center opacity-20">
            <span className="text-[8px] font-black uppercase tracking-[0.4em]">Placar Elite Pro v2.5</span>
         </div>
       </section>
 
-      {/* Modal Edição Arena */}
       {editingArena && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-6" onClick={() => setEditingArena(null)}>
           <div className="bg-[#090e1a] border border-white/10 rounded-[2.5rem] p-8 w-full max-sm shadow-2xl" onClick={e => e.stopPropagation()}>

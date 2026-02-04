@@ -11,7 +11,6 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ onConfirm }) => {
     <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[200] flex items-center justify-center p-6 animate-in fade-in duration-500">
       <div className="bg-[#090e1a] border border-indigo-500/20 rounded-[3rem] p-10 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
         
-        {/* Efeito de luz de fundo */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-600/20 blur-[100px] -z-10 rounded-full"></div>
 
         <div className="flex flex-col items-center text-center space-y-6">
@@ -32,11 +31,11 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ onConfirm }) => {
              <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Dúvidas ou Renovação?</span>
                 <a 
-                  href="https://wa.me/5531988124233" 
+                  href="https://wa.me/5531984211900" 
                   target="_blank" 
                   className="text-indigo-400 font-black text-lg hover:text-white transition-colors"
                 >
-                  (31) 98812-4233
+                  (31) 98421-1900
                 </a>
              </div>
           </div>

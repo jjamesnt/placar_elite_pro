@@ -82,7 +82,6 @@ const App: React.FC = () => {
           setShowWelcome(true);
         }
       } else {
-        // Fallback de segurança: Sempre cria como INATIVO (false) a menos que seja o James
         const isMaster = email.toLowerCase() === 'jjamesnt@gmail.com';
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 30);
@@ -90,7 +89,7 @@ const App: React.FC = () => {
         const { data: newLicense } = await supabase.from('user_licenses').insert([{
             user_id: userId,
             email: email.toLowerCase(),
-            is_active: isMaster, // Apenas o James entra Ativo por padrão
+            is_active: isMaster, 
             expires_at: expiry.toISOString()
         }]).select().single();
         
@@ -210,7 +209,6 @@ const App: React.FC = () => {
   if (!session) return <><Background color="indigo" /><Login onLogin={() => {}} /></>;
   if (mustChangePassword) return <ChangePassword onComplete={() => setMustChangePassword(false)} />;
 
-  // CRÍTICO: Se o e-mail não for o Master, ele PRECISA ter uma licença e ela PRECISA estar ativa.
   const isMaster = session?.user?.email?.toLowerCase() === 'jjamesnt@gmail.com';
   const isExpired = userLicense && new Date(userLicense.expires_at).getTime() < Date.now();
   const isBlocked = !isMaster && (!userLicense || !userLicense.is_active);
@@ -228,7 +226,7 @@ const App: React.FC = () => {
           <br /><br /> Fale com o suporte para liberação imediata.
         </p>
         <div className="flex flex-col gap-4 w-full max-w-xs">
-          <a href="https://wa.me/5531988124233" target="_blank" className="px-10 py-5 bg-rose-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95 text-center">Falar com Suporte</a>
+          <a href="https://wa.me/5531984211900" target="_blank" className="px-10 py-5 bg-rose-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95 text-center">Falar com Suporte</a>
           <button onClick={handleLogout} className="text-white/20 hover:text-white font-black uppercase text-[10px] tracking-widest py-4">Sair da Conta</button>
         </div>
       </div>

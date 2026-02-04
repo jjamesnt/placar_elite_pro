@@ -44,7 +44,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       console.error("Erro no login:", err);
       let msg = err.message || 'Erro desconhecido';
       
-      // Tradução de Erros Comuns do Supabase
       if (msg.includes('rate limit')) {
         msg = 'Muitas tentativas! Aguarde alguns minutos ou use outra rede.';
       } else if (msg.includes('Invalid login credentials')) {
@@ -63,7 +62,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   return (
     <div className="h-screen w-full flex items-center justify-center p-4 bg-[#030712] relative overflow-hidden">
-      {/* Background Glow dinâmico */}
       <div className={`absolute w-[600px] h-[600px] rounded-full blur-[140px] opacity-10 transition-all duration-1000 -z-10 ${isSignUp ? 'bg-emerald-500 -top-20 -right-20' : 'bg-indigo-500 -bottom-20 -left-20'}`}></div>
 
       <div className={`w-full max-w-[400px] bg-[#090e1a]/80 backdrop-blur-3xl border rounded-[3rem] p-10 shadow-2xl transition-all duration-500 ${isSignUp ? 'border-emerald-500/30 shadow-emerald-500/20' : 'border-indigo-500/20 shadow-indigo-500/10'}`}>
@@ -74,7 +72,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
           
           <h1 className="text-4xl font-black uppercase tracking-tighter text-white text-center leading-none">
-            {isSignUp ? 'Nova Conta' : 'Elite Pro'}
+            {isSignUp ? 'Nova Conta' : 'Placar Elite Pro'}
           </h1>
           <p className={`text-[10px] font-black uppercase tracking-[0.5em] mt-3 ${isSignUp ? 'text-emerald-500' : 'text-indigo-400/50'}`}>
             {isSignUp ? 'SOLICITAR ACESSO À ARENA' : 'PROFESSIONAL SCOREBOARD'}
