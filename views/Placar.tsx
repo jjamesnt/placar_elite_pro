@@ -5,7 +5,6 @@ import { SoundScheme } from '../App';
 import { useAttackTimer, useSensoryFeedback } from '../hooks';
 import ScoreCard from '../components/ScoreCard';
 import CenterConsole from '../components/CenterConsole';
-// Import RefreshCwIcon from icons
 import { RefreshCwIcon } from '../components/icons';
 
 interface PlacarProps {
@@ -178,9 +177,8 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
   const teamNameRight = isSidesSwitched ? 'Time A' : 'Time B';
 
   return (
-    <div className="h-full w-full p-1 sm:p-2 grid grid-cols-[1.2fr_1fr_1.2fr] gap-1 sm:gap-3 relative overflow-hidden bg-transparent">
+    <div className="h-full w-full p-1 sm:p-2 grid grid-cols-[1fr_0.8fr_1fr] md:grid-cols-[1.1fr_0.7fr_1.1fr] gap-1 sm:gap-3 relative overflow-hidden bg-transparent">
       
-      {/* Time Esquerda */}
       <div className="min-h-0 h-full overflow-hidden">
         <ScoreCard 
           teamName={teamNameLeft}
@@ -195,8 +193,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
         />
       </div>
 
-      {/* Painel Central: Largura aumentada para harmonia */}
-      <div className="w-full sm:w-56 flex-shrink-0 flex items-center justify-center min-h-0 overflow-hidden">
+      <div className="w-full flex-shrink-0 flex items-center justify-center min-h-0 overflow-hidden">
         <CenterConsole 
           timeLeft={attackTimer.timeLeft}
           isTimerActive={attackTimer.isActive}
@@ -214,7 +211,6 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
         />
       </div>
 
-      {/* Time Direita */}
       <div className="min-h-0 h-full overflow-hidden">
         <ScoreCard 
           teamName={teamNameRight}
@@ -229,14 +225,12 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
         />
       </div>
 
-      {/* Toast */}
       {toastMessage && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white px-4 py-2 rounded-full shadow-2xl backdrop-blur-md z-[100] font-black uppercase tracking-widest text-[8px] animate-in slide-in-from-bottom-2">
           {toastMessage}
         </div>
       )}
 
-      {/* Modal de Confirmação Reforçado */}
       {showResetConfirm && (
           <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-4" onClick={() => setShowResetConfirm(false)}>
               <div className="bg-[#090e1a] border border-white/10 rounded-[2rem] p-8 w-full max-w-[300px] shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>

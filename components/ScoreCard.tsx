@@ -51,7 +51,6 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
   return (
     <div className={`relative flex flex-col bg-black/40 backdrop-blur-3xl rounded-[1.2rem] sm:rounded-[1.5rem] p-2 border-t border-white/5 shadow-2xl h-full min-h-0 ${borderColor} ${isServing ? 'ring-1 ring-white/10' : ''} overflow-hidden`}>
       
-      {/* Indicador de Saque */}
       <div className={`absolute top-1.5 ${isLeft ? 'right-2' : 'left-2'} transition-opacity duration-300 z-10 ${isServing ? 'opacity-100' : 'opacity-0'}`}>
           <div className={`flex flex-col items-center gap-0 ${servingColor}`}>
              <ZapIcon className="w-2.5 h-2.5 animate-pulse" />
@@ -61,13 +60,13 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
 
       <h2 className="text-[7px] sm:text-[9px] font-black text-center text-white/20 uppercase tracking-[0.3em] mb-1">{teamName}</h2>
       
-      {/* Placar: Dimensão dinâmica vh para não vazar em modo paisagem */}
       <div 
         className="flex-1 flex items-center justify-center relative min-h-0 cursor-pointer select-none active:scale-[0.98] transition-transform"
         onClick={handleIncrement}
       >
-          <span className={`
-            block text-[22vh] sm:text-[26vh] font-mono font-black bg-clip-text text-transparent bg-gradient-to-br leading-[0.8] transition-all duration-300
+          {/* Ajustado com clamp() para nunca ultrapassar o limite visual em tablets ou landscape mobile */}
+          <span style={{ fontSize: 'clamp(80px, 24vh, 260px)' }} className={`
+            block font-mono font-black bg-clip-text text-transparent bg-gradient-to-br leading-none transition-all duration-300
             ${teamColor} 
             ${animate ? 'scale-105' : 'scale-100'}
           `}>
@@ -75,7 +74,6 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
           </span>
       </div>
 
-      {/* Controles e Atletas: Empilhamento Vertical solicitado */}
       <div className="mt-1 flex flex-col gap-1.5 flex-shrink-0">
           <div className="grid grid-cols-2 gap-1.5">
                <button onClick={(e) => { e.stopPropagation(); handleDecrement(); }} disabled={isGameWon || teamData.score === 0} className="flex items-center justify-center py-1.5 sm:py-2 bg-white/5 rounded-lg text-gray-500 disabled:opacity-5 active:scale-95 transition-all">
@@ -86,7 +84,6 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
               </button>
           </div>
           
-          {/* Campos de Atletas: Empilhados um sobre o outro */}
           <div className="flex flex-col gap-1">
             {[0, 1].map(index => (
               <div key={index} className="relative w-full">
@@ -97,7 +94,7 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
                     if (selectedPlayer) onPlayerSelect(selectedPlayer, index);
                   }}
                   disabled={isGameWon}
-                  className="w-full px-2 py-1.5 bg-black/60 text-white rounded-md text-[7px] font-black appearance-none border border-white/5 focus:outline-none focus:border-indigo-500/50 transition-all uppercase tracking-tighter truncate"
+                  className="w-full px-2 py-1 bg-black/60 text-white rounded-md text-[7px] font-black appearance-none border border-white/5 focus:outline-none focus:border-indigo-500/50 transition-all uppercase tracking-tighter truncate"
                 >
                   <option value="" disabled>{`Atleta ${index + 1}`}</option>
                   {allPlayers.map(player => (

@@ -1,8 +1,9 @@
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import Navigation, { View } from './components/Navigation';
 import OrientationLock from './components/OrientationLock';
 import WelcomeModal from './components/WelcomeModal';
+import LicenseExpiryModal from './components/LicenseExpiryModal';
 import Placar from './views/Placar';
 import Atletas from './views/Atletas';
 import Ranking from './views/Ranking';
@@ -43,12 +44,17 @@ const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [userLicense, setUserLicense] = useState<UserLicense | null>(null);
-  const [showWelcome, setShowWelcome] = useState(false);
+  
+  // MÁQUINA DE ESTADOS DE MODAL: Controla a sequência Welcome -> Expiry
+  const [activeModal, setActiveModal] = useState<'none' | 'welcome' | 'expiry'>('none');
+  
+  // Trava de runtime para evitar re-disparos por eventos de sessão
+  const modalFlowHandled = useRef(false);
 
   const [arenas, setArenas] = useState<Arena[]>([]);
   const [currentArenaId, setCurrentArenaId] = useState<string>('default');
 
-  const currentArena = useMemo(() => arenas.find(a => a.id === currentArenaId) || arenas[0] || { id: 'default', name: 'Carregando...', color: 'indigo' }, [arenas, currentArenaId]);
+  const currentArena: Arena = useMemo(() => arenas.find(a => a.id === currentArenaId) || arenas[0] || ({ id: 'default', name: 'Carregando...', color: 'indigo' as ArenaColor }), [arenas, currentArenaId]);
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [deletedPlayers, setDeletedPlayers] = useState<Player[]>([]);
@@ -62,7 +68,8 @@ const App: React.FC = () => {
   const handleLogout = useCallback(async () => {
     setSession(null);
     setUserLicense(null);
-    setCurrentView('placar');
+    setActiveModal('none');
+    modalFlowHandled.current = false;
     localStorage.clear();
     sessionStorage.clear();
     await supabase.auth.signOut();
@@ -70,6 +77,12 @@ const App: React.FC = () => {
 
   const checkLicense = useCallback(async (userId: string, email: string) => {
     try {
+      if (modalFlowHandled.current) return;
+
+      // Prioridade absoluta ao LocalStorage para evitar repetição por latência de rede
+      const welcomeDone = localStorage.getItem('elite_welcome_done') === 'true';
+      const expiryShown = sessionStorage.getItem('expiry_modal_shown') === 'true';
+
       const { data, error } = await supabase
         .from('user_licenses')
         .select('*')
@@ -78,22 +91,27 @@ const App: React.FC = () => {
       
       if (data) {
         setUserLicense(data);
-        if (data.is_active && !data.first_access_done && email !== 'jjamesnt@gmail.com') {
-          setShowWelcome(true);
+        const isMaster = email.toLowerCase() === 'jjamesnt@gmail.com';
+        
+        if (data.is_active && !isMaster) {
+          // FLUXO DE ONBOARDING: Welcome tem precedência. Se concluído, mostra Expiry.
+          if (!data.first_access_done && !welcomeDone) {
+            setActiveModal('welcome');
+          } else if (!expiryShown) {
+            setActiveModal('expiry');
+          }
         }
       } else {
-        const isMaster = email.toLowerCase() === 'jjamesnt@gmail.com';
+        // Criar licença para novos logins via Cadastro
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 30);
-        
-        const { data: newLicense } = await supabase.from('user_licenses').insert([{
+        await supabase.from('user_licenses').insert([{
             user_id: userId,
             email: email.toLowerCase(),
-            is_active: isMaster, 
-            expires_at: expiry.toISOString()
-        }]).select().single();
-        
-        if (newLicense) setUserLicense(newLicense);
+            is_active: false, 
+            expires_at: expiry.toISOString(),
+            first_access_done: false
+        }]);
       }
     } catch (err) {
       console.error("Erro licença:", err);
@@ -102,11 +120,28 @@ const App: React.FC = () => {
 
   const handleFirstAccessConfirm = async () => {
     if (!userLicense) return;
-    const { error } = await supabase.from('user_licenses').update({ first_access_done: true }).eq('id', userLicense.id);
-    if (!error) {
-      setUserLicense(prev => prev ? { ...prev, first_access_done: true } : null);
-      setShowWelcome(false);
+    
+    // 1. Bloqueia localmente para não voltar em caso de refresh
+    localStorage.setItem('elite_welcome_done', 'true');
+    
+    // 2. Transição sequencial: Fecha Welcome e abre Expiry
+    const expiryShown = sessionStorage.getItem('expiry_modal_shown') === 'true';
+    if (!expiryShown) {
+      setActiveModal('expiry');
+    } else {
+      setActiveModal('none');
+      modalFlowHandled.current = true;
     }
+
+    // 3. Atualização silenciosa no banco
+    await supabase.from('user_licenses').update({ first_access_done: true }).eq('id', userLicense.id);
+    setUserLicense(prev => prev ? { ...prev, first_access_done: true } : null);
+  };
+
+  const handleExpiryModalClose = () => {
+    setActiveModal('none');
+    modalFlowHandled.current = true; 
+    sessionStorage.setItem('expiry_modal_shown', 'true');
   };
 
   const refreshData = useCallback(async () => {
@@ -155,7 +190,7 @@ const App: React.FC = () => {
           const targetArena = (lastArena && data.find(a => a.id === lastArena)) ? lastArena : data[0].id;
           setCurrentArenaId(targetArena);
         } else {
-          const { data: newArena } = await supabase.from('arenas').insert([{ name: 'Arena Principal', color: 'indigo', user_id: session.user.id }]).select().single();
+          const { data: newArena } = await supabase.from('arenas').insert([{ name: 'Arena Principal', color: 'indigo' as ArenaColor, user_id: session.user.id }]).select().single();
           if (newArena) {
             setArenas([newArena]);
             setCurrentArenaId(newArena.id);
@@ -236,8 +271,11 @@ const App: React.FC = () => {
   return (
     <>
       <OrientationLock />
-      {showWelcome && <WelcomeModal onConfirm={handleFirstAccessConfirm} />}
-      <Background color={currentArena.color || 'indigo'} />
+      
+      {activeModal === 'welcome' && <WelcomeModal onConfirm={handleFirstAccessConfirm} />}
+      {activeModal === 'expiry' && userLicense && <LicenseExpiryModal expiryDate={userLicense.expires_at} onConfirm={handleExpiryModalClose} />}
+
+      <Background color={(currentArena.color || 'indigo') as ArenaColor} />
       <div className="h-screen w-screen flex flex-col text-white font-sans overflow-hidden bg-transparent">
         <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} currentArena={currentArena} onLogout={handleLogout} isAdmin={isAdmin} />
         <main className="flex-1 overflow-y-auto">
