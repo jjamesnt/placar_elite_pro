@@ -177,7 +177,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
   const teamNameRight = isSidesSwitched ? 'Time A' : 'Time B';
 
   return (
-    <div className="h-full w-full p-1 sm:p-2 grid grid-cols-[1fr_0.8fr_1fr] md:grid-cols-[1.1fr_0.7fr_1.1fr] gap-1 sm:gap-3 relative overflow-hidden bg-transparent">
+    <div className="h-full w-full p-1 sm:p-2 lg:p-4 grid grid-cols-[1fr_0.8fr_1fr] md:grid-cols-[1.1fr_0.7fr_1.1fr] lg:grid-cols-[1.2fr_0.6fr_1.2fr] gap-1 sm:gap-3 lg:gap-6 relative overflow-hidden bg-transparent max-w-[1600px] mx-auto">
       
       <div className="min-h-0 h-full overflow-hidden">
         <ScoreCard 
@@ -226,24 +226,24 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
       </div>
 
       {toastMessage && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white px-4 py-2 rounded-full shadow-2xl backdrop-blur-md z-[100] font-black uppercase tracking-widest text-[8px] animate-in slide-in-from-bottom-2">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white px-4 py-2 rounded-full shadow-2xl backdrop-blur-md z-[100] font-black uppercase tracking-widest text-[8px] lg:text-[10px] animate-in slide-in-from-bottom-2">
           {toastMessage}
         </div>
       )}
 
       {showResetConfirm && (
           <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-4" onClick={() => setShowResetConfirm(false)}>
-              <div className="bg-[#090e1a] border border-white/10 rounded-[2rem] p-8 w-full max-w-[300px] shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-                  <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 mx-auto">
-                     <RefreshCwIcon className="w-6 h-6" />
+              <div className="bg-[#090e1a] border border-white/10 rounded-[2rem] p-8 w-full max-w-[300px] lg:max-w-[350px] shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+                  <div className="w-12 h-12 lg:w-16 lg:h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 mx-auto">
+                     <RefreshCwIcon className="w-6 h-6 lg:w-8 lg:h-8" />
                   </div>
-                  <h2 className="text-xl font-black text-white text-center mb-1 uppercase tracking-tighter">Zerar Placar?</h2>
-                  <p className="text-white/30 text-center mb-8 leading-relaxed text-[8px] uppercase font-bold tracking-widest">
+                  <h2 className="text-xl lg:text-2xl font-black text-white text-center mb-1 uppercase tracking-tighter">Zerar Placar?</h2>
+                  <p className="text-white/30 text-center mb-8 leading-relaxed text-[8px] lg:text-[10px] uppercase font-bold tracking-widest">
                       O progresso atual será perdido permanentemente.
                   </p>
                   <div className="flex flex-col gap-3">
-                      <button onClick={() => resetGame(false)} className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20">Confirmar</button>
-                      <button onClick={() => setShowResetConfirm(false)} className="w-full py-4 bg-white/5 text-white/40 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:text-white transition-colors">Voltar</button>
+                      <button onClick={() => resetGame(false)} className="w-full py-4 lg:py-5 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase text-[10px] lg:text-[12px] tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20">Confirmar</button>
+                      <button onClick={() => setShowResetConfirm(false)} className="w-full py-4 lg:py-5 bg-white/5 text-white/40 rounded-2xl font-black uppercase text-[10px] lg:text-[12px] tracking-widest hover:text-white transition-colors">Voltar</button>
                   </div>
               </div>
           </div>

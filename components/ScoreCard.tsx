@@ -49,16 +49,16 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
   const buttonBg = isLeft ? theme.bg : 'bg-red-600/90';
 
   return (
-    <div className={`relative flex flex-col bg-black/40 backdrop-blur-3xl rounded-[1.2rem] sm:rounded-[1.5rem] p-2 border-t border-white/5 shadow-2xl h-full min-h-0 ${borderColor} ${isServing ? 'ring-1 ring-white/10' : ''} overflow-hidden`}>
+    <div className={`relative flex flex-col bg-black/40 backdrop-blur-3xl rounded-[1.2rem] sm:rounded-[1.5rem] lg:rounded-[2.5rem] p-2 sm:p-3 lg:p-6 border-t border-white/5 shadow-2xl h-full min-h-0 ${borderColor} ${isServing ? 'ring-1 ring-white/10 lg:ring-2' : ''} overflow-hidden`}>
       
-      <div className={`absolute top-1.5 ${isLeft ? 'right-2' : 'left-2'} transition-opacity duration-300 z-10 ${isServing ? 'opacity-100' : 'opacity-0'}`}>
-          <div className={`flex flex-col items-center gap-0 ${servingColor}`}>
-             <ZapIcon className="w-2.5 h-2.5 animate-pulse" />
-             <span className="text-[5px] font-black uppercase tracking-tighter">Saque</span>
+      <div className={`absolute top-1.5 sm:top-3 ${isLeft ? 'right-2 lg:right-4' : 'left-2 lg:left-4'} transition-opacity duration-300 z-10 ${isServing ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`flex flex-col items-center gap-0 lg:gap-1 ${servingColor}`}>
+             <ZapIcon className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 lg:w-5 lg:h-5 animate-pulse" />
+             <span className="text-[5px] sm:text-[6px] lg:text-[8px] font-black uppercase tracking-tighter">Saque</span>
           </div>
       </div>
 
-      <h2 className="text-[7px] sm:text-[9px] font-black text-center text-white/20 uppercase tracking-[0.3em] mb-1">{teamName}</h2>
+      <h2 className="text-[7px] sm:text-[9px] lg:text-[11px] font-black text-center text-white/20 uppercase tracking-[0.3em] mb-1 lg:mb-3">{teamName}</h2>
       
       <div 
         className="flex-1 flex items-center justify-center relative min-h-0 cursor-pointer select-none active:scale-[0.98] transition-transform"
@@ -74,17 +74,17 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
           </span>
       </div>
 
-      <div className="mt-1 flex flex-col gap-1.5 flex-shrink-0">
-          <div className="grid grid-cols-2 gap-1.5">
-               <button onClick={(e) => { e.stopPropagation(); handleDecrement(); }} disabled={isGameWon || teamData.score === 0} className="flex items-center justify-center py-1.5 sm:py-2 bg-white/5 rounded-lg text-gray-500 disabled:opacity-5 active:scale-95 transition-all">
-                  <MinusIcon className="w-3.5 h-3.5" />
+      <div className="mt-1 lg:mt-4 flex flex-col gap-1.5 lg:gap-3 flex-shrink-0">
+          <div className="grid grid-cols-2 gap-1.5 lg:gap-3">
+               <button onClick={(e) => { e.stopPropagation(); handleDecrement(); }} disabled={isGameWon || teamData.score === 0} className="flex items-center justify-center py-1.5 sm:py-2 lg:py-4 bg-white/5 rounded-lg lg:rounded-2xl text-gray-500 disabled:opacity-5 active:scale-95 transition-all">
+                  <MinusIcon className="w-3.5 h-3.5 lg:w-5 lg:h-5" />
               </button>
-              <button onClick={(e) => { e.stopPropagation(); handleIncrement(); }} disabled={isGameWon} className={`flex items-center justify-center py-1.5 sm:py-2 rounded-lg text-white disabled:opacity-5 active:scale-95 transition-all shadow-lg ${buttonBg}`}>
-                  <PlusIcon className="w-3.5 h-3.5" />
+              <button onClick={(e) => { e.stopPropagation(); handleIncrement(); }} disabled={isGameWon} className={`flex items-center justify-center py-1.5 sm:py-2 lg:py-4 rounded-lg lg:rounded-2xl text-white disabled:opacity-5 active:scale-95 transition-all shadow-lg ${buttonBg}`}>
+                  <PlusIcon className="w-3.5 h-3.5 lg:w-5 lg:h-5" />
               </button>
           </div>
           
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 lg:gap-2">
             {[0, 1].map(index => (
               <div key={index} className="relative w-full">
                 <select 
@@ -94,7 +94,7 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
                     if (selectedPlayer) onPlayerSelect(selectedPlayer, index);
                   }}
                   disabled={isGameWon}
-                  className="w-full px-2 py-1 bg-black/60 text-white rounded-md text-[7px] font-black appearance-none border border-white/5 focus:outline-none focus:border-indigo-500/50 transition-all uppercase tracking-tighter truncate"
+                  className="w-full px-2 py-1 lg:py-3 lg:px-4 bg-black/60 text-white rounded-md lg:rounded-xl text-[7px] lg:text-[10px] font-black appearance-none border border-white/5 focus:outline-none focus:border-indigo-500/50 transition-all uppercase tracking-tighter truncate"
                 >
                   <option value="" disabled>{`Atleta ${index + 1}`}</option>
                   {allPlayers.map(player => (
