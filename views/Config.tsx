@@ -17,6 +17,7 @@ interface ConfigProps {
   onUpdateArena: (id: string, name: string, color: ArenaColor) => void;
   onDeleteArena: (id: string) => void;
   onLogout: () => void;
+  onSaveSettings: () => void;
 }
 
 const ARENA_COLORS: ArenaColor[] = ['indigo', 'blue', 'emerald', 'amber', 'rose', 'violet'];
@@ -25,14 +26,21 @@ const COLOR_MAP: Record<ArenaColor, string> = { indigo: 'bg-indigo-500', blue: '
 const Config: React.FC<ConfigProps> = ({ 
   winScore, setWinScore, attackTime, setAttackTime, soundEnabled, setSoundEnabled, 
   vibrationEnabled, setVibrationEnabled, soundScheme, setSoundScheme,
-  arenas, currentArenaId, setCurrentArenaId, onAddArena, onUpdateArena, onDeleteArena, onLogout
+  arenas, currentArenaId, setCurrentArenaId, onAddArena, onUpdateArena, onDeleteArena, onLogout, onSaveSettings
 }) => {
   const [newName, setNewName] = useState('');
   const [selColor, setSelColor] = useState<ArenaColor>('indigo');
   const [editingArena, setEditingArena] = useState<Arena | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
 
   const handleAdd = () => { if(newName.trim()) { onAddArena(newName.trim(), selColor); setNewName(''); } };
   const handleUpdate = () => { if(editingArena && editingArena.name.trim()) { onUpdateArena(editingArena.id, editingArena.name.trim(), editingArena.color || 'indigo'); setEditingArena(null); } };
+
+  const handleSaveGameSettings = () => {
+    onSaveSettings();
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 2500);
+  };
 
   const handleLocalBackup = () => {
     alert("Função de Back-up Local: Os dados sincronizados com a nuvem já estão protegidos.");
@@ -122,26 +130,42 @@ const Config: React.FC<ConfigProps> = ({
       </section>
 
       <section className="bg-white/[0.02] rounded-3xl p-6 border border-white/5 space-y-6">
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Pontuação Alvo</span>
-          <div className="flex items-center gap-4 bg-black/20 p-1 rounded-xl">
-            <button onClick={() => setWinScore(Math.max(1, winScore-1))} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white">-</button>
-            <span className="font-mono text-xs font-black w-4 text-center">{winScore}</span>
-            <button onClick={() => setWinScore(winScore+1)} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white">+</button>
+        <div className="space-y-4">
+          <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400 text-center">Regras da Partida</h3>
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Pontuação Alvo</span>
+            <div className="flex items-center gap-4 bg-black/20 p-1 rounded-xl">
+              <button onClick={() => setWinScore(Math.max(1, winScore-1))} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white">-</button>
+              <span className="font-mono text-xs font-black w-4 text-center">{winScore}</span>
+              <button onClick={() => setWinScore(winScore+1)} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white">+</button>
+            </div>
           </div>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Tempo Posse (Seg)</span>
-          <div className="flex items-center gap-4 bg-black/20 p-1 rounded-xl">
-            <button onClick={() => setAttackTime(Math.max(5, attackTime-1))} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white">-</button>
-            <span className="font-mono text-xs font-black w-4 text-center">{attackTime}</span>
-            <button onClick={() => setAttackTime(attackTime+1)} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white">+</button>
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Tempo Posse (Seg)</span>
+            <div className="flex items-center gap-4 bg-black/20 p-1 rounded-xl">
+              <button onClick={() => setAttackTime(Math.max(5, attackTime-1))} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white">-</button>
+              <span className="font-mono text-xs font-black w-4 text-center">{attackTime}</span>
+              <button onClick={() => setAttackTime(attackTime+1)} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white">+</button>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 pt-2">
-          <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center">Som / Feedback</span>
+        <div className="space-y-4 pt-6 border-t border-white/5">
+          <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400 text-center">Som e Feedback Sensorial</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between bg-black/20 p-1 rounded-xl">
+              <span className="text-[9px] font-black uppercase tracking-widest text-white/20 pl-3">Som</span>
+              <button onClick={() => setSoundEnabled(!soundEnabled)} className={`px-4 py-2 text-[8px] font-black uppercase rounded-lg transition-all ${soundEnabled ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white/30'}`}>
+                {soundEnabled ? 'ATIVADO' : 'OFF'}
+              </button>
+            </div>
+            <div className="flex items-center justify-between bg-black/20 p-1 rounded-xl">
+              <span className="text-[9px] font-black uppercase tracking-widest text-white/20 pl-3">Vibração</span>
+              <button onClick={() => setVibrationEnabled(!vibrationEnabled)} className={`px-4 py-2 text-[8px] font-black uppercase rounded-lg transition-all ${vibrationEnabled ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white/30'}`}>
+                {vibrationEnabled ? 'ATIVADO' : 'OFF'}
+              </button>
+            </div>
+          </div>
           <div className="flex bg-black/40 p-1 rounded-xl">
             {(['moderno', 'classico', 'intenso'] as SoundScheme[]).map(s => (
               <button 
@@ -153,6 +177,15 @@ const Config: React.FC<ConfigProps> = ({
               </button>
             ))}
           </div>
+        </div>
+        
+        <div className="pt-6 border-t border-white/5">
+          <button
+            onClick={handleSaveGameSettings}
+            className={`w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all active:scale-95 shadow-xl flex items-center justify-center ${saveStatus === 'saved' ? 'bg-emerald-600 text-white' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/20'}`}
+          >
+            {saveStatus === 'saved' ? 'Configurações Salvas!' : 'Salvar Configurações da Arena'}
+          </button>
         </div>
 
         <div className="pt-4 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -16,15 +16,27 @@ interface PlacarProps {
   vibrationEnabled: boolean;
   soundScheme: SoundScheme;
   currentArena: Arena;
+  // State lifted to App.tsx
+  teamA: Team;
+  setTeamA: React.Dispatch<React.SetStateAction<Team>>;
+  teamB: Team;
+  setTeamB: React.Dispatch<React.SetStateAction<Team>>;
+  servingTeam: 'A' | 'B';
+  setServingTeam: React.Dispatch<React.SetStateAction<'A' | 'B'>>;
+  history: { teamA: Team; teamB: Team; servingTeam: 'A' | 'B' }[];
+  setHistory: React.Dispatch<React.SetStateAction<{ teamA: Team; teamB: Team; servingTeam: 'A' | 'B' }[]>>;
+  isSidesSwitched: boolean;
+  setIsSidesSwitched: React.Dispatch<React.SetStateAction<boolean>>;
+  gameStartTime: Date | null;
+  setGameStartTime: React.Dispatch<React.SetStateAction<Date | null>>;
+  resetGame: (fullReset?: boolean) => void;
 }
 
-const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, currentArena }) => {
-  const [teamA, setTeamA] = useState<Team>({ players: [undefined, undefined], score: 0 });
-  const [teamB, setTeamB] = useState<Team>({ players: [undefined, undefined], score: 0 });
-  const [servingTeam, setServingTeam] = useState<'A' | 'B'>('A');
-  const [history, setHistory] = useState<{ teamA: Team; teamB: Team; servingTeam: 'A' | 'B' }[]>([]);
-  const [isSidesSwitched, setIsSidesSwitched] = useState(false);
-  const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
+const Placar: React.FC<PlacarProps> = ({ 
+  allPlayers, onSaveGame, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, currentArena,
+  teamA, setTeamA, teamB, setTeamB, servingTeam, setServingTeam, history, setHistory,
+  isSidesSwitched, setIsSidesSwitched, gameStartTime, setGameStartTime, resetGame
+}) => {
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -77,7 +89,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
     playSound('point');
     vibrate(50);
     attackTimer.reset();
-  }, [playSound, vibrate, attackTimer, gameStartTime, teamA, teamB, servingTeam]);
+  }, [playSound, vibrate, attackTimer, gameStartTime, teamA, teamB, servingTeam, setHistory, setTeamA, setTeamB, setServingTeam, setGameStartTime]);
 
   const handleUndo = useCallback(() => {
     if (history.length > 0) {
@@ -89,7 +101,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
       playSound('error');
       vibrate(50);
     }
-  }, [history, playSound, vibrate]);
+  }, [history, playSound, vibrate, setTeamA, setTeamB, setServingTeam, setHistory]);
 
   const handlePlayerSelect = useCallback((team: 'A' | 'B', player: Player, index: number) => {
     const setter = team === 'A' ? setTeamA : setTeamB;
@@ -98,23 +110,15 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
         newPlayers[index] = player;
         return { ...prev, players: newPlayers };
     });
-  }, []);
+  }, [setTeamA, setTeamB]);
 
-  const resetGame = useCallback((fullReset = false) => {
-    setTeamA(prev => ({ ...prev, score: 0 }));
-    setTeamB(prev => ({ ...prev, score: 0 }));
-    setServingTeam('A');
-    setHistory([]);
-    setGameStartTime(null);
-    setShowResetConfirm(false);
+  const handleConfirmReset = (fullReset = false) => {
+    resetGame(fullReset);
     attackTimer.reset();
+    setShowResetConfirm(false);
     vibrate([100, 50, 100]);
     playSound('error');
-    if (fullReset) {
-      setTeamA({ players: [undefined, undefined], score: 0 });
-      setTeamB({ players: [undefined, undefined], score: 0 });
-    }
-  }, [attackTimer, vibrate, playSound]);
+  };
 
   const saveGame = useCallback(() => {
     if (!isGameWon) {
@@ -141,15 +145,14 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
     } as Omit<Match, 'id' | 'timestamp'>;
     
     onSaveGame(matchData);
-    setToastMessage("Vitória registrada!");
-    resetGame(true);
+    setToastMessage("Vitória registrada! Nova partida iniciada.");
 
-  }, [isGameWon, teamA, teamB, onSaveGame, resetGame, gameStartTime, playSound, vibrate]);
+  }, [isGameWon, teamA, teamB, onSaveGame, gameStartTime, playSound, vibrate]);
 
   const switchSides = useCallback(() => {
       setIsSidesSwitched(prev => !prev);
       vibrate(50);
-  }, [vibrate]);
+  }, [vibrate, setIsSidesSwitched]);
   
   const handleToggleTimer = useCallback(() => {
     if (attackTimer.isActive) {
@@ -165,14 +168,12 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
   const toggleServe = useCallback(() => {
       setServingTeam(prev => prev === 'A' ? 'B' : 'A');
       vibrate(40);
-  }, [vibrate]);
+  }, [vibrate, setServingTeam]);
 
   const teamLeftKey = isSidesSwitched ? 'B' : 'A';
   const teamRightKey = isSidesSwitched ? 'A' : 'B';
-
   const teamLeft = isSidesSwitched ? teamB : teamA;
   const teamNameLeft = isSidesSwitched ? 'Time B' : 'Time A';
-
   const teamRight = isSidesSwitched ? teamA : teamB;
   const teamNameRight = isSidesSwitched ? 'Time A' : 'Time B';
 
@@ -242,7 +243,7 @@ const Placar: React.FC<PlacarProps> = ({ allPlayers, onSaveGame, winScore, attac
                       O progresso atual será perdido permanentemente.
                   </p>
                   <div className="flex flex-col gap-3">
-                      <button onClick={() => resetGame(false)} className="w-full py-4 lg:py-5 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase text-[10px] lg:text-[12px] tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20">Confirmar</button>
+                      <button onClick={() => handleConfirmReset(false)} className="w-full py-4 lg:py-5 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase text-[10px] lg:text-[12px] tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20">Confirmar</button>
                       <button onClick={() => setShowResetConfirm(false)} className="w-full py-4 lg:py-5 bg-white/5 text-white/40 rounded-2xl font-black uppercase text-[10px] lg:text-[12px] tracking-widest hover:text-white transition-colors">Voltar</button>
                   </div>
               </div>

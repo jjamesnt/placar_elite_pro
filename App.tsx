@@ -12,7 +12,7 @@ import Config from './views/Config';
 import Admin from './views/Admin';
 import Login from './views/Login';
 import ChangePassword from './views/ChangePassword';
-import { Player, Match, Arena, ArenaColor, UserLicense } from './types';
+import { Player, Match, Arena, ArenaColor, UserLicense, Team } from './types';
 import { supabase } from './lib/supabase';
 import { ShieldIcon } from './components/icons';
 
@@ -45,10 +45,7 @@ const App: React.FC = () => {
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [userLicense, setUserLicense] = useState<UserLicense | null>(null);
   
-  // MÁQUINA DE ESTADOS DE MODAL: Controla a sequência Welcome -> Expiry
   const [activeModal, setActiveModal] = useState<'none' | 'welcome' | 'expiry'>('none');
-  
-  // Trava de runtime para evitar re-disparos por eventos de sessão
   const modalFlowHandled = useRef(false);
 
   const [arenas, setArenas] = useState<Arena[]>([]);
@@ -59,11 +56,21 @@ const App: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [deletedPlayers, setDeletedPlayers] = useState<Player[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
+  
+  // Game settings state
   const [winScore, setWinScore] = useState(15);
   const [attackTime, setAttackTime] = useState(24);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [soundScheme, setSoundScheme] = useState<SoundScheme>('moderno');
+
+  // Game state lifted from Placar.tsx
+  const [teamA, setTeamA] = useState<Team>({ players: [undefined, undefined], score: 0 });
+  const [teamB, setTeamB] = useState<Team>({ players: [undefined, undefined], score: 0 });
+  const [servingTeam, setServingTeam] = useState<'A' | 'B'>('A');
+  const [history, setHistory] = useState<{ teamA: Team; teamB: Team; servingTeam: 'A' | 'B' }[]>([]);
+  const [isSidesSwitched, setIsSidesSwitched] = useState(false);
+  const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
 
   const handleLogout = useCallback(async () => {
     setSession(null);
@@ -78,62 +85,35 @@ const App: React.FC = () => {
   const checkLicense = useCallback(async (userId: string, email: string) => {
     try {
       if (modalFlowHandled.current) return;
-
-      // Prioridade absoluta ao LocalStorage para evitar repetição por latência de rede
       const welcomeDone = localStorage.getItem('elite_welcome_done') === 'true';
       const expiryShown = sessionStorage.getItem('expiry_modal_shown') === 'true';
 
-      const { data, error } = await supabase
-        .from('user_licenses')
-        .select('*')
-        .eq('email', email.toLowerCase())
-        .maybeSingle();
+      const { data } = await supabase.from('user_licenses').select('*').eq('email', email.toLowerCase()).maybeSingle();
       
       if (data) {
         setUserLicense(data);
         const isMaster = email.toLowerCase() === 'jjamesnt@gmail.com';
         
         if (data.is_active && !isMaster) {
-          // FLUXO DE ONBOARDING: Welcome tem precedência. Se concluído, mostra Expiry.
-          if (!data.first_access_done && !welcomeDone) {
-            setActiveModal('welcome');
-          } else if (!expiryShown) {
-            setActiveModal('expiry');
-          }
+          if (!data.first_access_done && !welcomeDone) setActiveModal('welcome');
+          else if (!expiryShown) setActiveModal('expiry');
         }
       } else {
-        // Criar licença para novos logins via Cadastro
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 30);
-        await supabase.from('user_licenses').insert([{
-            user_id: userId,
-            email: email.toLowerCase(),
-            is_active: false, 
-            expires_at: expiry.toISOString(),
-            first_access_done: false
-        }]);
+        await supabase.from('user_licenses').insert([{ user_id: userId, email: email.toLowerCase(), is_active: false, expires_at: expiry.toISOString(), first_access_done: false }]);
       }
-    } catch (err) {
-      console.error("Erro licença:", err);
-    }
+    } catch (err) { console.error("Erro licença:", err); }
   }, []);
 
   const handleFirstAccessConfirm = async () => {
     if (!userLicense) return;
-    
-    // 1. Bloqueia localmente para não voltar em caso de refresh
     localStorage.setItem('elite_welcome_done', 'true');
     
-    // 2. Transição sequencial: Fecha Welcome e abre Expiry
     const expiryShown = sessionStorage.getItem('expiry_modal_shown') === 'true';
-    if (!expiryShown) {
-      setActiveModal('expiry');
-    } else {
-      setActiveModal('none');
-      modalFlowHandled.current = true;
-    }
+    if (!expiryShown) setActiveModal('expiry');
+    else { setActiveModal('none'); modalFlowHandled.current = true; }
 
-    // 3. Atualização silenciosa no banco
     await supabase.from('user_licenses').update({ first_access_done: true }).eq('id', userLicense.id);
     setUserLicense(prev => prev ? { ...prev, first_access_done: true } : null);
   };
@@ -161,6 +141,19 @@ const App: React.FC = () => {
     } catch (err) { console.error("Refresh Error:", err); }
   }, [session, currentArenaId, userLicense]);
 
+  const resetGame = useCallback((fullReset = false) => {
+    setTeamA(prev => ({ ...prev, score: 0 }));
+    setTeamB(prev => ({ ...prev, score: 0 }));
+    setServingTeam('A');
+    setHistory([]);
+    setGameStartTime(null);
+    if (fullReset) {
+      setTeamA({ players: [undefined, undefined], score: 0 });
+      setTeamB({ players: [undefined, undefined], score: 0 });
+      setIsSidesSwitched(false);
+    }
+  }, []);
+
   useEffect(() => {
     const handleSession = (session: any) => {
       setSession(session);
@@ -168,9 +161,7 @@ const App: React.FC = () => {
         setIsAdmin(session.user.email.toLowerCase() === 'jjamesnt@gmail.com');
         setMustChangePassword(!!session.user.user_metadata?.must_change_password);
         checkLicense(session.user.id, session.user.email);
-      } else {
-        setLoading(false);
-      }
+      } else setLoading(false);
     };
     supabase.auth.getSession().then(({ data: { session } }) => handleSession(session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => handleSession(session));
@@ -191,10 +182,7 @@ const App: React.FC = () => {
           setCurrentArenaId(targetArena);
         } else {
           const { data: newArena } = await supabase.from('arenas').insert([{ name: 'Arena Principal', color: 'indigo' as ArenaColor, user_id: session.user.id }]).select().single();
-          if (newArena) {
-            setArenas([newArena]);
-            setCurrentArenaId(newArena.id);
-          }
+          if (newArena) { setArenas([newArena]); setCurrentArenaId(newArena.id); }
         }
       } catch (e) { console.error("Erro Arenas:", e); }
     };
@@ -217,7 +205,10 @@ const App: React.FC = () => {
   const handleSaveMatch = async (matchData: Omit<Match, 'id' | 'timestamp'>) => {
     if (!session || currentArenaId === 'default') return;
     const { data } = await supabase.from('matches').insert([{ arena_id: currentArenaId, user_id: session.user.id, data_json: matchData }]).select().single();
-    if (data) refreshData();
+    if (data) {
+      resetGame(true);
+      refreshData();
+    }
   };
 
   const handleAddArena = async (name: string, color: ArenaColor) => {
@@ -238,6 +229,16 @@ const App: React.FC = () => {
       setArenas(prev => prev.filter(a => a.id !== id));
       if (currentArenaId === id) setCurrentArenaId(arenas[0]?.id || 'default');
     }
+  };
+
+  const handleSaveSettings = () => {
+    if (currentArenaId === 'default') return;
+    const prefix = `elite_arena_${currentArenaId}_`;
+    localStorage.setItem(`${prefix}winScore`, String(winScore));
+    localStorage.setItem(`${prefix}attackTime`, String(attackTime));
+    localStorage.setItem(`${prefix}soundEnabled`, String(soundEnabled));
+    localStorage.setItem(`${prefix}vibrationEnabled`, String(vibrationEnabled));
+    localStorage.setItem(`${prefix}soundScheme`, soundScheme);
   };
 
   if (loading) return <div className="h-screen w-screen flex items-center justify-center bg-[#030712]"><div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
@@ -279,11 +280,11 @@ const App: React.FC = () => {
       <div className="h-screen w-screen flex flex-col text-white font-sans overflow-hidden bg-transparent">
         <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} currentArena={currentArena} onLogout={handleLogout} isAdmin={isAdmin} />
         <main className="flex-1 overflow-y-auto">
-           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} />}
+           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} />}
            {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} />}
            {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} />}
            {currentView === 'ranking' && <Ranking matches={matches} players={[...players, ...deletedPlayers]} arenaName={currentArena.name} arenaColor={currentArena.color} />}
-           {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} />}
+           {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} />}
            {currentView === 'admin' && <Admin />}
         </main>
       </div>
