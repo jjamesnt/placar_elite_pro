@@ -63,6 +63,8 @@ const App: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [soundScheme, setSoundScheme] = useState<SoundScheme>('moderno');
+  const [capoteEnabled, setCapoteEnabled] = useState(true);
+  const [vaiATresEnabled, setVaiATresEnabled] = useState(true);
 
   // Game state lifted from Placar.tsx
   const [teamA, setTeamA] = useState<Team>({ players: [undefined, undefined], score: 0 });
@@ -151,8 +153,10 @@ const App: React.FC = () => {
       setTeamA({ players: [undefined, undefined], score: 0 });
       setTeamB({ players: [undefined, undefined], score: 0 });
       setIsSidesSwitched(false);
+      const prefix = `elite_arena_${currentArenaId}_`;
+      setWinScore(Number(localStorage.getItem(`${prefix}winScore`)) || 15);
     }
-  }, []);
+  }, [currentArenaId]);
 
   useEffect(() => {
     const handleSession = (session: any) => {
@@ -198,6 +202,8 @@ const App: React.FC = () => {
       setSoundEnabled(localStorage.getItem(`${prefix}soundEnabled`) !== 'false');
       setVibrationEnabled(localStorage.getItem(`${prefix}vibrationEnabled`) !== 'false');
       setSoundScheme((localStorage.getItem(`${prefix}soundScheme`) as SoundScheme) || 'moderno');
+      setCapoteEnabled(localStorage.getItem(`${prefix}capoteEnabled`) !== 'false');
+      setVaiATresEnabled(localStorage.getItem(`${prefix}vaiATresEnabled`) !== 'false');
       localStorage.setItem('elite_last_arena', currentArenaId);
     }
   }, [currentArenaId, session, refreshData, userLicense]);
@@ -239,6 +245,8 @@ const App: React.FC = () => {
     localStorage.setItem(`${prefix}soundEnabled`, String(soundEnabled));
     localStorage.setItem(`${prefix}vibrationEnabled`, String(vibrationEnabled));
     localStorage.setItem(`${prefix}soundScheme`, soundScheme);
+    localStorage.setItem(`${prefix}capoteEnabled`, String(capoteEnabled));
+    localStorage.setItem(`${prefix}vaiATresEnabled`, String(vaiATresEnabled));
   };
 
   if (loading) return <div className="h-screen w-screen flex items-center justify-center bg-[#030712]"><div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
@@ -280,11 +288,11 @@ const App: React.FC = () => {
       <div className="h-screen w-screen flex flex-col text-white font-sans overflow-hidden bg-transparent">
         <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} currentArena={currentArena} onLogout={handleLogout} isAdmin={isAdmin} />
         <main className="flex-1 overflow-y-auto">
-           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} />}
+           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} />}
            {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} />}
            {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} />}
            {currentView === 'ranking' && <Ranking matches={matches} players={[...players, ...deletedPlayers]} arenaName={currentArena.name} arenaColor={currentArena.color} />}
-           {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} />}
+           {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} capoteEnabled={capoteEnabled} setCapoteEnabled={setCapoteEnabled} vaiATresEnabled={vaiATresEnabled} setVaiATresEnabled={setVaiATresEnabled} />}
            {currentView === 'admin' && <Admin />}
         </main>
       </div>

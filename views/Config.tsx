@@ -18,6 +18,10 @@ interface ConfigProps {
   onDeleteArena: (id: string) => void;
   onLogout: () => void;
   onSaveSettings: () => void;
+  capoteEnabled: boolean;
+  setCapoteEnabled: (e: boolean) => void;
+  vaiATresEnabled: boolean;
+  setVaiATresEnabled: (e: boolean) => void;
 }
 
 const ARENA_COLORS: ArenaColor[] = ['indigo', 'blue', 'emerald', 'amber', 'rose', 'violet'];
@@ -26,7 +30,8 @@ const COLOR_MAP: Record<ArenaColor, string> = { indigo: 'bg-indigo-500', blue: '
 const Config: React.FC<ConfigProps> = ({ 
   winScore, setWinScore, attackTime, setAttackTime, soundEnabled, setSoundEnabled, 
   vibrationEnabled, setVibrationEnabled, soundScheme, setSoundScheme,
-  arenas, currentArenaId, setCurrentArenaId, onAddArena, onUpdateArena, onDeleteArena, onLogout, onSaveSettings
+  arenas, currentArenaId, setCurrentArenaId, onAddArena, onUpdateArena, onDeleteArena, onLogout, onSaveSettings,
+  capoteEnabled, setCapoteEnabled, vaiATresEnabled, setVaiATresEnabled
 }) => {
   const [newName, setNewName] = useState('');
   const [selColor, setSelColor] = useState<ArenaColor>('indigo');
@@ -148,6 +153,24 @@ const Config: React.FC<ConfigProps> = ({
               <button onClick={() => setAttackTime(attackTime+1)} className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white">+</button>
             </div>
           </div>
+          <div className="flex items-center justify-between pt-4 border-t border-white/5">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black uppercase tracking-widest text-white/20">REGRA "CAPOTE"</span>
+              <span className="text-[8px] font-bold text-white/30 uppercase mt-1 max-w-[150px] sm:max-w-none">Finaliza se placar for 50% vs 0.</span>
+            </div>
+            <button onClick={() => setCapoteEnabled(!capoteEnabled)} className={`px-4 py-2 text-[8px] font-black uppercase rounded-lg transition-all ${capoteEnabled ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white/30'}`}>
+              {capoteEnabled ? 'ATIVADO' : 'OFF'}
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black uppercase tracking-widest text-white/20">REGRA "VAI A 3"</span>
+              <span className="text-[8px] font-bold text-white/30 uppercase mt-1 max-w-[150px] sm:max-w-none">Resolve empates em pontos decisivos.</span>
+            </div>
+            <button onClick={() => setVaiATresEnabled(!vaiATresEnabled)} className={`px-4 py-2 text-[8px] font-black uppercase rounded-lg transition-all ${vaiATresEnabled ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white/30'}`}>
+              {vaiATresEnabled ? 'ATIVADO' : 'OFF'}
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4 pt-6 border-t border-white/5">
@@ -213,8 +236,8 @@ const Config: React.FC<ConfigProps> = ({
 
       {editingArena && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-6" onClick={() => setEditingArena(null)}>
-          <div className="bg-[#090e1a] border border-white/10 rounded-[2.5rem] p-8 w-full max-sm shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-black text-white mb-6 uppercase tracking-tight text-center">Editar Arena</h2>
+          <div className="bg-[#090e1a] border border-white/10 rounded-[1.5rem] p-5 sm:p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg sm:text-xl font-black text-white mb-6 uppercase tracking-tight text-center">Editar Arena</h2>
             
             <div className="space-y-6">
               <div className="space-y-1">
@@ -241,8 +264,8 @@ const Config: React.FC<ConfigProps> = ({
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button onClick={() => setEditingArena(null)} className="flex-1 p-4 bg-white/5 text-white/40 rounded-2xl font-black uppercase text-[10px]">Cancelar</button>
-                <button onClick={handleUpdate} className="flex-1 p-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px]">Salvar</button>
+                <button onClick={() => setEditingArena(null)} className="flex-1 p-3 sm:p-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px]">Cancelar</button>
+                <button onClick={handleUpdate} className="flex-1 p-3 sm:p-4 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px]">Salvar</button>
               </div>
             </div>
           </div>

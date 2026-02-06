@@ -14,8 +14,6 @@ interface CenterConsoleProps {
   onUndo: () => void;
   isGameWon: boolean;
   canUndo: boolean;
-  servingTeam: 'A' | 'B';
-  onToggleServe: () => void;
   arenaColor?: ArenaColor;
 }
 
@@ -31,27 +29,28 @@ const THEME_ACCENTS: Record<string, { bg: string; text: string; border: string; 
 const CenterConsole: React.FC<CenterConsoleProps> = ({ 
     timeLeft, isTimerActive, onToggleTimer, onResetTimer, onResetGame, 
     onSaveGame, onSwitchSides, isGameWon, 
-    servingTeam, onToggleServe, arenaColor = 'indigo'
+    arenaColor = 'indigo'
 }) => {
   const timerColor = timeLeft <= 10 && timeLeft > 0 ? 'text-red-500 animate-pulse' : 'text-yellow-400';
-  const theme = THEME_ACCENTS[arenaColor];
   
   return (
     <div className="flex flex-col items-center gap-1.5 lg:gap-4 w-full h-full justify-between py-1 lg:py-2">
       
-      {/* Cronômetro Posse: Maximização da área central */}
       <div className="w-full flex-[1.4] lg:flex-[1.6] flex flex-col">
-        <div className="bg-black/60 backdrop-blur-3xl rounded-[1.2rem] lg:rounded-[2.5rem] p-3 lg:p-6 border border-white/10 shadow-xl flex flex-col items-center w-full h-full justify-center relative overflow-hidden">
+        <div 
+          className={`bg-black/60 backdrop-blur-3xl rounded-[1.2rem] lg:rounded-[2.5rem] p-3 lg:p-6 border border-white/10 shadow-xl flex flex-col items-center w-full h-full justify-center relative overflow-hidden transition-all ${!isTimerActive && !isGameWon ? 'cursor-pointer active:scale-95' : ''}`}
+          onClick={!isTimerActive && !isGameWon ? onToggleTimer : undefined}
+        >
             <span className="text-[6px] lg:text-[9px] font-black uppercase tracking-[0.5em] text-white/10 mb-1 lg:mb-2">CRONÔMETRO POSSE</span>
             <div className={`font-mono text-5xl sm:text-7xl lg:text-9xl font-black transition-all duration-300 ${timerColor} leading-none mb-3 lg:mb-6`}>
               {String(timeLeft).padStart(2, '0')}
             </div>
             {!isGameWon && (
                 <div className="flex gap-3 lg:gap-6">
-                   <button onClick={onToggleTimer} className={`p-2 lg:p-5 rounded-xl lg:rounded-3xl transition-all active:scale-90 shadow-md ${isTimerActive ? 'bg-orange-600/30 text-orange-400 border border-orange-500/20' : 'bg-green-600/30 text-green-400 border border-green-500/20'}`}>
+                   <button onClick={(e) => { e.stopPropagation(); onToggleTimer(); }} className={`p-2 lg:p-5 rounded-xl lg:rounded-3xl transition-all active:scale-90 shadow-md ${isTimerActive ? 'bg-orange-600/30 text-orange-400 border border-orange-500/20' : 'bg-green-600/30 text-green-400 border border-green-500/20'}`}>
                       {isTimerActive ? <PauseIcon className="w-5 h-5 lg:w-8 lg:h-8" /> : <PlayIcon className="w-5 h-5 lg:w-8 lg:h-8" />}
                   </button>
-                  <button onClick={onResetTimer} className="p-2 lg:p-5 bg-white/5 text-gray-600 rounded-xl lg:rounded-3xl active:scale-90 transition-all border border-white/5">
+                  <button onClick={(e) => { e.stopPropagation(); onResetTimer(); }} className="p-2 lg:p-5 bg-white/5 text-gray-600 rounded-xl lg:rounded-3xl active:scale-90 transition-all border border-white/5">
                       <RotateCcwIcon className="w-5 h-5 lg:w-8 lg:h-8" />
                   </button>
                 </div>
@@ -59,19 +58,7 @@ const CenterConsole: React.FC<CenterConsoleProps> = ({
         </div>
       </div>
 
-      {/* Ações Consolidadas */}
       <div className="flex flex-col gap-1.5 lg:gap-3 w-full flex-shrink-0">
-         <button 
-            onClick={onToggleServe} 
-            disabled={isGameWon} 
-            className={`w-full flex items-center justify-between px-3 py-2 lg:py-4 lg:px-6 rounded-xl lg:rounded-[1.5rem] border transition-all active:scale-95 disabled:opacity-20 shadow-md ${theme.bg} ${theme.text} ${theme.border}`}
-         >
-            <span className="text-[7px] lg:text-[10px] font-black uppercase tracking-widest hidden sm:block">Alternar Saque</span>
-            <div className={`p-1.5 lg:p-2.5 rounded-lg lg:rounded-xl text-white shadow-lg transition-transform duration-500 mx-auto sm:mx-0 ${theme.iconBg} ${servingTeam === 'B' ? 'rotate-180' : ''}`}>
-                <ZapIcon className="w-3.5 h-3.5 lg:w-5 lg:h-5" />
-            </div>
-         </button>
-
          <div className="grid grid-cols-2 gap-1.5 lg:gap-3 w-full">
             <button 
                 onClick={onSwitchSides} 

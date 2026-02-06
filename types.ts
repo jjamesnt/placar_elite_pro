@@ -29,6 +29,8 @@ export interface Match {
   winner: 'A' | 'B';
   timestamp: Date;
   duration: number; // Duração em minutos
+  capoteApplied?: boolean;
+  vaiATresTriggered?: boolean;
 }
 
 export interface UserProfile {

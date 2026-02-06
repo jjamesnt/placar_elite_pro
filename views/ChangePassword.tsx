@@ -36,23 +36,23 @@ const ChangePassword: React.FC<{ onComplete: () => void }> = ({ onComplete }) =>
 
   return (
     <div className="h-screen w-full flex items-center justify-center p-4 bg-black">
-      <div className="w-full max-w-md bg-gray-900 border border-white/10 rounded-[3rem] p-10 shadow-2xl space-y-8 animate-in zoom-in-95">
+      <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl space-y-8 animate-in zoom-in-95">
         <div className="flex flex-col items-center">
-          <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-6">
-            <ShieldIcon className="w-8 h-8 text-indigo-500" />
+          <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-6">
+            <ShieldIcon className="w-7 h-7 text-indigo-500" />
           </div>
-          <h1 className="text-2xl font-black text-white uppercase tracking-tighter text-center">Primeiro Acesso</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tighter text-center">Primeiro Acesso</h1>
           <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mt-2 text-center">Defina sua senha pessoal de segurança</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-white/20 ml-1">Nova Senha</label>
             <input 
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-5 text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-2xl py-3 px-5 text-white focus:outline-none focus:border-indigo-500"
               placeholder="••••••••"
               required
             />
@@ -63,7 +63,7 @@ const ChangePassword: React.FC<{ onComplete: () => void }> = ({ onComplete }) =>
               type="password"
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-5 text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-2xl py-3 px-5 text-white focus:outline-none focus:border-indigo-500"
               placeholder="••••••••"
               required
             />
@@ -74,7 +74,7 @@ const ChangePassword: React.FC<{ onComplete: () => void }> = ({ onComplete }) =>
           <button 
             type="submit"
             disabled={loading}
-            className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl active:scale-95 transition-all"
+            className="w-full bg-white text-black py-4 rounded-xl sm:rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl active:scale-95 transition-all"
           >
             {loading ? <LoaderIcon className="w-5 h-5 mx-auto animate-spin" /> : 'Salvar e Entrar'}
           </button>

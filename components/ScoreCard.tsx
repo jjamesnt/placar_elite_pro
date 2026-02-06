@@ -58,13 +58,12 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
           </div>
       </div>
 
-      <h2 className="text-[7px] sm:text-[9px] lg:text-[11px] font-black text-center text-white/20 uppercase tracking-[0.3em] mb-1 lg:mb-3">{teamName}</h2>
+      <h2 className="text-[7px] sm:text-[9px] lg:text-[11px] font-black text-center text-white/20 uppercase tracking-[0.3em] mb-1 lg:mb-2">{teamName}</h2>
       
       <div 
-        className="flex-1 flex items-center justify-center relative min-h-0 cursor-pointer select-none active:scale-[0.98] transition-transform"
+        className="flex-1 flex items-center justify-center relative min-h-0 cursor-pointer select-none active:scale-[0.98] transition-transform -mt-2 sm:-mt-4"
         onClick={handleIncrement}
       >
-          {/* Ajustado com clamp() para nunca ultrapassar o limite visual em tablets ou landscape mobile */}
           <span style={{ fontSize: 'clamp(80px, 24vh, 260px)' }} className={`
             block font-mono font-black bg-clip-text text-transparent bg-gradient-to-br leading-none transition-all duration-300
             ${teamColor} 
@@ -74,17 +73,17 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
           </span>
       </div>
 
-      <div className="mt-1 lg:mt-4 flex flex-col gap-1.5 lg:gap-3 flex-shrink-0">
+      <div className="mt-1 lg:mt-2 flex flex-col gap-1.5 lg:gap-3 flex-shrink-0">
           <div className="grid grid-cols-2 gap-1.5 lg:gap-3">
-               <button onClick={(e) => { e.stopPropagation(); handleDecrement(); }} disabled={isGameWon || teamData.score === 0} className="flex items-center justify-center py-1.5 sm:py-2 lg:py-4 bg-white/5 rounded-lg lg:rounded-2xl text-gray-500 disabled:opacity-5 active:scale-95 transition-all">
-                  <MinusIcon className="w-3.5 h-3.5 lg:w-5 lg:h-5" />
+               <button onClick={(e) => { e.stopPropagation(); handleDecrement(); }} disabled={isGameWon || teamData.score === 0} className="flex items-center justify-center py-2 sm:py-3 lg:py-5 bg-white/5 rounded-lg lg:rounded-2xl text-gray-500 disabled:opacity-5 active:scale-95 transition-all">
+                  <MinusIcon className="w-4 h-4 lg:w-6 lg:h-6" />
               </button>
-              <button onClick={(e) => { e.stopPropagation(); handleIncrement(); }} disabled={isGameWon} className={`flex items-center justify-center py-1.5 sm:py-2 lg:py-4 rounded-lg lg:rounded-2xl text-white disabled:opacity-5 active:scale-95 transition-all shadow-lg ${buttonBg}`}>
-                  <PlusIcon className="w-3.5 h-3.5 lg:w-5 lg:h-5" />
+              <button onClick={(e) => { e.stopPropagation(); handleIncrement(); }} disabled={isGameWon} className={`flex items-center justify-center py-2 sm:py-3 lg:py-5 rounded-lg lg:rounded-2xl text-white disabled:opacity-5 active:scale-95 transition-all shadow-lg ${buttonBg}`}>
+                  <PlusIcon className="w-4 h-4 lg:w-6 lg:h-6" />
               </button>
           </div>
           
-          <div className="flex flex-col gap-1 lg:gap-2">
+          <div className="flex flex-col gap-1.5 lg:gap-2">
             {[0, 1].map(index => (
               <div key={index} className="relative w-full">
                 <select 
@@ -94,7 +93,7 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
                     if (selectedPlayer) onPlayerSelect(selectedPlayer, index);
                   }}
                   disabled={isGameWon}
-                  className="w-full px-2 py-1 lg:py-3 lg:px-4 bg-black/60 text-white rounded-md lg:rounded-xl text-[7px] lg:text-[10px] font-black appearance-none border border-white/5 focus:outline-none focus:border-indigo-500/50 transition-all uppercase tracking-tighter truncate"
+                  className="w-full px-2 py-2 lg:py-3.5 lg:px-4 bg-black/60 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-[11px] font-black appearance-none border border-white/5 focus:outline-none focus:border-indigo-500/50 transition-all uppercase tracking-tighter truncate"
                 >
                   <option value="" disabled>{`Atleta ${index + 1}`}</option>
                   {allPlayers.map(player => (

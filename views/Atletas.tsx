@@ -186,24 +186,24 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
 
       {playerToDelete && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[110] flex items-center justify-center p-4" onClick={() => setPlayerToDelete(null)}>
-          <div className="bg-[#090e1a] border border-red-500/20 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6">
-              <Trash2Icon className="w-8 h-8" />
+          <div className="bg-[#090e1a] border border-red-500/20 rounded-[1.5rem] p-4 sm:p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto mb-4">
+              <Trash2Icon className="w-6 h-6" />
             </div>
-            <h2 className="text-xl font-black text-white mb-2 uppercase tracking-tight text-center">
+            <h2 className="text-lg sm:text-xl font-black text-white mb-2 uppercase tracking-tight text-center">
               {isPermanentDelete ? 'Deletar' : 'Inativar'}?
             </h2>
-            <p className="text-white/30 text-[10px] mb-8 leading-relaxed text-center font-bold uppercase tracking-widest">
+            <p className="text-white/30 text-[10px] mb-6 sm:mb-8 leading-relaxed text-center font-bold uppercase tracking-widest">
               {isPermanentDelete 
                 ? `Esta ação é irreversível. O atleta será apagado do banco.`
                 : `O atleta sairá da lista principal, mas poderá ser restaurado.`
               }
             </p>
             <div className="flex flex-col gap-3">
-              <button onClick={handleConfirmDelete} disabled={loading} className="w-full p-4 bg-red-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all">
+              <button onClick={handleConfirmDelete} disabled={loading} className="w-full p-3 sm:p-4 bg-red-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all">
                 {loading ? "Processando..." : "Confirmar"}
               </button>
-              <button onClick={() => setPlayerToDelete(null)} className="w-full p-4 bg-white/5 text-white/40 rounded-2xl font-black uppercase text-[10px] tracking-widest">Voltar</button>
+              <button onClick={() => setPlayerToDelete(null)} className="w-full p-3 sm:p-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] tracking-widest">Voltar</button>
             </div>
           </div>
         </div>

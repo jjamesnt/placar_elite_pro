@@ -125,8 +125,8 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const width = isStory ? 1080 : 1200;
-    const height = isStory ? 1920 : 1600;
+    const width = 1080;
+    const height = 1920;
     canvas.width = width;
     canvas.height = height;
 
@@ -138,132 +138,95 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
     ctx.fillRect(0, 0, width, height);
 
     const centerX = width / 2;
-    ctx.textAlign = 'center';
-
-    // 1. Logo
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 32px sans-serif';
-    ctx.fillText(arenaName ? `ARENA ${arenaName.toUpperCase()}` : 'PLACAR ELITE PRO', centerX, 80);
-
-    // 2. Título Central
+    ctx.textAlign = 'center';
+    ctx.fillText(arenaName ? `ARENA ${arenaName.toUpperCase()}` : 'PLACAR ELITE PRO', centerX, 100);
     ctx.fillStyle = themeHex;
-    let baseFontSize = 95;
-    ctx.font = `900 ${baseFontSize}px sans-serif`;
+    ctx.font = '900 95px sans-serif';
     const titleText = filter === 'Hoje' ? 'RANKING DO DIA' : `RANKING ${filter.toUpperCase()}`;
-    
-    let textWidth = ctx.measureText(titleText).width;
-    const maxWidth = width - 160;
-    if (textWidth > maxWidth) {
-      const newSize = Math.floor(baseFontSize * maxWidth / textWidth);
-      ctx.font = `900 ${newSize}px sans-serif`;
-    }
-    ctx.fillText(titleText, centerX, 280);
-    
-    // 3. Data e Linha
+    ctx.fillText(titleText, centerX, 240);
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 65px sans-serif';
-    const dateLabel = filter === 'Mensal' 
-      ? viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()
-      : viewDate.toLocaleDateString('pt-BR');
-    ctx.fillText(dateLabel, centerX, 360);
-    
-    ctx.fillStyle = themeHex;
-    ctx.fillRect(centerX - 100, 410, 200, 6);
+    const dateLabel = filter === 'Mensal' ? viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase() : viewDate.toLocaleDateString('pt-BR');
+    ctx.fillText(dateLabel, centerX, 320);
 
-    const podiumBaseY = isStory ? 1150 : 920;
+    const podium = stats.slice(0, 3);
+    const podiumY = 420;
+    const podiumBoxWidth = 280;
+    const podiumHeights = [200, 150, 120];
+    const podiumColors = ['#ffd700', '#c0c0c0', '#cd7f32'];
+    const positions = [{rank: 2, x: centerX - podiumBoxWidth - 20}, {rank: 1, x: centerX}, {rank: 3, x: centerX + podiumBoxWidth + 20}];
     
-    const drawPodium = (data: typeof stats[0], pos: 1|2|3, x: number, w: number, h: number, color: string) => {
-      ctx.fillStyle = '#1e293b';
+    positions.forEach(pos => {
+      const playerStat = podium.find((p, i) => i + 1 === pos.rank);
+      if (!playerStat) return;
+      
+      const heightIndex = pos.rank === 1 ? 0 : (pos.rank === 2 ? 1 : 2);
+      const x = pos.x;
+      const y = podiumY + (podiumHeights[0] - podiumHeights[heightIndex]);
+
+      ctx.fillStyle = `rgba(255, 255, 255, 0.05)`;
+      ctx.strokeStyle = podiumColors[heightIndex];
+      ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.roundRect(x - w/2, podiumBaseY - h, w, h, 45);
+      ctx.roundRect(x - podiumBoxWidth / 2, y, podiumBoxWidth, podiumHeights[heightIndex] + 80, [20]);
       ctx.fill();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 10;
       ctx.stroke();
 
-      const cardCenterX = x;
-      const cardTopY = podiumBaseY - h;
+      ctx.font = '900 80px sans-serif';
+      ctx.fillStyle = podiumColors[heightIndex];
+      ctx.fillText(`${pos.rank}º`, x, y + 90);
 
-      ctx.fillStyle = color;
-      ctx.font = 'bold 120px sans-serif';
-      ctx.fillText(`${pos}º`, cardCenterX, cardTopY + 130); 
-
+      ctx.font = 'bold 38px sans-serif';
       ctx.fillStyle = '#ffffff';
-      let nameFontSize = 44;
-      ctx.font = `bold ${nameFontSize}px sans-serif`;
-      const nameText = data.player.name.toUpperCase();
-      let nameWidth = ctx.measureText(nameText).width;
-      if (nameWidth > w - 40) {
-        nameFontSize = Math.floor(nameFontSize * (w - 40) / nameWidth);
-        ctx.font = `bold ${nameFontSize}px sans-serif`;
+      let nameText = playerStat.player.name.toUpperCase();
+      if (ctx.measureText(nameText).width > podiumBoxWidth - 40) {
+        nameText = nameText.substring(0, 10) + '...';
       }
-      ctx.fillText(nameText, cardCenterX, cardTopY + 210); 
-
-      ctx.fillStyle = color;
-      ctx.font = 'bold 95px sans-serif';
-      ctx.fillText(data.letalidade.toFixed(2), cardCenterX, cardTopY + 320); 
+      ctx.fillText(nameText, x, y + 160);
       
+      ctx.font = 'bold 32px sans-serif';
       ctx.fillStyle = '#94a3b8';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillText('LETALIDADE', cardCenterX, cardTopY + 370); 
-      
-      ctx.fillStyle = color;
-      ctx.font = 'bold 45px sans-serif';
-      ctx.fillText(`${data.winRate.toFixed(0)}%`, cardCenterX, cardTopY + 430); 
-    };
-
-    if (podium[1]) drawPodium(podium[1], 2, centerX - 340, 320, 560, '#94a3b8');
-    if (podium[2]) drawPodium(podium[2], 3, centerX + 340, 320, 500, '#d97706');
-    if (podium[0]) drawPodium(podium[0], 1, centerX, 380, 700, themeHex);
-
-    const tableTopY = isStory ? podiumBaseY + 80 : podiumBaseY + 20;
-    ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = 'bold 32px sans-serif';
-    ctx.fillText('ATLETA', 100, tableTopY);
-    ctx.textAlign = 'center';
-    ctx.fillText('VIT', width - 480, tableTopY);
-    ctx.fillText('S.P.', width - 300, tableTopY);
-    ctx.fillText('LETALIDADE', width - 120, tableTopY);
-
-    stats.slice(0, isStory ? 5 : 25).forEach((s, i) => {
-      const rowY = tableTopY + 100 + (i * 90);
-      if (i % 2 === 0) {
-        ctx.fillStyle = 'rgba(255,255,255,0.03)';
-        ctx.fillRect(60, rowY - 65, width - 120, 90);
-      }
-      ctx.textAlign = 'left';
-      ctx.fillStyle = i < 3 ? themeHex : '#ffffff';
-      ctx.font = 'bold 40px sans-serif';
-      const name = s.wins === 0 ? `${s.player.name} 😢` : s.player.name;
-      
-      let displayName = name;
-      if (ctx.measureText(displayName).width > width - 700) {
-        displayName = name.substring(0, 18) + "...";
-      }
-      ctx.fillText(`${i + 1}º ${displayName}`, 80, rowY);
-      
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText(s.wins.toString(), width - 480, rowY);
-      ctx.fillText(`${s.zeroWinsDays}d`, width - 300, rowY);
-      ctx.fillStyle = i < 3 ? themeHex : '#818cf8';
-      ctx.fillText(`${s.letalidade.toFixed(2)} (${s.winRate.toFixed(0)}%)`, width - 120, rowY);
+      ctx.fillText(`LET: ${playerStat.letalidade.toFixed(2)}`, x, y + 210);
     });
+
+    const otherPlayers = stats.slice(3);
+    if (otherPlayers.length > 0) {
+        const listStartY = podiumY + podiumHeights[0] + 150;
+        const listEndY = height - 120;
+        const availableHeight = listEndY - listStartY;
+        let rowHeight = Math.min(80, availableHeight / otherPlayers.length);
+        let nameFontSize = Math.max(26, Math.min(36, rowHeight * 0.4));
+        
+        ctx.font = `bold ${nameFontSize}px sans-serif`;
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.fillText("DEMAIS ATLETAS", 100, listStartY - 40);
+
+        otherPlayers.forEach((s, i) => {
+            const rank = i + 4;
+            const rowY = listStartY + (i * rowHeight) + (rowHeight / 2);
+            
+            ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
+            ctx.fillRect(80, rowY - rowHeight/2, width - 160, rowHeight);
+
+            ctx.font = `bold ${nameFontSize}px sans-serif`;
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText(`${rank}º`, 120, rowY + (nameFontSize / 3));
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(s.player.name.toUpperCase(), 220, rowY + (nameFontSize / 3));
+            
+            ctx.textAlign = 'right';
+            ctx.font = `bold ${nameFontSize - 2}px sans-serif`;
+            ctx.fillText(`LET: ${s.letalidade.toFixed(2)}`, width - 120, rowY + (nameFontSize / 3));
+            ctx.textAlign = 'left';
+        });
+    }
 
     setExportImageUrl(canvas.toDataURL('image/png'));
     setIsStoryMode(isStory);
-  };
-
-  const handlePrint = () => {
-    setShowReportSelector(false);
-    const originalTitle = document.title;
-    document.title = `Ranking ${arenaName || 'Placar Elite Pro'} - ${filter}`;
-    
-    setTimeout(() => {
-      window.print();
-      document.title = originalTitle;
-    }, 500);
   };
 
   const currentPeriodLabel = useMemo(() => {
@@ -272,6 +235,81 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
     if (filter === 'Anual') return viewDate.getFullYear().toString();
     return filter;
   }, [filter, viewDate]);
+  
+  const handleExport = () => {
+    setShowReportSelector(false);
+    const reportWindow = window.open('', '_blank');
+    if (!reportWindow) {
+        alert("Não foi possível abrir a janela de exportação. Verifique se seu navegador está bloqueando pop-ups.");
+        return;
+    }
+    
+    const reportTitle = `Ranking ${arenaName || 'Placar Elite Pro'} - ${filter}`;
+    const dateLabel = currentPeriodLabel;
+
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <title>${reportTitle}</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 2rem; background: #f8f9fa; }
+                .report-container { max-width: 800px; margin: auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                h1 { font-size: 1.5rem; font-weight: 900; text-transform: uppercase; color: #343a40; }
+                p { font-size: 1rem; color: #6c757d; border-bottom: 2px solid #dee2e6; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #dee2e6; }
+                th { font-weight: 700; text-transform: uppercase; font-size: 0.75rem; color: #495057; }
+                tbody tr:nth-child(odd) { background-color: #f8f9fa; }
+                .center { text-align: center; }
+                .letalidade { font-weight: 900; color: ${themeHex}; }
+                @media print {
+                    body { background: white; padding: 0; }
+                    .report-container { box-shadow: none; border: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="report-container">
+                <h1>${reportTitle}</h1>
+                <p>${dateLabel}</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Atleta</th>
+                            <th class="center">Vitórias</th>
+                            <th class="center">Sem Pontuar</th>
+                            <th class="center">Letalidade (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${stats.map((s, i) => `
+                            <tr>
+                                <td><strong>${i + 1}º</strong></td>
+                                <td>${s.player.name}</td>
+                                <td class="center">${s.wins}</td>
+                                <td class="center">${s.zeroWinsDays > 0 ? `${s.zeroWinsDays}d` : '-'}</td>
+                                <td class="center letalidade">${s.letalidade.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                        ${stats.length === 0 ? '<tr><td colspan="5" class="center">Nenhum dado registrado.</td></tr>' : ''}
+                    </tbody>
+                </table>
+            </div>
+            <script>
+                setTimeout(() => {
+                    window.print();
+                    window.onafterprint = () => window.close();
+                }, 500);
+            </script>
+        </body>
+        </html>
+    `;
+    reportWindow.document.write(htmlContent);
+    reportWindow.document.close();
+};
 
   return (
     <div className="w-full flex flex-col gap-3 p-2 sm:p-4 overflow-x-hidden animate-in fade-in duration-500">
@@ -311,36 +349,36 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
           <p className="text-sm text-gray-500 mt-1">Gerado em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</p>
       </div>
 
-      <div className="bg-gray-800/40 rounded-3xl p-3 border border-gray-700/50 shadow-inner mt-4 print:border-none">
+      <div className="bg-gray-800/40 rounded-3xl p-3 border border-gray-700/50 shadow-inner mt-4 print:border-none print:shadow-none print:p-0 print:bg-transparent">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+          <table className="w-full text-left text-xs sm:text-sm print-table">
             <thead className="text-gray-500 font-black uppercase tracking-widest border-b border-gray-700/50 print:text-black print:border-black">
               <tr>
-                <th className="px-3 py-4">#</th>
-                <th className="px-3 py-4">ATLETA</th>
-                <th className="px-3 py-4 text-center">VITÓRIAS</th>
-                <th className="px-3 py-4 text-center">SEM PONTUAR</th>
+                <th className="px-3 py-4 print-th">#</th>
+                <th className="px-3 py-4 print-th">ATLETA</th>
+                <th className="px-3 py-4 text-center print-th">VITÓRIAS</th>
+                <th className="px-3 py-4 text-center print-th">SEM PONTUAR</th>
                 <th className={`px-3 py-4 text-center print:text-black ${THEME_TEXT_CLASSES[arenaColor]}`}>LETALIDADE (%)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700/20 print:divide-none">
               {stats.map((s, i) => (
-                <tr key={s.player.id} className={`${i < 3 ? 'bg-indigo-500/10' : ''} hover:bg-white/5 transition-colors print:bg-transparent`}>
-                  <td className="px-3 py-4 font-mono font-bold text-gray-500 print:text-black">
+                <tr key={s.player.id} className={`${i < 3 ? 'bg-indigo-500/10' : ''} hover:bg-white/5 transition-colors print:bg-transparent print-tr`}>
+                  <td className="px-3 py-4 font-mono font-bold text-gray-500 print:text-black print-td">
                     <span className={i < 3 ? `${THEME_TEXT_CLASSES[arenaColor]} font-black text-lg` : ''}>{i + 1}º</span>
                   </td>
-                  <td className={`px-3 py-4 font-black ${i < 3 ? 'text-white' : 'text-gray-300'} print:text-black print:font-bold`}>
+                  <td className={`px-3 py-4 font-black ${i < 3 ? 'text-white' : 'text-gray-300'} print:text-black print:font-bold print-td`}>
                     <div className="flex items-center gap-2 print:block">
-                       {i === 0 && <span className="text-yellow-400 text-lg">👑</span>}
+                       {i === 0 && <span className="text-yellow-400 text-lg print:hidden">👑</span>}
                        <span className="truncate">{s.player.name}</span>
                        {s.wins === 0 && <span title="Sem vitórias no período">😢</span>}
                     </div>
                   </td>
-                  <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black">{s.wins}</td>
-                  <td className="px-3 py-4 text-center font-bold text-red-500/60 print:text-black">
+                  <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black print-td">{s.wins}</td>
+                  <td className="px-3 py-4 text-center font-bold text-red-500/60 print:text-black print-td">
                     {s.zeroWinsDays > 0 ? `${s.zeroWinsDays}d` : '-'}
                   </td>
-                  <td className="px-3 py-4 text-center">
+                  <td className="px-3 py-4 text-center print-td">
                     <div className="flex flex-col items-center">
                       <span className={`font-mono font-black ${i < 3 ? `${THEME_TEXT_CLASSES[arenaColor]} text-lg` : 'text-gray-300 text-base'} print:text-black`}>
                         {s.letalidade.toFixed(2)}
@@ -362,22 +400,22 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
 
       {showReportSelector && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6 print:hidden" onClick={() => setShowReportSelector(false)}>
-          <div className="bg-gray-900 border border-indigo-500/20 rounded-[3rem] p-10 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <h2 className="text-3xl font-black text-white text-center mb-2 tracking-tighter uppercase">Gerar Relatório PDF</h2>
-            <p className="text-gray-500 text-center text-xs mb-10 font-bold uppercase tracking-widest">Baseado no período: <strong>{filter} ({currentPeriodLabel})</strong></p>
+          <div className="bg-gray-900 border border-indigo-500/20 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl sm:text-2xl font-black text-white text-center mb-2 tracking-tighter uppercase">Gerar Relatório PDF</h2>
+            <p className="text-gray-500 text-center text-xs mb-8 sm:mb-10 font-bold uppercase tracking-widest">Baseado no período: <strong>{filter} ({currentPeriodLabel})</strong></p>
             
             <div className="flex flex-col gap-4">
               <button
-                onClick={handlePrint}
-                className={`w-full ${THEME_BG_CLASSES[arenaColor]} hover:opacity-90 text-white py-8 rounded-[2rem] flex flex-col items-center gap-2 transition-all active:scale-95 shadow-xl`}
+                onClick={handleExport}
+                className={`w-full ${THEME_BG_CLASSES[arenaColor]} hover:opacity-90 text-white py-5 sm:py-6 rounded-2xl sm:rounded-[2rem] flex flex-col items-center gap-2 transition-all active:scale-95 shadow-xl`}
               >
-                <span className="text-2xl font-black tracking-tighter uppercase">Imprimir Relatório</span>
-                <span className="text-[10px] font-bold opacity-70">ABRIR CONFIGURAÇÕES DO NAVEGADOR</span>
+                <span className="text-lg sm:text-xl font-black tracking-tighter uppercase">Imprimir Relatório</span>
+                <span className="text-[10px] font-bold opacity-70">ABRIR RELATÓRIO EM NOVA ABA</span>
               </button>
               
               <button 
                 onClick={() => setShowReportSelector(false)}
-                className="w-full p-5 bg-white/5 text-gray-500 rounded-3xl font-black hover:text-white transition-colors uppercase tracking-[0.3em] text-[10px]"
+                className="w-full p-4 sm:p-5 bg-white/5 text-gray-500 rounded-2xl sm:rounded-3xl font-black hover:text-white transition-colors uppercase tracking-[0.3em] text-[10px]"
               >
                 Voltar
               </button>

@@ -5,18 +5,20 @@ import { SoundScheme } from '../App';
 import { useAttackTimer, useSensoryFeedback } from '../hooks';
 import ScoreCard from '../components/ScoreCard';
 import CenterConsole from '../components/CenterConsole';
+import VictoryModal from '../components/VictoryModal';
+import VaiATresModal from '../components/VaiATresModal';
 import { RefreshCwIcon } from '../components/icons';
 
 interface PlacarProps {
   allPlayers: Player[];
   onSaveGame: (match: Omit<Match, 'id' | 'timestamp'>) => void;
   winScore: number;
+  setWinScore: React.Dispatch<React.SetStateAction<number>>;
   attackTime: number;
   soundEnabled: boolean;
   vibrationEnabled: boolean;
   soundScheme: SoundScheme;
   currentArena: Arena;
-  // State lifted to App.tsx
   teamA: Team;
   setTeamA: React.Dispatch<React.SetStateAction<Team>>;
   teamB: Team;
@@ -30,20 +32,50 @@ interface PlacarProps {
   gameStartTime: Date | null;
   setGameStartTime: React.Dispatch<React.SetStateAction<Date | null>>;
   resetGame: (fullReset?: boolean) => void;
+  capoteEnabled: boolean;
+  vaiATresEnabled: boolean;
+}
+
+interface VictoryData {
+  winner: 'A' | 'B';
+  teamA: Team;
+  teamB: Team;
+  isCapote: boolean;
 }
 
 const Placar: React.FC<PlacarProps> = ({ 
-  allPlayers, onSaveGame, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, currentArena,
+  allPlayers, onSaveGame, winScore, setWinScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, currentArena,
   teamA, setTeamA, teamB, setTeamB, servingTeam, setServingTeam, history, setHistory,
-  isSidesSwitched, setIsSidesSwitched, gameStartTime, setGameStartTime, resetGame
+  isSidesSwitched, setIsSidesSwitched, gameStartTime, setGameStartTime, resetGame,
+  capoteEnabled, vaiATresEnabled
 }) => {
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [victoryData, setVictoryData] = useState<VictoryData | null>(null);
+  const [showVaiATresModal, setShowVaiATresModal] = useState(false);
 
   const { playSound, vibrate } = useSensoryFeedback({ soundEnabled, vibrationEnabled, soundScheme });
   const attackTimer = useAttackTimer(attackTime);
 
-  const isGameWon = useMemo(() => teamA.score >= winScore || teamB.score >= winScore, [teamA.score, teamB.score, winScore]);
+  const initialWinScore = useMemo(() => {
+    const prefix = `elite_arena_${currentArena.id}_`;
+    return Number(localStorage.getItem(`${prefix}winScore`)) || 15;
+  }, [currentArena.id]);
+
+  const { isGameWon, isCapoteWin } = useMemo(() => {
+    let capoteWin = false;
+    if (capoteEnabled) {
+      const capoteScore = Math.ceil(initialWinScore / 2);
+      if (
+        (teamA.score >= capoteScore && teamB.score === 0) ||
+        (teamB.score >= capoteScore && teamA.score === 0)
+      ) {
+        capoteWin = true;
+      }
+    }
+    const regularWin = teamA.score >= winScore || teamB.score >= winScore;
+    return { isGameWon: regularWin || capoteWin, isCapoteWin: capoteWin };
+  }, [teamA.score, teamB.score, winScore, capoteEnabled, initialWinScore]);
 
   useEffect(() => {
     if (toastMessage) {
@@ -53,12 +85,26 @@ const Placar: React.FC<PlacarProps> = ({
   }, [toastMessage]);
 
   useEffect(() => {
-    if (isGameWon) {
+    if (isGameWon && !victoryData) {
       attackTimer.reset();
       playSound('win');
       vibrate([200, 100, 200]);
+      setVictoryData({
+        winner: teamA.score > teamB.score ? 'A' : 'B',
+        teamA, teamB, isCapote: isCapoteWin
+      });
     }
-  }, [isGameWon, attackTimer, playSound, vibrate]);
+  }, [isGameWon, victoryData, attackTimer, playSound, vibrate, teamA, teamB, isCapoteWin]);
+
+  useEffect(() => {
+    const isTiePoint = teamA.score === teamB.score && teamA.score === winScore - 1;
+    if (vaiATresEnabled && isTiePoint && !isGameWon && !showVaiATresModal) {
+      setWinScore(prev => prev + 2);
+      setShowVaiATresModal(true);
+      playSound('win');
+      vibrate([100, 50, 100, 50, 100]);
+    }
+  }, [teamA.score, teamB.score, winScore, vaiATresEnabled, isGameWon, showVaiATresModal, setWinScore, playSound, vibrate]);
 
   useEffect(() => {
     if (attackTimer.isActive) {
@@ -116,6 +162,7 @@ const Placar: React.FC<PlacarProps> = ({
     resetGame(fullReset);
     attackTimer.reset();
     setShowResetConfirm(false);
+    setVictoryData(null);
     vibrate([100, 50, 100]);
     playSound('error');
   };
@@ -136,18 +183,21 @@ const Placar: React.FC<PlacarProps> = ({
     }
 
     const duration = gameStartTime ? Math.round((new Date().getTime() - gameStartTime.getTime()) / 60000) : 0;
-
+    
     const matchData = {
       teamA: { players: teamA.players.filter(p => p) as Player[], score: teamA.score },
       teamB: { players: teamB.players.filter(p => p) as Player[], score: teamB.score },
       winner: teamA.score > teamB.score ? 'A' : 'B',
       duration,
+      capoteApplied: isCapoteWin,
+      vaiATresTriggered: winScore > initialWinScore,
     } as Omit<Match, 'id' | 'timestamp'>;
     
     onSaveGame(matchData);
     setToastMessage("Vitória registrada! Nova partida iniciada.");
+    setVictoryData(null);
 
-  }, [isGameWon, teamA, teamB, onSaveGame, gameStartTime, playSound, vibrate]);
+  }, [isGameWon, teamA, teamB, onSaveGame, gameStartTime, playSound, vibrate, isCapoteWin, winScore, initialWinScore]);
 
   const switchSides = useCallback(() => {
       setIsSidesSwitched(prev => !prev);
@@ -165,11 +215,6 @@ const Placar: React.FC<PlacarProps> = ({
     }
   }, [attackTimer, playSound]);
 
-  const toggleServe = useCallback(() => {
-      setServingTeam(prev => prev === 'A' ? 'B' : 'A');
-      vibrate(40);
-  }, [vibrate, setServingTeam]);
-
   const teamLeftKey = isSidesSwitched ? 'B' : 'A';
   const teamRightKey = isSidesSwitched ? 'A' : 'B';
   const teamLeft = isSidesSwitched ? teamB : teamA;
@@ -180,6 +225,23 @@ const Placar: React.FC<PlacarProps> = ({
   return (
     <div className="h-full w-full p-1 sm:p-2 lg:p-4 grid grid-cols-[1fr_0.8fr_1fr] md:grid-cols-[1.1fr_0.7fr_1.1fr] lg:grid-cols-[1.2fr_0.6fr_1.2fr] gap-1 sm:gap-3 lg:gap-6 relative overflow-hidden bg-transparent max-w-[1600px] mx-auto">
       
+      {victoryData && (
+        <VictoryModal
+          victoryData={victoryData}
+          onClose={() => setVictoryData(null)}
+          onSave={saveGame}
+          onNewGame={() => handleConfirmReset(true)}
+          arenaColor={currentArena.color}
+        />
+      )}
+      
+      {showVaiATresModal && (
+        <VaiATresModal 
+          newWinScore={winScore}
+          onClose={() => setShowVaiATresModal(false)}
+        />
+      )}
+
       <div className="min-h-0 h-full overflow-hidden">
         <ScoreCard 
           teamName={teamNameLeft}
@@ -206,8 +268,6 @@ const Placar: React.FC<PlacarProps> = ({
           onUndo={handleUndo}
           isGameWon={isGameWon}
           canUndo={history.length > 0}
-          servingTeam={servingTeam}
-          onToggleServe={toggleServe}
           arenaColor={currentArena.color}
         />
       </div>
@@ -234,17 +294,17 @@ const Placar: React.FC<PlacarProps> = ({
 
       {showResetConfirm && (
           <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-4" onClick={() => setShowResetConfirm(false)}>
-              <div className="bg-[#090e1a] border border-white/10 rounded-[2rem] p-8 w-full max-w-[300px] lg:max-w-[350px] shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-                  <div className="w-12 h-12 lg:w-16 lg:h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 mx-auto">
-                     <RefreshCwIcon className="w-6 h-6 lg:w-8 lg:h-8" />
+              <div className="bg-[#090e1a] border border-white/10 rounded-[1.5rem] p-4 sm:p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+                  <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 mx-auto">
+                     <RefreshCwIcon className="w-6 h-6" />
                   </div>
-                  <h2 className="text-xl lg:text-2xl font-black text-white text-center mb-1 uppercase tracking-tighter">Zerar Placar?</h2>
-                  <p className="text-white/30 text-center mb-8 leading-relaxed text-[8px] lg:text-[10px] uppercase font-bold tracking-widest">
+                  <h2 className="text-lg sm:text-xl font-black text-white text-center mb-1 uppercase tracking-tighter">Zerar Placar?</h2>
+                  <p className="text-white/30 text-center mb-6 sm:mb-8 leading-relaxed text-[8px] sm:text-[10px] uppercase font-bold tracking-widest">
                       O progresso atual será perdido permanentemente.
                   </p>
                   <div className="flex flex-col gap-3">
-                      <button onClick={() => handleConfirmReset(false)} className="w-full py-4 lg:py-5 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase text-[10px] lg:text-[12px] tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20">Confirmar</button>
-                      <button onClick={() => setShowResetConfirm(false)} className="w-full py-4 lg:py-5 bg-white/5 text-white/40 rounded-2xl font-black uppercase text-[10px] lg:text-[12px] tracking-widest hover:text-white transition-colors">Voltar</button>
+                      <button onClick={() => handleConfirmReset(false)} className="w-full py-3 sm:py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20">Confirmar</button>
+                      <button onClick={() => setShowResetConfirm(false)} className="w-full py-3 sm:py-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] tracking-widest hover:text-white transition-colors">Voltar</button>
                   </div>
               </div>
           </div>
