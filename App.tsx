@@ -15,6 +15,7 @@ import ChangePassword from './views/ChangePassword';
 import { Player, Match, Arena, ArenaColor, UserLicense, Team } from './types';
 import { supabase } from './lib/supabase';
 import { ShieldIcon } from './components/icons';
+import { warmUpAudioContext } from './hooks';
 
 export type SoundScheme = 'moderno' | 'classico' | 'intenso';
 
@@ -110,6 +111,7 @@ const App: React.FC = () => {
 
   const handleFirstAccessConfirm = async () => {
     if (!userLicense) return;
+    warmUpAudioContext();
     localStorage.setItem('elite_welcome_done', 'true');
     
     const expiryShown = sessionStorage.getItem('expiry_modal_shown') === 'true';
@@ -121,6 +123,7 @@ const App: React.FC = () => {
   };
 
   const handleExpiryModalClose = () => {
+    warmUpAudioContext();
     setActiveModal('none');
     modalFlowHandled.current = true; 
     sessionStorage.setItem('expiry_modal_shown', 'true');
@@ -207,6 +210,29 @@ const App: React.FC = () => {
       localStorage.setItem('elite_last_arena', currentArenaId);
     }
   }, [currentArenaId, session, refreshData, userLicense]);
+
+  useEffect(() => {
+    if (!userLicense?.is_active || currentArenaId === 'default') {
+      return;
+    }
+
+    const channel = supabase.channel(`arena-${currentArenaId}-changes`);
+
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'players', filter: `arena_id=eq.${currentArenaId}` },
+      () => refreshData()
+    ).on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'matches', filter: `arena_id=eq.${currentArenaId}` },
+      () => refreshData()
+    ).subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentArenaId, userLicense, refreshData]);
+
 
   const handleSaveMatch = async (matchData: Omit<Match, 'id' | 'timestamp'>) => {
     if (!session || currentArenaId === 'default') return;

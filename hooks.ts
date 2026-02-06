@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { SoundScheme } from './App';
 
@@ -88,29 +89,32 @@ const soundSchemes = {
     }
 }
 
-export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme }: SensoryFeedbackProps) => {
-  const audioContextRef = useRef<AudioContext | null>(null);
+let audioContext: AudioContext | null = null;
 
-  useEffect(() => {
-    const initAudio = () => {
-        if (!audioContextRef.current) {
-            try {
-                audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-            } catch (e) {
-                console.error("Web Audio API não é suportada neste navegador.", e);
-            }
-        }
-        document.removeEventListener('click', initAudio, true);
-    };
-    document.addEventListener('click', initAudio, true);
-    return () => {
-        document.removeEventListener('click', initAudio, true);
-    }
-  }, []);
+const getAudioContext = (): AudioContext | null => {
+  if (audioContext) return audioContext;
+  try {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    return audioContext;
+  } catch (e) {
+    console.error("Web Audio API não é suportada neste navegador.", e);
+    return null;
+  }
+};
+
+export const warmUpAudioContext = () => {
+  const ctx = getAudioContext();
+  if (ctx && ctx.state === 'suspended') {
+    ctx.resume();
+  }
+};
+
+
+export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme }: SensoryFeedbackProps) => {
 
   const playSound = useCallback((type: 'point' | 'error' | 'win' | 'countdownBeep' | 'timerEndBeep' | 'timerStartBeep') => {
     if (!soundEnabled) return;
-    const ctx = audioContextRef.current;
+    const ctx = getAudioContext();
     if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
     

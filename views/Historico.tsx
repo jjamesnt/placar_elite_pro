@@ -35,7 +35,8 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
         return;
     }
     
-    const reportTitle = `Histórico de Partidas - ${currentArena.name} (${filterDate ? new Date(filterDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Todas as datas'})`;
+    const reportTitle = `Histórico de Partidas - ${currentArena.name}`;
+    const reportSubtitle = `Data: ${filterDate ? new Date(filterDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Todas as datas'}`;
 
     const htmlContent = `
         <!DOCTYPE html>
@@ -44,25 +45,28 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
             <meta charset="UTF-8">
             <title>${reportTitle}</title>
             <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 2rem; background: #f8f9fa; color: #212529; }
-                .report-container { max-width: 800px; margin: auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-                h1 { font-size: 1.5rem; font-weight: 900; text-transform: uppercase; color: #343a40; border-bottom: 2px solid #dee2e6; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
-                .match-item { border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 1rem; padding: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-                .match-info { font-size: 0.8rem; color: #6c757d; min-width: 100px; margin-right: 1rem; }
-                .match-teams { flex-grow: 1; display: flex; justify-content: center; align-items: center; gap: 1rem; font-size: 1rem; font-weight: 700; }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 1.5rem; background: white; color: #111827; font-size: 10pt; line-height: 1.5; }
+                .report-container { max-width: 800px; margin: auto; }
+                h1 { font-size: 1.5rem; font-weight: 700; text-transform: uppercase; color: #111827; margin: 0; }
+                h2 { font-size: 0.9rem; font-weight: 500; color: #6b7280; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb; }
+                .match-item { padding: 0.75rem 0; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+                .match-item:last-child { border-bottom: none; }
+                .match-info { font-size: 0.75rem; color: #6b7280; min-width: 100px; }
+                .match-teams { flex-grow: 1; display: flex; justify-content: center; align-items: center; gap: 1rem; font-size: 0.9rem; font-weight: 600; }
                 .team { display: flex; flex-direction: column; text-align: center; }
-                .team-name { font-size: 0.9rem; }
-                .team-winner .team-name { color: #198754; }
-                .team-winner .team-score { color: #198754; font-size: 1.5rem; }
-                .team-loser .team-name { color: #6c757d; }
-                .team-loser .team-score { color: #6c757d; font-size: 1.5rem; }
-                .vs { font-size: 0.8rem; color: #adb5bd; }
-                .tags { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
-                .tag { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; padding: 0.2rem 0.5rem; border-radius: 99px; }
-                .tag-capote { background-color: #dc354520; color: #dc3545; }
-                .tag-vaiatres { background-color: #ffc10720; color: #ffc107; }
+                .team-name { font-size: 0.85rem; }
+                .team-score { font-size: 1.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-weight: 700; }
+                .team-winner .team-name { color: #111827; }
+                .team-winner .team-score { color: #111827; }
+                .team-loser .team-name { color: #6b7280; }
+                .team-loser .team-score { color: #6b7280; }
+                .vs { font-size: 0.7rem; color: #9ca3af; font-weight: 700; }
+                .tags { display: flex; gap: 0.25rem; margin-top: 0.25rem; }
+                .tag { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; padding: 0.1rem 0.4rem; border-radius: 99px; border: 1px solid; }
+                .tag-capote { border-color: #ef4444; color: #ef4444; }
+                .tag-vaiatres { border-color: #f59e0b; color: #f59e0b; }
                 @media print {
-                    body { background: white; padding: 0; }
+                    body { padding: 0; }
                     .report-container { box-shadow: none; border: none; margin: 0; max-width: 100%; }
                 }
             </style>
@@ -70,13 +74,14 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
         <body>
             <div class="report-container">
                 <h1>${reportTitle}</h1>
+                <h2>${reportSubtitle}</h2>
                 ${filteredMatches.map(match => {
                     const isWinnerA = match.winner === 'A';
                     return `
                     <div class="match-item">
                         <div class="match-info">
                             <div>${new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(match.timestamp))}</div>
-                            <div>${match.duration} min</div>
+                            <div>Duração: ${match.duration} min</div>
                             <div class="tags">
                                 ${match.capoteApplied ? '<span class="tag tag-capote">Capote</span>' : ''}
                                 ${match.vaiATresTriggered ? '<span class="tag tag-vaiatres">Vai a 3</span>' : ''}
@@ -96,7 +101,7 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                     </div>
                     `
                 }).join('')}
-                 ${filteredMatches.length === 0 ? '<p>Nenhuma partida encontrada para este filtro.</p>' : ''}
+                 ${filteredMatches.length === 0 ? '<p style="text-align:center; padding: 2rem; color: #6c757d;">Nenhuma partida encontrada para este filtro.</p>' : ''}
             </div>
             <script>
                 setTimeout(() => {

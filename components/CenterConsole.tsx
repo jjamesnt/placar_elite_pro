@@ -21,7 +21,7 @@ const THEME_ACCENTS: Record<string, { bg: string; text: string; border: string; 
   indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/20', iconBg: 'bg-indigo-500' },
   blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', iconBg: 'bg-blue-500' },
   emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', iconBg: 'bg-emerald-500' },
-  amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-400/20', iconBg: 'bg-amber-500' },
+  amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20', iconBg: 'bg-amber-500' },
   rose: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20', iconBg: 'bg-rose-500' },
   violet: { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/20', iconBg: 'bg-violet-500' }
 };
@@ -38,8 +38,8 @@ const CenterConsole: React.FC<CenterConsoleProps> = ({
       
       <div className="w-full flex-[1.4] lg:flex-[1.6] flex flex-col">
         <div 
-          className={`bg-black/60 backdrop-blur-3xl rounded-[1.2rem] lg:rounded-[2.5rem] p-3 lg:p-6 border border-white/10 shadow-xl flex flex-col items-center w-full h-full justify-center relative overflow-hidden transition-all ${!isTimerActive && !isGameWon ? 'cursor-pointer active:scale-95' : ''}`}
-          onClick={!isTimerActive && !isGameWon ? onToggleTimer : undefined}
+          className={`bg-black/60 backdrop-blur-3xl rounded-[1.2rem] lg:rounded-[2.5rem] p-3 lg:p-6 border border-white/10 shadow-xl flex flex-col items-center w-full h-full justify-center relative overflow-hidden transition-all ${!isGameWon ? 'cursor-pointer active:scale-95' : ''}`}
+          onClick={!isGameWon ? onToggleTimer : undefined}
         >
             <span className="text-[6px] lg:text-[9px] font-black uppercase tracking-[0.5em] text-white/10 mb-1 lg:mb-2">CRONÔMETRO POSSE</span>
             <div className={`font-mono text-5xl sm:text-7xl lg:text-9xl font-black transition-all duration-300 ${timerColor} leading-none mb-3 lg:mb-6`}>
