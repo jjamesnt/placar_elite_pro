@@ -24,7 +24,7 @@ const Background: React.FC<{ color: ArenaColor }> = ({ color }) => {
     indigo: '#1e1b4b', blue: '#172554', emerald: '#064e3b', amber: '#451a03', rose: '#4c0519', violet: '#2e1065'
   };
   const glowMap: Record<ArenaColor, string> = {
-    indigo: 'rgba(99, 102, 241, 0.45)', blue: 'rgba(59, 130, 246, 0.45)', emerald: 'rgba(16, 185, 129, 0.4)', 
+    indigo: 'rgba(99, 102, 241, 0.45)', blue: 'rgba(59, 130, 246, 0.45)', emerald: 'rgba(16, 185, 129, 0.4)',
     amber: 'rgba(245, 158, 11, 0.4)', rose: 'rgba(244, 63, 94, 0.45)', violet: 'rgba(139, 92, 246, 0.45)'
   };
 
@@ -41,11 +41,11 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('placar');
   const [lastUpdate, setLastUpdate] = useState<string>('--/-- --:--');
   const [loading, setLoading] = useState(true);
-  
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [userLicense, setUserLicense] = useState<UserLicense | null>(null);
-  
+
   const [activeModal, setActiveModal] = useState<'none' | 'welcome' | 'expiry'>('none');
   const modalFlowHandled = useRef(false);
 
@@ -57,7 +57,7 @@ const App: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [deletedPlayers, setDeletedPlayers] = useState<Player[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
-  
+
   // Game settings state
   const [winScore, setWinScore] = useState(15);
   const [attackTime, setAttackTime] = useState(24);
@@ -92,11 +92,11 @@ const App: React.FC = () => {
       const expiryShown = sessionStorage.getItem('expiry_modal_shown') === 'true';
 
       const { data } = await supabase.from('user_licenses').select('*').eq('email', email.toLowerCase()).maybeSingle();
-      
+
       if (data) {
         setUserLicense(data);
         const isMaster = email.toLowerCase() === 'jjamesnt@gmail.com';
-        
+
         if (data.is_active && !isMaster) {
           if (!data.first_access_done && !welcomeDone) setActiveModal('welcome');
           else if (!expiryShown) setActiveModal('expiry');
@@ -113,7 +113,7 @@ const App: React.FC = () => {
     if (!userLicense) return;
     warmUpAudioContext();
     localStorage.setItem('elite_welcome_done', 'true');
-    
+
     const expiryShown = sessionStorage.getItem('expiry_modal_shown') === 'true';
     if (!expiryShown) setActiveModal('expiry');
     else { setActiveModal('none'); modalFlowHandled.current = true; }
@@ -125,7 +125,7 @@ const App: React.FC = () => {
   const handleExpiryModalClose = () => {
     warmUpAudioContext();
     setActiveModal('none');
-    modalFlowHandled.current = true; 
+    modalFlowHandled.current = true;
     sessionStorage.setItem('expiry_modal_shown', 'true');
   };
 
@@ -231,6 +231,22 @@ const App: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+    const handleUserInteraction = () => {
+      warmUpAudioContext();
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+    };
+
+    window.addEventListener('click', handleUserInteraction, { capture: true });
+    window.addEventListener('touchstart', handleUserInteraction, { capture: true });
+    window.addEventListener('keydown', handleUserInteraction, { capture: true });
+
+    return () => {
+      window.removeEventListener('click', handleUserInteraction, { capture: true });
+      window.removeEventListener('touchstart', handleUserInteraction, { capture: true });
+      window.removeEventListener('keydown', handleUserInteraction, { capture: true });
+    };
   }, [currentArenaId, userLicense, refreshData]);
 
 
@@ -276,7 +292,7 @@ const App: React.FC = () => {
   };
 
   if (loading) return <div className="h-screen w-screen flex items-center justify-center bg-[#030712]"><div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
-  if (!session) return <><Background color="indigo" /><Login onLogin={() => {}} /></>;
+  if (!session) return <><Background color="indigo" /><Login onLogin={() => { }} /></>;
   if (mustChangePassword) return <ChangePassword onComplete={() => setMustChangePassword(false)} />;
 
   const isMaster = session?.user?.email?.toLowerCase() === 'jjamesnt@gmail.com';
@@ -306,7 +322,7 @@ const App: React.FC = () => {
   return (
     <>
       <OrientationLock />
-      
+
       {activeModal === 'welcome' && <WelcomeModal onConfirm={handleFirstAccessConfirm} />}
       {activeModal === 'expiry' && userLicense && <LicenseExpiryModal expiryDate={userLicense.expires_at} onConfirm={handleExpiryModalClose} />}
 
@@ -314,12 +330,12 @@ const App: React.FC = () => {
       <div className="h-screen w-screen flex flex-col text-white font-sans overflow-hidden bg-transparent">
         <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} currentArena={currentArena} onLogout={handleLogout} isAdmin={isAdmin} />
         <main className="flex-1 overflow-y-auto">
-           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} />}
-           {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} />}
-           {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} />}
-           {currentView === 'ranking' && <Ranking matches={matches} players={[...players, ...deletedPlayers]} arenaName={currentArena.name} arenaColor={currentArena.color} />}
-           {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} capoteEnabled={capoteEnabled} setCapoteEnabled={setCapoteEnabled} vaiATresEnabled={vaiATresEnabled} setVaiATresEnabled={setVaiATresEnabled} />}
-           {currentView === 'admin' && <Admin />}
+          {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} />}
+          {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} />}
+          {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} />}
+          {currentView === 'ranking' && <Ranking matches={matches} players={[...players, ...deletedPlayers]} arenaName={currentArena.name} arenaColor={currentArena.color} />}
+          {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} capoteEnabled={capoteEnabled} setCapoteEnabled={setCapoteEnabled} vaiATresEnabled={vaiATresEnabled} setVaiATresEnabled={setVaiATresEnabled} />}
+          {currentView === 'admin' && <Admin />}
         </main>
       </div>
     </>

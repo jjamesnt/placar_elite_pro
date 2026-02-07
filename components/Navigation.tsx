@@ -82,7 +82,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
       const doc = document as any;
       const element = document.documentElement as any;
       const isCurrentlyFull = !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement || doc.webkitIsFullScreen);
-      
+
       if (!isCurrentlyFull) {
         if (element.requestFullscreen) await element.requestFullscreen();
         else if (element.webkitRequestFullscreen) await element.webkitRequestFullscreen();
@@ -103,7 +103,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
           <ShieldIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-500" />
           <h1 className="font-black text-[9px] sm:text-[11px] uppercase tracking-tighter leading-none whitespace-nowrap">Placar Elite Pro</h1>
         </div>
-        <div className="flex items-center gap-1 mt-0.5">
+        <div className="flex items-center gap-1 mt-0.5 ml-3.5 sm:ml-4">
           <span className={`text-[6px] sm:text-[7px] font-black tracking-[0.1em] uppercase truncate max-w-[70px] sm:max-w-[100px] ${arenaColorClass}`}>
             {currentArena.name}
           </span>
@@ -127,7 +127,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
         {showIosTip && (
           <div className="absolute top-12 right-0 bg-white text-black p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] text-[9px] font-black uppercase tracking-tighter w-48 animate-in slide-in-from-top-2 z-[100] border-2 border-indigo-500">
             <div className="flex flex-col gap-2">
-              <p>No iPhone, toque em <span className="text-blue-600">Compartilhar</span> <svg className="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></p>
+              <p>No iPhone, toque em <span className="text-blue-600">Compartilhar</span> <svg className="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg></p>
               <p>E selecione <span className="text-blue-600">"Adicionar à Tela de Início"</span> para focar.</p>
             </div>
             <div className="absolute -top-2 right-6 w-4 h-4 bg-white rotate-45 border-l-2 border-t-2 border-indigo-500"></div>
