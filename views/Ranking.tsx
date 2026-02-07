@@ -34,35 +34,35 @@ const THEME_BG_CLASSES: Record<ArenaColor, string> = {
 };
 
 const THEME_SVG_COLORS: Record<ArenaColor, { bgStart: string; bgEnd: string; primary: string; secondary: string; text: string; }> = {
-    indigo: { bgStart: '#1e1b4b', bgEnd: '#030712', primary: '#818cf8', secondary: '#a5b4fc', text: '#ffffff' },
-    blue: { bgStart: '#172554', bgEnd: '#030712', primary: '#60a5fa', secondary: '#93c5fd', text: '#ffffff' },
-    emerald: { bgStart: '#064e3b', bgEnd: '#020617', primary: '#34d399', secondary: '#6ee7b7', text: '#ffffff' },
-    amber: { bgStart: '#451a03', bgEnd: '#0c0a09', primary: '#f59e0b', secondary: '#fbbf24', text: '#ffffff' },
-    rose: { bgStart: '#4c0519', bgEnd: '#1f2937', primary: '#f43f5e', secondary: '#fb7185', text: '#ffffff' },
-    violet: { bgStart: '#2e1065', bgEnd: '#1e293b', primary: '#a78bfa', secondary: '#c4b5fd', text: '#ffffff' },
+  indigo: { bgStart: '#1e1b4b', bgEnd: '#030712', primary: '#818cf8', secondary: '#a5b4fc', text: '#ffffff' },
+  blue: { bgStart: '#172554', bgEnd: '#030712', primary: '#60a5fa', secondary: '#93c5fd', text: '#ffffff' },
+  emerald: { bgStart: '#064e3b', bgEnd: '#020617', primary: '#34d399', secondary: '#6ee7b7', text: '#ffffff' },
+  amber: { bgStart: '#451a03', bgEnd: '#0c0a09', primary: '#f59e0b', secondary: '#fbbf24', text: '#ffffff' },
+  rose: { bgStart: '#4c0519', bgEnd: '#1f2937', primary: '#f43f5e', secondary: '#fb7185', text: '#ffffff' },
+  violet: { bgStart: '#2e1065', bgEnd: '#1e293b', primary: '#a78bfa', secondary: '#c4b5fd', text: '#ffffff' },
 };
 
 // Fix: Changed arenaColor parameter type to string and added validation to prevent type errors.
 const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor: string, periodLabel: string, filter: Filter, viewDate: Date): string => {
-    const safeColor = (Object.keys(THEME_SVG_COLORS).includes(arenaColor) ? arenaColor : 'indigo') as ArenaColor;
-    const theme = THEME_SVG_COLORS[safeColor];
-    const top3 = stats.slice(0, 3);
-    const rest = stats.slice(3);
+  const safeColor = (Object.keys(THEME_SVG_COLORS).includes(arenaColor) ? arenaColor : 'indigo') as ArenaColor;
+  const theme = THEME_SVG_COLORS[safeColor];
+  const top3 = stats.slice(0, 3);
+  const rest = stats.slice(3);
 
-    const escapeHtml = (unsafe: string) => 
-        unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
+  const escapeHtml = (unsafe: string) =>
+    unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
 
-    const podiumCardsSvg = () => {
-        if (top3.length === 0) return '';
-        
-        const [p1, p2, p3] = top3;
+  const podiumCardsSvg = () => {
+    if (top3.length === 0) return '';
 
-        const p1Card = p1 ? `
+    const [p1, p2, p3] = top3;
+
+    const p1Card = p1 ? `
             <g transform="translate(340, 480)">
                 <rect x="0" y="0" width="400" height="400" rx="40" fill="rgba(255, 255, 255, 0.05)" stroke="${theme.primary}" stroke-width="4" />
                 <text x="200" y="90" font-size="90" font-weight="900" fill="${theme.primary}" text-anchor="middle">1º</text>
@@ -74,7 +74,7 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
             </g>
         ` : '';
 
-        const p2Card = p2 ? `
+    const p2Card = p2 ? `
             <g transform="translate(10, 560)">
                 <rect x="0" y="0" width="320" height="320" rx="40" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2" />
                 <text x="160" y="70" font-size="70" font-weight="900" fill="${theme.secondary}" text-anchor="middle">2º</text>
@@ -86,7 +86,7 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
             </g>
         ` : '';
 
-        const p3Card = p3 ? `
+    const p3Card = p3 ? `
             <g transform="translate(750, 560)">
                 <rect x="0" y="0" width="320" height="320" rx="40" fill="rgba(255, 255, 255, 0.05)" stroke="#f59e0b" stroke-width="2" />
                 <text x="160" y="70" font-size="70" font-weight="900" fill="#fbbf24" text-anchor="middle">3º</text>
@@ -97,14 +97,14 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
                 <text x="160" y="295" font-size="30" font-weight="700" fill="#fbbf24" text-anchor="middle">${p3.winRate.toFixed(0)}%</text>
             </g>
         ` : '';
-        
-        return `${p2Card}${p3Card}${p1Card}`;
-    };
 
-    const listSvg = () => {
-        if (rest.length === 0) return '';
+    return `${p2Card}${p3Card}${p1Card}`;
+  };
 
-        const header = `
+  const listSvg = () => {
+    if (rest.length === 0) return '';
+
+    const header = `
             <g transform="translate(90, 1000)" font-size="30" font-weight="700" fill="${theme.text}" opacity="0.5" style="text-transform: uppercase; letter-spacing: 0.1em;">
                 <text x="0" y="0" text-anchor="start">Atleta</text>
                 <text x="480" y="0" text-anchor="middle">Vit</text>
@@ -113,10 +113,10 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
             </g>
             <line x1="90" y1="1025" x2="990" y2="1025" stroke="${theme.text}" stroke-width="1" opacity="0.1" />
         `;
-        
-        const rows = rest.map((s, i) => {
-            const yBase = 1070 + i * 70;
-            return `
+
+    const rows = rest.map((s, i) => {
+      const yBase = 1070 + i * 70;
+      return `
                 <g transform="translate(90, ${yBase})" font-size="35" font-weight="700" fill="${theme.text}">
                     <text x="0" y="12" text-anchor="start">
                         <tspan font-weight="900" fill="${theme.secondary}">${i + 4}º</tspan>
@@ -130,18 +130,18 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
                     </text>
                 </g>
             `;
-        }).join('');
+    }).join('');
 
-        return header + rows;
-    };
+    return header + rows;
+  };
 
-    const headerTop = filter === 'Hoje'
-        ? `${escapeHtml(arenaName)} - ${viewDate.toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase()}`
-        : escapeHtml(arenaName);
-    const headerTitle = "RANKING DO DIA";
-    const headerSubtitle = periodLabel;
+  const headerTop = filter === 'Hoje'
+    ? `${escapeHtml(arenaName)} - ${viewDate.toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase()}`
+    : escapeHtml(arenaName);
+  const headerTitle = "RANKING DO DIA";
+  const headerSubtitle = periodLabel;
 
-    const svgString = `
+  const svgString = `
         <svg width="1080" height="1920" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
             <defs>
                 <linearGradient id="bgGradient" x1="50%" y1="0%" x2="50%" y2="100%">
@@ -162,18 +162,44 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
         </svg>
     `;
 
-    const base64 = btoa(unescape(encodeURIComponent(svgString)));
-    return 'data:image/svg+xml;base64,' + base64;
+  const base64 = btoa(unescape(encodeURIComponent(svgString)));
+  return 'data:image/svg+xml;base64,' + base64;
 }
 
+const convertSvgToPng = (svgDataUrl: string, width: number, height: number): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+      // Use white background as default for PNG if needed, or transparent
+      ctx.drawImage(img, 0, 0, width, height);
+      try {
+        const pngUrl = canvas.toDataURL('image/png');
+        resolve(pngUrl);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    img.onerror = (err) => reject(err);
+    img.src = svgDataUrl;
+  });
+};
+
 const formatDuration = (minutes: number) => {
-    if (minutes < 1) return '0m';
-    const h = Math.floor(minutes / 60);
-    const m = Math.round(minutes % 60);
-    if (h > 0) {
-        return `${h}h ${m}m`;
-    }
-    return `${m}m`;
+  if (minutes < 1) return '0m';
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h > 0) {
+    return `${h}h ${m}m`;
+  }
+  return `${m}m`;
 };
 
 const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaColor = 'indigo' }) => {
@@ -209,11 +235,11 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
 
   const stats: PlayerStats[] = useMemo(() => {
     const playerDailyStats = new Map<string, Map<string, { wins: number, games: number, duration: number }>>();
-    
+
     filteredMatches.forEach(match => {
       const winningTeam = match.winner === 'A' ? match.teamA : match.teamB;
       const dateKey = new Date(match.timestamp).toDateString();
-      
+
       [match.teamA, match.teamB].forEach(team => {
         team.players.forEach(p => {
           if (!playerDailyStats.has(p.id)) playerDailyStats.set(p.id, new Map());
@@ -229,14 +255,14 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
 
     return Array.from(playerDailyStats.entries()).map(([id, dailyMap]) => {
       const player = players.find(p => p.id === id);
-      if (!player) return null; 
+      if (!player) return null;
 
       let totalWins = 0;
       let totalGames = 0;
       let zeroWinsDays = 0;
       let totalDuration = 0;
       const days = dailyMap.size;
-      
+
       dailyMap.forEach(d => {
         totalWins += d.wins;
         totalGames += d.games;
@@ -249,8 +275,8 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
 
       return { player, wins: totalWins, games: totalGames, days, letalidade, winRate, zeroWinsDays, totalDuration };
     })
-    .filter((s): s is NonNullable<typeof s> => s !== null && s.days > 0)
-    .sort((a, b) => b.wins - a.wins || b.winRate - a.winRate);
+      .filter((s): s is NonNullable<typeof s> => s !== null && s.days > 0)
+      .sort((a, b) => b.wins - a.wins || b.winRate - a.winRate);
   }, [filteredMatches, players]);
 
   const navigateDate = (amount: number) => {
@@ -264,23 +290,23 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
   const currentPeriodLabel = useMemo(() => {
     if (filter === 'Hoje') return viewDate.toLocaleDateString('pt-BR');
     if (filter === 'Semanal') {
-        const startOfWeek = new Date(viewDate);
-        startOfWeek.setDate(viewDate.getDate() - viewDate.getDay());
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        return `${startOfWeek.toLocaleDateString('pt-BR')} - ${endOfWeek.toLocaleDateString('pt-BR')}`;
+      const startOfWeek = new Date(viewDate);
+      startOfWeek.setDate(viewDate.getDate() - viewDate.getDay());
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      return `${startOfWeek.toLocaleDateString('pt-BR')} - ${endOfWeek.toLocaleDateString('pt-BR')}`;
     }
     if (filter === 'Mensal') return viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     if (filter === 'Anual') return viewDate.getFullYear().toString();
     return filter;
   }, [filter, viewDate]);
-  
+
   const handleExport = () => {
     setShowReportSelector(false);
     const reportWindow = window.open('', '_blank');
     if (!reportWindow) {
-        alert("Pop-up bloqueado. Libere para gerar o relatório.");
-        return;
+      alert("Pop-up bloqueado. Libere para gerar o relatório.");
+      return;
     }
     const reportTitle = `Ranking - ${arenaName || 'Arena'}`;
     const periodLabel = `${filter}: ${currentPeriodLabel}`;
@@ -356,14 +382,21 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
     reportWindow.document.close();
   };
 
-  const handleExportStory = () => {
+  const handleExportStory = async () => {
     if (stats.length === 0) {
-        alert("Não há dados de ranking para gerar um story.");
-        return;
+      alert("Não há dados de ranking para gerar um story.");
+      return;
     }
-    const imageUrl = generateStoryImage(stats, arenaName || 'Arena', arenaColor, currentPeriodLabel, filter, viewDate);
-    setExportImageUrl(imageUrl);
-    setIsStoryMode(true);
+    try {
+      const svgUrl = generateStoryImage(stats, arenaName || 'Arena', arenaColor, currentPeriodLabel, filter, viewDate);
+      // Converter SVG para PNG (1080x1920 é o padrão do story gerado)
+      const pngUrl = await convertSvgToPng(svgUrl, 1080, 1920);
+      setExportImageUrl(pngUrl);
+      setIsStoryMode(true);
+    } catch (error) {
+      console.error("Erro ao gerar imagem do story:", error);
+      alert("Erro ao gerar imagem para o telefone. Tente novamente.");
+    }
   };
 
   return (
@@ -371,7 +404,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
       <div className="flex flex-col items-center gap-3 print:hidden">
         <div className="flex bg-gray-800/90 backdrop-blur rounded-2xl p-1.5 shadow-2xl w-full max-w-xl border border-gray-700/50">
           {(['Hoje', 'Semanal', 'Mensal', 'Anual', 'Total'] as Filter[]).map(f => (
-            <button 
+            <button
               key={f} onClick={() => { setFilter(f); setViewDate(new Date()); }}
               className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${filter === f ? `${THEME_BG_CLASSES[arenaColor]} text-white shadow-lg` : 'text-gray-500 hover:text-white'}`}
             >
@@ -397,45 +430,45 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
           </button>
         </div>
       </div>
-      
+
       {stats.length > 0 ? (
         <div className="mt-4 print:mt-0">
           <div className="bg-gray-800/40 rounded-3xl p-3 border border-gray-700/50 shadow-inner print:border-none print:shadow-none print:p-0 print:bg-transparent">
-              <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="w-full text-left text-xs sm:text-sm print-table">
-                  <thead className="text-gray-500 font-black uppercase tracking-widest border-b border-gray-700/50 print:text-black print:border-black">
+                <thead className="text-gray-500 font-black uppercase tracking-widest border-b border-gray-700/50 print:text-black print:border-black">
                   <tr>
-                      <th className="px-3 py-4 print-th">#</th>
-                      <th className="px-3 py-4 print-th">ATLETA</th>
-                      <th className="px-3 py-4 text-center print-th">VITÓRIAS</th>
-                      <th className="px-3 py-4 text-center print-th">JOGOS</th>
-                      <th className="px-3 py-4 text-center print-th">TEMPO EM QUADRA</th>
-                      <th className="px-3 py-4 text-center print-th">MÉDIA / JOGO</th>
-                      <th className={`px-3 py-4 text-center print:text-black ${THEME_TEXT_CLASSES[arenaColor]}`}>LETALIDADE (%)</th>
+                    <th className="px-3 py-4 print-th">#</th>
+                    <th className="px-3 py-4 print-th">ATLETA</th>
+                    <th className="px-3 py-4 text-center print-th">VITÓRIAS</th>
+                    <th className="px-3 py-4 text-center print-th">JOGOS</th>
+                    <th className="px-3 py-4 text-center print-th">TEMPO EM QUADRA</th>
+                    <th className="px-3 py-4 text-center print-th">MÉDIA / JOGO</th>
+                    <th className={`px-3 py-4 text-center print:text-black ${THEME_TEXT_CLASSES[arenaColor]}`}>LETALIDADE (%)</th>
                   </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-700/20 print:divide-none">
+                </thead>
+                <tbody className="divide-y divide-gray-700/20 print:divide-none">
                   {stats.map((s, i) => (
-                      <tr key={s.player.id} className="hover:bg-white/5 transition-colors print:bg-transparent print-tr">
-                          <td className="px-3 py-4 font-mono font-bold text-gray-500 print:text-black print-td">{i + 1}º</td>
-                          <td className="px-3 py-4 font-black text-gray-300 print:text-black print:font-bold print-td">{s.player.name}</td>
-                          <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black print-td">{s.wins}</td>
-                          <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black print-td">{s.games}</td>
-                          <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black print-td">{formatDuration(s.totalDuration)}</td>
-                          <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black print-td">{s.games > 0 ? (s.totalDuration / s.games).toFixed(0) : '0'} min</td>
-                          <td className={`px-3 py-4 text-center font-mono font-black ${THEME_TEXT_CLASSES[arenaColor]} print:text-black print-td`}>
-                              {s.winRate.toFixed(0)}%
-                          </td>
-                      </tr>
+                    <tr key={s.player.id} className="hover:bg-white/5 transition-colors print:bg-transparent print-tr">
+                      <td className="px-3 py-4 font-mono font-bold text-gray-500 print:text-black print-td">{i + 1}º</td>
+                      <td className="px-3 py-4 font-black text-gray-300 print:text-black print:font-bold print-td">{s.player.name}</td>
+                      <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black print-td">{s.wins}</td>
+                      <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black print-td">{s.games}</td>
+                      <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black print-td">{formatDuration(s.totalDuration)}</td>
+                      <td className="px-3 py-4 text-center font-bold text-gray-400 print:text-black print-td">{s.games > 0 ? (s.totalDuration / s.games).toFixed(0) : '0'} min</td>
+                      <td className={`px-3 py-4 text-center font-mono font-black ${THEME_TEXT_CLASSES[arenaColor]} print:text-black print-td`}>
+                        {s.winRate.toFixed(0)}%
+                      </td>
+                    </tr>
                   ))}
-                  </tbody>
+                </tbody>
               </table>
-              </div>
+            </div>
           </div>
         </div>
       ) : (
         <div className="py-20 text-center flex flex-col items-center gap-4 bg-gray-800/20 rounded-[3rem] border border-dashed border-gray-700/30 print:hidden">
-            <span className="text-gray-600 italic uppercase tracking-widest text-[9px]">Nenhum dado registrado para o período {filter}.</span>
+          <span className="text-gray-600 italic uppercase tracking-widest text-[9px]">Nenhum dado registrado para o período {filter}.</span>
         </div>
       )}
 
@@ -444,7 +477,7 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
           <div className="bg-gray-900 border border-indigo-500/20 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl sm:text-2xl font-black text-white text-center mb-2 tracking-tighter uppercase">Gerar Relatório PDF</h2>
             <p className="text-gray-500 text-center text-xs mb-8 sm:mb-10 font-bold uppercase tracking-widest">Baseado no período: <strong>{filter} ({currentPeriodLabel})</strong></p>
-            
+
             <div className="flex flex-col gap-4">
               <button
                 onClick={handleExport}
@@ -453,8 +486,8 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
                 <span className="text-lg sm:text-xl font-black tracking-tighter uppercase">Gerar e Imprimir</span>
                 <span className="text-[10px] font-bold opacity-70">ABRIR JANELA DE IMPRESSÃO</span>
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => setShowReportSelector(false)}
                 className="w-full p-4 sm:p-5 bg-white/5 text-gray-500 rounded-2xl sm:rounded-3xl font-black hover:text-white transition-colors uppercase tracking-[0.3em] text-[10px]"
               >
