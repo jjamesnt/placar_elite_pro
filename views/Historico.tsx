@@ -45,29 +45,29 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
             <meta charset="UTF-8">
             <title>${reportTitle}</title>
             <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 1.5rem; background: white; color: #111827; font-size: 9pt; line-height: 1.4; }
-                .report-header { margin-bottom: 2rem; border-bottom: 2px solid #111827; padding-bottom: 1rem; }
-                h1 { font-size: 1.4rem; font-weight: 800; text-transform: uppercase; color: #111827; margin: 0; letter-spacing: -0.02em; }
-                h2 { font-size: 0.85rem; font-weight: 600; color: #4b5563; margin: 0.5rem 0 0 0; text-transform: uppercase; letter-spacing: 0.05em; }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0.5cm; background: white; color: #111827; font-size: 10pt; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .report-header { margin-bottom: 1.5rem; border-bottom: 3px solid #111827; padding-bottom: 0.75rem; }
+                h1 { font-size: 1.6rem; font-weight: 900; text-transform: uppercase; color: #111827; margin: 0; letter-spacing: -0.03em; }
+                h2 { font-size: 0.9rem; font-weight: 700; color: #374151; margin: 0.4rem 0 0 0; text-transform: uppercase; letter-spacing: 0.05em; }
                 
-                table { width: 100%; border-collapse: collapse; margin-block-start: 1rem; }
-                th { text-align: left; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #6b7280; border-bottom: 1px solid #111827; padding: 0.5rem 0.75rem; background: #f9fafb; }
-                td { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+                table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+                th { text-align: left; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; color: #4b5563; border-bottom: 2px solid #111827; padding: 0.75rem; background: #f3f4f6; }
+                td { padding: 0.75rem; border-bottom: 1px solid #d1d5db; vertical-align: middle; }
                 
-                .col-date { white-space: nowrap; width: 15%; color: #6b7280; font-size: 0.75rem; }
-                .col-team { font-weight: 700; color: #111827; width: 30%; }
-                .col-score { text-align: center; width: 10%; font-family: ui-monospace, monospace; font-weight: 800; font-size: 1.1rem; }
-                .col-vs { text-align: center; width: 5%; color: #9ca3af; font-weight: 900; font-style: italic; font-size: 0.7rem; }
+                .col-date { width: 18%; color: #4b5563; font-size: 0.8rem; font-weight: 500; }
+                .col-team { font-weight: 700; color: #111827; width: 32%; }
+                .col-score { text-align: center; width: 12%; font-family: ui-monospace, monospace; font-weight: 900; font-size: 1.2rem; background: #f9fafb; }
                 .col-tags { width: 10%; text-align: right; }
                 
-                .winner { color: #2563eb; }
-                .tag { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid; margin-left: 0.25rem; display: inline-block; }
-                .tag-capote { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
-                .tag-vaiatres { border-color: #f59e0b; color: #f59e0b; background: #fffbeb; }
+                .winner { color: #1e40af !important; font-weight: 900; }
+                .tag { font-size: 0.65rem; font-weight: 900; text-transform: uppercase; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid; margin-left: 0.3rem; display: inline-block; white-space: nowrap; }
+                .tag-capote { border-color: #b91c1c; color: #b91c1c; background: #fef2f2 !important; }
+                .tag-vaiatres { border-color: #b45309; color: #b45309; background: #fffbeb !important; }
                 
                 @media print {
                     body { padding: 0; }
-                    @page { margin: 1cm; }
+                    @page { size: A4 portrait; margin: 1.5cm; }
+                    .no-print { display: none; }
                 }
             </style>
         </head>
