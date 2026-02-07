@@ -218,9 +218,9 @@ const Placar: React.FC<PlacarProps> = ({
   const teamLeftKey = isSidesSwitched ? 'B' : 'A';
   const teamRightKey = isSidesSwitched ? 'A' : 'B';
   const teamLeft = isSidesSwitched ? teamB : teamA;
-  const teamNameLeft = isSidesSwitched ? 'Time B' : 'Time A';
+  const teamNameLeft = isSidesSwitched ? 'Time 2' : 'Time 1';
   const teamRight = isSidesSwitched ? teamA : teamB;
-  const teamNameRight = isSidesSwitched ? 'Time A' : 'Time B';
+  const teamNameRight = isSidesSwitched ? 'Time 1' : 'Time 2';
 
   return (
     <div className="h-full w-full p-1 sm:p-2 lg:p-4 grid grid-cols-[1fr_0.8fr_1fr] md:grid-cols-[1.1fr_0.7fr_1.1fr] lg:grid-cols-[1.2fr_0.6fr_1.2fr] gap-1 sm:gap-3 lg:gap-6 relative overflow-hidden bg-transparent max-w-[1600px] mx-auto">
