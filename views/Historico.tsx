@@ -45,29 +45,29 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
             <meta charset="UTF-8">
             <title>${reportTitle}</title>
             <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0.5cm; background: white; color: #111827; font-size: 10pt; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                .report-header { margin-bottom: 1.5rem; border-bottom: 3px solid #111827; padding-bottom: 0.75rem; }
-                h1 { font-size: 1.6rem; font-weight: 900; text-transform: uppercase; color: #111827; margin: 0; letter-spacing: -0.03em; }
-                h2 { font-size: 0.9rem; font-weight: 700; color: #374151; margin: 0.4rem 0 0 0; text-transform: uppercase; letter-spacing: 0.05em; }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0.5cm; background: white; color: black; font-size: 10pt; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .report-header { margin-bottom: 1.5rem; border-bottom: 2px solid black; padding-bottom: 0.5rem; }
+                h1 { font-size: 1.5rem; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: -0.02em; }
+                h2 { font-size: 0.8rem; font-weight: 700; color: #444; margin: 0.3rem 0 0 0; text-transform: uppercase; letter-spacing: 0.05em; }
                 
-                table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-                th { text-align: left; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; color: #4b5563; border-bottom: 2px solid #111827; padding: 0.75rem; background: #f3f4f6; }
-                td { padding: 0.75rem; border-bottom: 1px solid #d1d5db; vertical-align: middle; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                th { text-align: left; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; color: #333; border-bottom: 1px solid black; padding: 0.6rem 0.4rem; }
+                td { padding: 0.6rem 0.4rem; border-bottom: 1px solid #ddd; vertical-align: middle; }
                 
-                .col-date { width: 18%; color: #4b5563; font-size: 0.8rem; font-weight: 500; }
-                .col-team { font-weight: 700; color: #111827; width: 32%; }
-                .col-score { text-align: center; width: 12%; font-family: ui-monospace, monospace; font-weight: 900; font-size: 1.2rem; background: #f9fafb; }
-                .col-tags { width: 10%; text-align: right; }
+                .col-date { width: 15%; color: #444; font-size: 0.75rem; }
+                .col-team-a { width: 32%; text-align: right; font-weight: 700; padding-right: 1.5rem; }
+                .col-score { width: 10%; text-align: center; font-family: ui-monospace, monospace; font-weight: 900; font-size: 1.2rem; border-left: 1px solid #eee; border-right: 1px solid #eee; }
+                .col-team-b { width: 32%; text-align: left; font-weight: 700; padding-left: 1.5rem; }
+                .col-tags { width: 11%; text-align: right; }
                 
-                .winner { color: #1e40af !important; font-weight: 900; }
-                .tag { font-size: 0.65rem; font-weight: 900; text-transform: uppercase; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid; margin-left: 0.3rem; display: inline-block; white-space: nowrap; }
-                .tag-capote { border-color: #b91c1c; color: #b91c1c; background: #fef2f2 !important; }
-                .tag-vaiatres { border-color: #b45309; color: #b45309; background: #fffbeb !important; }
+                .winner { color: #0044cc !important; font-weight: 900; text-decoration: underline; }
+                .tag { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; padding: 0.1rem 0.3rem; border: 1px solid black; margin-left: 0.2rem; display: inline-block; white-space: nowrap; border-radius: 2px; }
+                .tag-capote { border-color: #900; color: #900; background: #fff2f2 !important; }
+                .tag-vaiatres { border-color: #960; color: #960; background: #fffcf0 !important; }
                 
                 @media print {
                     body { padding: 0; }
-                    @page { size: A4 portrait; margin: 1.5cm; }
-                    .no-print { display: none; }
+                    @page { size: A4 portrait; margin: 1.2cm; }
                 }
             </style>
         </head>
@@ -80,9 +80,9 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                 <thead>
                     <tr>
                         <th class="col-date">Data / Hora</th>
-                        <th class="col-team" style="text-align: right;">Equipe A</th>
+                        <th class="col-team-a">Equipe A (Vencedora)</th>
                         <th class="col-score">Placar</th>
-                        <th class="col-team" style="text-align: left;">Equipe B</th>
+                        <th class="col-team-b">Equipe B</th>
                         <th class="col-tags">Obs.</th>
                     </tr>
                 </thead>
@@ -94,17 +94,17 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                         <tr>
                             <td class="col-date">
                                 <div>${date}</div>
-                                <div style="font-size: 0.65rem; opacity: 0.7;">${match.duration} min</div>
+                                <div style="font-size: 0.6rem; opacity: 0.6;">${match.duration} min</div>
                             </td>
-                            <td class="col-team ${isWinnerA ? 'winner' : ''}" style="text-align: right;">
+                            <td class="col-team-a ${isWinnerA ? 'winner' : ''}">
                                 ${match.teamA.players.map(p => p.name).join(' & ')}
                             </td>
                             <td class="col-score">
                                 <span class="${isWinnerA ? 'winner' : ''}">${match.teamA.score}</span>
-                                <span style="color: #d1d5db; font-weight: 400; margin: 0 0.25rem;">x</span>
+                                <span style="color: #ccc; font-weight: 400; margin: 0 0.1rem;">x</span>
                                 <span class="${!isWinnerA ? 'winner' : ''}">${match.teamB.score}</span>
                             </td>
-                            <td class="col-team ${!isWinnerA ? 'winner' : ''}" style="text-align: left;">
+                            <td class="col-team-b ${!isWinnerA ? 'winner' : ''}">
                                 ${match.teamB.players.map(p => p.name).join(' & ')}
                             </td>
                             <td class="col-tags">
