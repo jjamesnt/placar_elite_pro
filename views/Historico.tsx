@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Match, Arena } from '../types';
 import { Trash2Icon, FileDownIcon, CalendarIcon, XCircleIcon } from '../components/icons';
@@ -50,24 +49,26 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                 h1 { font-size: 1.5rem; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: -0.02em; }
                 h2 { font-size: 0.8rem; font-weight: 700; color: #444; margin: 0.3rem 0 0 0; text-transform: uppercase; letter-spacing: 0.05em; }
                 
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-                th { text-align: left; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; color: #333; border-bottom: 1px solid black; padding: 0.6rem 0.4rem; }
-                td { padding: 0.6rem 0.4rem; border-bottom: 1px solid #ddd; vertical-align: middle; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 1rem; }
+                th { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; color: #333; border-bottom: 2px solid black; padding: 0.8rem 0.5rem; }
+                td { padding: 0.8rem 0.5rem; border-bottom: 1px solid #eee; vertical-align: middle; }
                 
-                .col-date { width: 15%; color: #444; font-size: 0.75rem; }
-                .col-team-a { width: 32%; text-align: right; font-weight: 700; padding-right: 1.5rem; }
-                .col-score { width: 10%; text-align: center; font-family: ui-monospace, monospace; font-weight: 900; font-size: 1.2rem; border-left: 1px solid #eee; border-right: 1px solid #eee; }
-                .col-team-b { width: 32%; text-align: left; font-weight: 700; padding-left: 1.5rem; }
-                .col-tags { width: 11%; text-align: right; }
+                .col-date { width: 15%; color: #666; font-size: 0.8rem; text-align: left; }
+                .col-team-a { width: 32.5%; text-align: right; font-weight: 700; padding-right: 1.2rem; }
+                .col-score { width: 10%; text-align: center; font-family: ui-monospace, monospace; font-weight: 900; font-size: 1.3rem; white-space: nowrap; }
+                .col-team-b { width: 32.5%; text-align: left; font-weight: 700; padding-left: 1.2rem; }
+                .col-tags { width: 10%; text-align: right; }
                 
-                .winner { color: #0044cc !important; font-weight: 900; text-decoration: underline; }
-                .tag { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; padding: 0.1rem 0.3rem; border: 1px solid black; margin-left: 0.2rem; display: inline-block; white-space: nowrap; border-radius: 2px; }
+                .winner { color: #0044cc !important; font-weight: 900; }
+                .score-x { color: #aaa; font-weight: 400; margin: 0 0.35rem; font-size: 1rem; }
+                
+                .tag { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; padding: 0.1rem 0.3rem; border: 1px solid #000; margin-left: 0.2rem; display: inline-block; white-space: nowrap; border-radius: 2px; }
                 .tag-capote { border-color: #900; color: #900; background: #fff2f2 !important; }
                 .tag-vaiatres { border-color: #960; color: #960; background: #fffcf0 !important; }
                 
                 @media print {
                     body { padding: 0; }
-                    @page { size: A4 portrait; margin: 1.2cm; }
+                    @page { size: A4 portrait; margin: 1.5cm; }
                 }
             </style>
         </head>
@@ -79,11 +80,11 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
             <table>
                 <thead>
                     <tr>
-                        <th class="col-date">Data / Hora</th>
-                        <th class="col-team-a">Equipe A (Vencedora)</th>
-                        <th class="col-score">Placar</th>
-                        <th class="col-team-b">Equipe B</th>
-                        <th class="col-tags">Obs.</th>
+                        <th style="width: 15%; text-align: left;">Data</th>
+                        <th style="width: 32.5%; text-align: right;">Equipe A</th>
+                        <th style="width: 10%; text-align: center;">Placar</th>
+                        <th style="width: 32.5%; text-align: left;">Equipe B</th>
+                        <th style="width: 10%; text-align: right;">Obs.</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -94,35 +95,35 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                         <tr>
                             <td class="col-date">
                                 <div>${date}</div>
-                                <div style="font-size: 0.6rem; opacity: 0.6;">${match.duration} min</div>
+                                <div style="font-size: 0.65rem; opacity: 0.6;">${match.duration} min</div>
                             </td>
                             <td class="col-team-a ${isWinnerA ? 'winner' : ''}">
-                                ${match.teamA.players.map(p => p.name).join(' & ')}
+                                ${match.teamA.players.map(p => p.name).join(' \u0026 ')}
                             </td>
                             <td class="col-score">
                                 <span class="${isWinnerA ? 'winner' : ''}">${match.teamA.score}</span>
-                                <span style="color: #ccc; font-weight: 400; margin: 0 0.1rem;">x</span>
+                                <span class="score-x">x</span>
                                 <span class="${!isWinnerA ? 'winner' : ''}">${match.teamB.score}</span>
                             </td>
                             <td class="col-team-b ${!isWinnerA ? 'winner' : ''}">
-                                ${match.teamB.players.map(p => p.name).join(' & ')}
+                                ${match.teamB.players.map(p => p.name).join(' \u0026 ')}
                             </td>
                             <td class="col-tags">
-                                ${match.capoteApplied ? '<span class="tag tag-capote">Capote</span>' : ''}
-                                ${match.vaiATresTriggered ? '<span class="tag tag-vaiatres">Vai a 3</span>' : ''}
+                                ${match.capoteApplied ? '\u003cspan class="tag tag-capote"\u003eCapote\u003c/span\u003e' : ''}
+                                ${match.vaiATresTriggered ? '\u003cspan class="tag tag-vaiatres"\u003eVai a 3\u003c/span\u003e' : ''}
                             </td>
                         </tr>
                         `
     }).join('')}
                 </tbody>
             </table>
-            ${filteredMatches.length === 0 ? '<p style="text-align:center; padding: 2rem; color: #6b7280; font-weight: 600;">Nenhuma partida encontrada para este filtro.</p>' : ''}
-            <script>
+            ${filteredMatches.length === 0 ? '\u003cp style="text-align:center; padding: 2rem; color: #444; font-weight: bold;"\u003eNenhuma partida encontrada.\u003c/p\u003e' : ''}
+            \u003cscript\u003e
                 setTimeout(() => {
                     window.print();
                     window.onafterprint = () => window.close();
                 }, 500);
-            </script>
+            \u003c/script\u003e
         </body>
         </html>
     `;
@@ -201,7 +202,7 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
               <div className="flex-1 flex items-center justify-center gap-4 w-full">
                 <div className="flex-1 text-right">
                   <div className={`text-[11px] sm:text-sm font-black truncate transition-colors ${isWinnerA ? 'text-blue-400' : 'text-gray-500'}`}>
-                    {match.teamA.players.map(p => p.name).join(' & ')}
+                    {match.teamA.players.map(p => p.name).join(' \u0026 ')}
                   </div>
                   <div className={`text-xl sm:text-2xl font-mono font-bold ${isWinnerA ? 'text-blue-500' : 'text-gray-600 opacity-60'}`}>
                     {match.teamA.score}
@@ -212,7 +213,7 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
 
                 <div className="flex-1 text-left">
                   <div className={`text-[11px] sm:text-sm font-black truncate transition-colors ${!isWinnerA ? 'text-red-400' : 'text-gray-500'}`}>
-                    {match.teamB.players.map(p => p.name).join(' & ')}
+                    {match.teamB.players.map(p => p.name).join(' \u0026 ')}
                   </div>
                   <div className={`text-xl sm:text-2xl font-mono font-bold ${!isWinnerA ? 'text-red-500' : 'text-gray-600 opacity-60'}`}>
                     {match.teamB.score}
