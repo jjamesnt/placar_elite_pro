@@ -15,6 +15,7 @@ interface VictoryModalProps {
   onClose: () => void;
   onSave: () => void;
   onNewGame: () => void;
+  onUndo: () => void;
   arenaColor?: ArenaColor;
 }
 
@@ -27,7 +28,7 @@ const THEME_STYLES: Record<string, { bg: string; text: string; shadow: string; b
   violet: { bg: 'bg-violet-600', text: 'text-violet-400', shadow: 'shadow-violet-500/40', border: 'border-violet-500/30' },
 };
 
-const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSave, onNewGame, arenaColor = 'indigo' }) => {
+const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSave, onNewGame, onUndo, arenaColor = 'indigo' }) => {
   const { winner, teamA, teamB, isCapote } = victoryData;
   const winningTeam = winner === 'A' ? teamA : teamB;
   const losingTeam = winner === 'A' ? teamB : teamA;
@@ -38,12 +39,12 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
 
   return (
     <div className="victory-modal fixed inset-0 bg-black/95 backdrop-blur-xl z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={onClose}>
-      <div 
+      <div
         className={`bg-[#030712] border ${isCapote ? 'border-rose-500/30' : theme.border} rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 w-full max-w-sm sm:max-w-md shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden max-h-[95vh] overflow-y-auto`}
         onClick={e => e.stopPropagation()}
       >
         <div className={`absolute -top-1/4 -right-1/4 w-96 h-96 ${isCapote ? 'bg-rose-600/20' : theme.bg}/20 rounded-full blur-[120px] -z-10`}></div>
-        
+
         <div className="flex flex-col items-center text-center">
           <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 border ${isCapote ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : `${theme.bg}/10 ${theme.border} ${theme.text}`}`}>
             <TrophyIcon className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -64,18 +65,25 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
               <p className="text-3xl sm:text-4xl font-mono font-black text-gray-600">{losingTeam.score}</p>
             </div>
           </div>
-          
+
           <div className="w-full grid grid-cols-2 gap-2 sm:gap-3">
             <button onClick={onNewGame} className="w-full py-3 sm:py-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-colors hover:text-white">
               Nova Partida
             </button>
-            <button 
+            <button
               onClick={onSave}
               className={`w-full py-3 sm:py-4 ${theme.bg} hover:opacity-90 text-white rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] shadow-xl ${theme.shadow}`}
             >
               Salvar e Zerar
             </button>
           </div>
+
+          <button
+            onClick={onUndo}
+            className="mt-3 w-full py-2 sm:py-3 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition-colors border border-red-500/20"
+          >
+            Voltar (Desfazer Vitória)
+          </button>
         </div>
       </div>
     </div>

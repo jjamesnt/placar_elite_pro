@@ -75,6 +75,10 @@ const App: React.FC = () => {
   const [isSidesSwitched, setIsSidesSwitched] = useState(false);
   const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
 
+  // Ranking state persistence
+  const [rankingFilter, setRankingFilter] = useState<'Hoje' | 'Semanal' | 'Mensal' | 'Anual' | 'Total'>('Hoje');
+  const [rankingViewDate, setRankingViewDate] = useState(new Date());
+
   const handleLogout = useCallback(async () => {
     setSession(null);
     setUserLicense(null);
@@ -142,7 +146,7 @@ const App: React.FC = () => {
       if (mData) {
         setMatches(mData.map((m: any) => ({ ...m.data_json, id: m.id, timestamp: new Date(m.created_at) })));
       }
-      setLastUpdate(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+      setLastUpdate(new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }));
     } catch (err) { console.error("Refresh Error:", err); }
   }, [session, currentArenaId, userLicense]);
 
@@ -333,7 +337,18 @@ const App: React.FC = () => {
           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} />}
           {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} />}
           {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} />}
-          {currentView === 'ranking' && <Ranking matches={matches} players={[...players, ...deletedPlayers]} arenaName={currentArena.name} arenaColor={currentArena.color} />}
+          {currentView === 'ranking' && (
+            <Ranking
+              players={players}
+              matches={matches}
+              arenaName={currentArena.name}
+              arenaColor={currentArena.color}
+              filter={rankingFilter}
+              setFilter={setRankingFilter}
+              viewDate={rankingViewDate}
+              setViewDate={setRankingViewDate}
+            />
+          )}
           {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} capoteEnabled={capoteEnabled} setCapoteEnabled={setCapoteEnabled} vaiATresEnabled={vaiATresEnabled} setVaiATresEnabled={setVaiATresEnabled} />}
           {currentView === 'admin' && <Admin />}
         </main>

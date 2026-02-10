@@ -27,15 +27,15 @@ const NavButton: React.FC<NavButtonProps> = ({ label, icon, isActive, onClick, a
   return (
     <button
       onClick={onClick}
-      className={`relative flex flex-col items-center justify-center px-1.5 sm:px-4 py-1 transition-all duration-300 transform active:scale-95 ${isActive ? activeColorClass : inactiveClasses}`}
+      className={`relative flex flex-col items-center justify-center px-4 py-2 transition-all duration-300 transform active:scale-95 ${isActive ? activeColorClass : inactiveClasses}`}
     >
       <div className={`relative transition-transform duration-300 ${isActive ? 'scale-110' : 'scale-100'}`}>
         {/* Cast to any to safely inject className prop during React.cloneElement */}
-        {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-4 h-4 sm:w-5 h-5' })}
+        {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5 lg:w-6 lg:h-6' })}
       </div>
-      <span className="text-[5px] sm:text-[7px] font-black mt-0.5 uppercase tracking-widest leading-none">{label}</span>
+      <span className="text-[10px] font-black mt-1 uppercase tracking-widest leading-none text-center">{label}</span>
       {isActive && (
-        <div className={`absolute -bottom-1 w-6 sm:w-8 h-0.5 rounded-full ${activeColorClass.replace('text', 'bg')} shadow-[0_0_8px_currentColor]`} />
+        <div className={`absolute -bottom-1 w-8 h-1 rounded-full ${activeColorClass.replace('text', 'bg')} shadow-[0_0_8px_currentColor]`} />
       )}
     </button>
   );
@@ -96,52 +96,97 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
     }
   };
 
+  const handleLogoutWithConfirmation = () => {
+    if (window.confirm("Deseja realmente sair? Toda a sua sessão atual está ativa e você perderá o acesso rápido se não tiver salvo os dados.")) {
+      onLogout();
+    }
+  };
+
   return (
-    <header className="relative w-full z-50 bg-gray-900/98 backdrop-blur-3xl border-b border-white/5 px-2 sm:px-4 h-11 sm:h-12 flex items-center justify-between flex-shrink-0">
-      <div className="flex flex-col min-w-[90px] justify-center">
-        <div className="flex items-center gap-1 text-white">
-          <ShieldIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-500" />
-          <h1 className="font-black text-[9px] sm:text-[11px] uppercase tracking-tighter leading-none whitespace-nowrap">Placar Elite Pro</h1>
+    <header className="relative w-full z-50 bg-gray-900/98 backdrop-blur-3xl border-b border-white/5 h-16 lg:h-20 flex items-center flex-shrink-0">
+      {/* 1. Mobile Layout: keep strict structure */}
+      <div className="flex lg:hidden w-full items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="Logo" className="h-8 w-auto object-contain" />
+          <div className="flex flex-col border-l border-white/10 pl-3">
+            <span className={`text-[10px] font-black uppercase truncate max-w-[150px] ${arenaColorClass}`}>{currentArena.name}</span>
+            <span className="text-[6px] text-gray-400 font-mono opacity-80 uppercase">Atualizado {lastUpdate}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1 mt-0.5 ml-3.5 sm:ml-4">
-          <span className={`text-[6px] sm:text-[7px] font-black tracking-[0.1em] uppercase truncate max-w-[70px] sm:max-w-[100px] ${arenaColorClass}`}>
-            {currentArena.name}
-          </span>
-          <div className="w-px h-1.5 bg-gray-800"></div>
-          <span className="text-[5px] sm:text-[6px] text-gray-600 font-mono tracking-tighter">{lastUpdate}</span>
+        <nav className="flex items-center gap-1">
+          <NavButton label="Placar" icon={<ClipboardListIcon />} isActive={currentView === 'placar'} onClick={() => onNavigate('placar')} activeColorClass={arenaColorClass} />
+          <NavButton label="Histórico" icon={<HistoryIcon />} isActive={currentView === 'historico'} onClick={() => onNavigate('historico')} activeColorClass={arenaColorClass} />
+          <NavButton label="Atletas" icon={<UsersIcon />} isActive={currentView === 'atletas'} onClick={() => onNavigate('atletas')} activeColorClass={arenaColorClass} />
+          <NavButton label="Ranking" icon={<TrophyIcon />} isActive={currentView === 'ranking'} onClick={() => onNavigate('ranking')} activeColorClass={arenaColorClass} />
+          <NavButton label="Config" icon={<CogIcon />} isActive={currentView === 'config'} onClick={() => onNavigate('config')} activeColorClass={arenaColorClass} />
+        </nav>
+        <button onClick={handleLogoutWithConfirmation} className="p-2 text-red-500 flex flex-col items-center">
+          <LogOutIcon className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* 2. Tablet/Desktop Layout: Standard Flexbox (Clean Slate) */}
+      <div className="hidden lg:flex w-full h-full items-center justify-between px-6 max-w-[1600px] mx-auto">
+        {/* Left Section */}
+        <div className="flex items-center gap-4">
+          <NavButton label="Placar" icon={<ClipboardListIcon />} isActive={currentView === 'placar'} onClick={() => onNavigate('placar')} activeColorClass={arenaColorClass} />
+          <NavButton label="Histórico" icon={<HistoryIcon />} isActive={currentView === 'historico'} onClick={() => onNavigate('historico')} activeColorClass={arenaColorClass} />
+          <NavButton label="Atletas" icon={<UsersIcon />} isActive={currentView === 'atletas'} onClick={() => onNavigate('atletas')} activeColorClass={arenaColorClass} />
+        </div>
+
+        {/* Central Branding: Simple Flex Item (No Absolute) */}
+        <div className="flex items-center justify-center gap-4 px-8 border-x border-white/5 bg-white/5 py-2 rounded-xl">
+          <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
+          <div className="flex flex-col">
+            <span className={`text-sm md:text-base lg:text-xl font-black uppercase tracking-widest whitespace-nowrap ${arenaColorClass}`}>
+              {currentArena.name}
+            </span>
+            <span className="text-[9px] text-gray-400 font-mono opacity-80 uppercase tracking-widest leading-none">
+              {lastUpdate}
+            </span>
+          </div>
+        </div>
+
+        {/* Right Section */}
+        <div className="flex items-center gap-4">
+          <NavButton label="Ranking" icon={<TrophyIcon />} isActive={currentView === 'ranking'} onClick={() => onNavigate('ranking')} activeColorClass={arenaColorClass} />
+          <NavButton label="Config" icon={<CogIcon />} isActive={currentView === 'config'} onClick={() => onNavigate('config')} activeColorClass={arenaColorClass} />
+          {isAdmin && (
+            <NavButton label="ADM" icon={<UserCogIcon />} isActive={currentView === 'admin'} onClick={() => onNavigate('admin')} activeColorClass="text-rose-500" />
+          )}
+          <NavButton
+            label="Focar"
+            icon={isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
+            isActive={false}
+            onClick={toggleFullscreen}
+            activeColorClass="text-white"
+          />
+
+          {/* Logout Button: Standard */}
+          <div className="border-l border-white/10 pl-4 ml-2">
+            <button
+              onClick={handleLogoutWithConfirmation}
+              className="text-red-500 hover:text-red-400 transition-all active:scale-95 flex flex-col items-center group px-2"
+            >
+              <LogOutIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-50 group-hover:opacity-100 transition-opacity">Sair</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <nav className="flex items-center gap-0.5 sm:gap-1 flex-1 justify-center px-1">
-        <NavButton label="Placar" icon={<ClipboardListIcon />} isActive={currentView === 'placar'} onClick={() => onNavigate('placar')} activeColorClass={arenaColorClass} />
-        <NavButton label="Histórico" icon={<HistoryIcon />} isActive={currentView === 'historico'} onClick={() => onNavigate('historico')} activeColorClass={arenaColorClass} />
-        <NavButton label="Atletas" icon={<UsersIcon />} isActive={currentView === 'atletas'} onClick={() => onNavigate('atletas')} activeColorClass={arenaColorClass} />
-        <NavButton label="Ranking" icon={<TrophyIcon />} isActive={currentView === 'ranking'} onClick={() => onNavigate('ranking')} activeColorClass={arenaColorClass} />
-        <NavButton label="Config" icon={<CogIcon />} isActive={currentView === 'config'} onClick={() => onNavigate('config')} activeColorClass={arenaColorClass} />
-        {isAdmin && (
-          <NavButton label="ADM" icon={<UserCogIcon />} isActive={currentView === 'admin'} onClick={() => onNavigate('admin')} activeColorClass="text-rose-500" />
-        )}
-      </nav>
-
-      <div className="flex items-center gap-1 sm:gap-2 min-w-[70px] justify-end relative">
-        {showIosTip && (
-          <div className="absolute top-12 right-0 bg-white text-black p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] text-[9px] font-black uppercase tracking-tighter w-48 animate-in slide-in-from-top-2 z-[100] border-2 border-indigo-500">
+      {/* iOS Installation Tip Tip */}
+      {
+        showIosTip && (
+          <div className="absolute top-full right-4 sm:right-16 bg-white text-black p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] text-[9px] font-black uppercase tracking-tighter w-48 animate-in slide-in-from-top-2 z-[100] border-2 border-indigo-500 mt-2">
             <div className="flex flex-col gap-2">
               <p>No iPhone, toque em <span className="text-blue-600">Compartilhar</span> <svg className="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg></p>
               <p>E selecione <span className="text-blue-600">"Adicionar à Tela de Início"</span> para focar.</p>
             </div>
             <div className="absolute -top-2 right-6 w-4 h-4 bg-white rotate-45 border-l-2 border-t-2 border-indigo-500"></div>
           </div>
-        )}
-        <button onClick={toggleFullscreen} className="p-1.5 text-gray-600 hover:text-white transition-all active:scale-95 flex flex-col items-center">
-          {isFullscreen ? <MinimizeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <MaximizeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-          <span className="text-[4px] sm:text-[5px] font-black uppercase tracking-widest mt-0.5">Focar</span>
-        </button>
-        <button onClick={onLogout} className="p-1.5 text-red-500 hover:text-red-400 transition-all active:scale-95 flex flex-col items-center ml-0.5">
-          <LogOutIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="text-[4px] sm:text-[5px] font-black uppercase tracking-widest mt-0.5">Sair</span>
-        </button>
-      </div>
+        )
+      }
     </header>
   );
 };

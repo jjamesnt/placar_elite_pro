@@ -43,7 +43,7 @@ interface VictoryData {
   isCapote: boolean;
 }
 
-const Placar: React.FC<PlacarProps> = ({ 
+const Placar: React.FC<PlacarProps> = ({
   allPlayers, onSaveGame, winScore, setWinScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, currentArena,
   teamA, setTeamA, teamB, setTeamB, servingTeam, setServingTeam, history, setHistory,
   isSidesSwitched, setIsSidesSwitched, gameStartTime, setGameStartTime, resetGame,
@@ -108,28 +108,28 @@ const Placar: React.FC<PlacarProps> = ({
 
   useEffect(() => {
     if (attackTimer.isActive) {
-        if (attackTimer.timeLeft <= 10 && attackTimer.timeLeft > 0) {
-            playSound('countdownBeep');
-        } else if (attackTimer.timeLeft === 0) {
-            playSound('timerEndBeep');
-            vibrate([150, 50, 150]);
-        }
+      if (attackTimer.timeLeft <= 10 && attackTimer.timeLeft > 0) {
+        playSound('countdownBeep');
+      } else if (attackTimer.timeLeft === 0) {
+        playSound('timerEndBeep');
+        vibrate([150, 50, 150]);
+      }
     }
   }, [attackTimer.timeLeft, attackTimer.isActive, playSound, vibrate]);
-  
+
   const handleScoreChange = useCallback((setter: 'A' | 'B', newScore: number) => {
     setHistory(prev => [...prev, { teamA: { ...teamA }, teamB: { ...teamB }, servingTeam }].slice(-10));
-    
+
     if (!gameStartTime && newScore > 0) {
       setGameStartTime(new Date());
     }
 
     if (setter === 'A') {
-        setTeamA(prev => ({ ...prev, score: newScore }));
-        if (newScore > teamA.score) setServingTeam('A');
+      setTeamA(prev => ({ ...prev, score: newScore }));
+      if (newScore > teamA.score) setServingTeam('A');
     } else {
-        setTeamB(prev => ({ ...prev, score: newScore }));
-        if (newScore > teamB.score) setServingTeam('B');
+      setTeamB(prev => ({ ...prev, score: newScore }));
+      if (newScore > teamB.score) setServingTeam('B');
     }
 
     playSound('point');
@@ -152,9 +152,9 @@ const Placar: React.FC<PlacarProps> = ({
   const handlePlayerSelect = useCallback((team: 'A' | 'B', player: Player, index: number) => {
     const setter = team === 'A' ? setTeamA : setTeamB;
     setter(prev => {
-        const newPlayers = [...prev.players];
-        newPlayers[index] = player;
-        return { ...prev, players: newPlayers };
+      const newPlayers = [...prev.players];
+      newPlayers[index] = player;
+      return { ...prev, players: newPlayers };
     });
   }, [setTeamA, setTeamB]);
 
@@ -183,7 +183,7 @@ const Placar: React.FC<PlacarProps> = ({
     }
 
     const duration = gameStartTime ? Math.round((new Date().getTime() - gameStartTime.getTime()) / 60000) : 0;
-    
+
     const matchData = {
       teamA: { players: teamA.players.filter(p => p) as Player[], score: teamA.score },
       teamB: { players: teamB.players.filter(p => p) as Player[], score: teamB.score },
@@ -192,7 +192,7 @@ const Placar: React.FC<PlacarProps> = ({
       capoteApplied: isCapoteWin,
       vaiATresTriggered: winScore > initialWinScore,
     } as Omit<Match, 'id' | 'timestamp'>;
-    
+
     onSaveGame(matchData);
     setToastMessage("Vitória registrada! Nova partida iniciada.");
     setVictoryData(null);
@@ -200,18 +200,18 @@ const Placar: React.FC<PlacarProps> = ({
   }, [isGameWon, teamA, teamB, onSaveGame, gameStartTime, playSound, vibrate, isCapoteWin, winScore, initialWinScore]);
 
   const switchSides = useCallback(() => {
-      setIsSidesSwitched(prev => !prev);
-      vibrate(50);
+    setIsSidesSwitched(prev => !prev);
+    vibrate(50);
   }, [vibrate, setIsSidesSwitched]);
-  
+
   const handleToggleTimer = useCallback(() => {
     if (attackTimer.isActive) {
-        attackTimer.pause();
+      attackTimer.pause();
     } else if (attackTimer.isPaused) {
-        attackTimer.resume();
+      attackTimer.resume();
     } else {
-        attackTimer.start();
-        playSound('timerStartBeep');
+      attackTimer.start();
+      playSound('timerStartBeep');
     }
   }, [attackTimer, playSound]);
 
@@ -224,26 +224,35 @@ const Placar: React.FC<PlacarProps> = ({
 
   return (
     <div className="h-full w-full p-1 sm:p-2 lg:p-4 grid grid-cols-[1fr_0.8fr_1fr] md:grid-cols-[1.1fr_0.7fr_1.1fr] lg:grid-cols-[1.2fr_0.6fr_1.2fr] gap-1 sm:gap-3 lg:gap-6 relative overflow-hidden bg-transparent max-w-[1600px] mx-auto">
-      
+
       {victoryData && (
         <VictoryModal
           victoryData={victoryData}
           onClose={() => setVictoryData(null)}
           onSave={saveGame}
           onNewGame={() => handleConfirmReset(true)}
+          onUndo={() => {
+            handleUndo();
+            setVictoryData(null);
+          }}
           arenaColor={currentArena.color}
         />
       )}
-      
+
       {showVaiATresModal && (
-        <VaiATresModal 
+        <VaiATresModal
           newWinScore={winScore}
           onClose={() => setShowVaiATresModal(false)}
+          onUndo={() => {
+            handleUndo();
+            setWinScore(prev => prev - 2);
+            setShowVaiATresModal(false);
+          }}
         />
       )}
 
       <div className="min-h-0 h-full overflow-hidden">
-        <ScoreCard 
+        <ScoreCard
           teamName={teamNameLeft}
           teamData={teamLeft}
           onScoreChange={(score) => handleScoreChange(teamLeftKey, score)}
@@ -257,7 +266,7 @@ const Placar: React.FC<PlacarProps> = ({
       </div>
 
       <div className="w-full flex-shrink-0 flex items-center justify-center min-h-0 overflow-hidden">
-        <CenterConsole 
+        <CenterConsole
           timeLeft={attackTimer.timeLeft}
           isTimerActive={attackTimer.isActive}
           onToggleTimer={handleToggleTimer}
@@ -273,7 +282,7 @@ const Placar: React.FC<PlacarProps> = ({
       </div>
 
       <div className="min-h-0 h-full overflow-hidden">
-        <ScoreCard 
+        <ScoreCard
           teamName={teamNameRight}
           teamData={teamRight}
           onScoreChange={(score) => handleScoreChange(teamRightKey, score)}
@@ -293,21 +302,21 @@ const Placar: React.FC<PlacarProps> = ({
       )}
 
       {showResetConfirm && (
-          <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-4" onClick={() => setShowResetConfirm(false)}>
-              <div className="bg-[#090e1a] border border-white/10 rounded-[1.5rem] p-4 sm:p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-                  <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 mx-auto">
-                     <RefreshCwIcon className="w-6 h-6" />
-                  </div>
-                  <h2 className="text-lg sm:text-xl font-black text-white text-center mb-1 uppercase tracking-tighter">Zerar Placar?</h2>
-                  <p className="text-white/30 text-center mb-6 sm:mb-8 leading-relaxed text-[8px] sm:text-[10px] uppercase font-bold tracking-widest">
-                      O progresso atual será perdido permanentemente.
-                  </p>
-                  <div className="flex flex-col gap-3">
-                      <button onClick={() => handleConfirmReset(false)} className="w-full py-3 sm:py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20">Confirmar</button>
-                      <button onClick={() => setShowResetConfirm(false)} className="w-full py-3 sm:py-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] tracking-widest hover:text-white transition-colors">Voltar</button>
-                  </div>
-              </div>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-4" onClick={() => setShowResetConfirm(false)}>
+          <div className="bg-[#090e1a] border border-white/10 rounded-[1.5rem] p-4 sm:p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 mx-auto">
+              <RefreshCwIcon className="w-6 h-6" />
+            </div>
+            <h2 className="text-lg sm:text-xl font-black text-white text-center mb-1 uppercase tracking-tighter">Zerar Placar?</h2>
+            <p className="text-white/30 text-center mb-6 sm:mb-8 leading-relaxed text-[8px] sm:text-[10px] uppercase font-bold tracking-widest">
+              O progresso atual será perdido permanentemente.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button onClick={() => handleConfirmReset(false)} className="w-full py-3 sm:py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20">Confirmar</button>
+              <button onClick={() => setShowResetConfirm(false)} className="w-full py-3 sm:py-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] tracking-widest hover:text-white transition-colors">Voltar</button>
+            </div>
           </div>
+        </div>
       )}
     </div>
   );
