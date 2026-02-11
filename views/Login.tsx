@@ -23,19 +23,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     try {
       if (isSignUp) {
-        const { error: signUpError } = await supabase.auth.signUp({ 
-          email: email.trim().toLowerCase(), 
-          password 
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
+          password
         });
-        
+
         if (signUpError) throw signUpError;
-        
+
         setSuccess('SOLICITAÇÃO ENVIADA! AGUARDE APROVAÇÃO DO ADM.');
-        setIsSignUp(false); 
+        setIsSignUp(false);
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ 
-          email: email.trim().toLowerCase(), 
-          password 
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password
         });
         if (signInError) throw signInError;
         onLogin();
@@ -43,7 +43,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     } catch (err: any) {
       console.error("Erro no login:", err);
       let msg = err.message || 'Erro desconhecido';
-      
+
       if (msg.includes('rate limit')) {
         msg = 'Muitas tentativas! Aguarde alguns minutos ou use outra rede.';
       } else if (msg.includes('Invalid login credentials')) {
@@ -53,7 +53,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       } else if (msg.includes('Password should be at least 6 characters')) {
         msg = 'A senha deve ter pelo menos 6 caracteres.';
       }
-      
+
       setError(msg.toUpperCase());
     } finally {
       setLoading(false);
@@ -65,16 +65,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className={`absolute w-[600px] h-[600px] rounded-full blur-[140px] opacity-10 transition-all duration-1000 -z-10 ${isSignUp ? 'bg-emerald-500 -top-20 -right-20' : 'bg-indigo-500 -bottom-20 -left-20'}`}></div>
 
       <div className={`w-full max-w-sm bg-[#090e1a]/80 backdrop-blur-3xl border rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl transition-all duration-500 ${isSignUp ? 'border-emerald-500/30 shadow-emerald-500/20' : 'border-indigo-500/20 shadow-indigo-500/10'}`}>
-        
+
         <div className="flex flex-col items-center mb-8">
-          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-6 border shadow-2xl transition-all duration-500 ${isSignUp ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 scale-110 shadow-emerald-500/20' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500'}`}>
-            {isSignUp ? <UserPlusIcon className="w-8 h-8" /> : <ShieldIcon className="w-8 h-8" />}
-          </div>
-          
-          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-white text-center leading-none">
-            {isSignUp ? 'Nova Conta' : 'Placar Elite Pro'}
-          </h1>
-          <p className={`text-[10px] font-black uppercase tracking-[0.5em] mt-3 ${isSignUp ? 'text-emerald-500' : 'text-indigo-400/50'}`}>
+          <img
+            src="/logo.png"
+            alt="Placar Elite Pro"
+            className="h-20 sm:h-24 w-auto object-contain mb-2 animate-in fade-in zoom-in duration-700"
+          />
+          <p className={`text-[10px] font-black uppercase tracking-[0.5em] ${isSignUp ? 'text-emerald-500' : 'text-indigo-400/50'}`}>
             {isSignUp ? 'SOLICITAR ACESSO À ARENA' : 'PROFESSIONAL SCOREBOARD'}
           </p>
         </div>
@@ -82,7 +80,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Seu E-mail</label>
-            <input 
+            <input
               type="email" value={email} onChange={e => setEmail(e.target.value)}
               className={`w-full bg-white/[0.03] border rounded-xl sm:rounded-2xl py-3 px-5 text-sm text-white focus:outline-none transition-all placeholder:text-white/5 ${isSignUp ? 'focus:border-emerald-500 border-white/10' : 'focus:border-indigo-500 border-white/10'}`}
               placeholder="exemplo@gmail.com" required
@@ -91,7 +89,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Sua Senha</label>
-            <input 
+            <input
               type="password" value={password} onChange={e => setPassword(e.target.value)}
               className={`w-full bg-white/[0.03] border rounded-xl sm:rounded-2xl py-3 px-5 text-sm text-white focus:outline-none transition-all placeholder:text-white/5 ${isSignUp ? 'focus:border-emerald-500 border-white/10' : 'focus:border-indigo-500 border-white/10'}`}
               placeholder="••••••••" required
@@ -100,34 +98,34 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center animate-in fade-in slide-in-from-top-2">
-               <p className="text-[9px] font-black uppercase tracking-widest text-red-500 leading-relaxed">{error}</p>
+              <p className="text-[9px] font-black uppercase tracking-widest text-red-500 leading-relaxed">{error}</p>
             </div>
           )}
 
           {success && (
             <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-center animate-in fade-in slide-in-from-top-2">
-               <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 leading-relaxed">{success}</p>
+              <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 leading-relaxed">{success}</p>
             </div>
           )}
 
           <div className="space-y-3 pt-2">
-            <button 
+            <button
               type="submit" disabled={loading}
               className={`w-full py-4 rounded-xl sm:rounded-2xl font-black uppercase text-[11px] sm:text-[12px] tracking-widest shadow-2xl active:scale-[0.96] transition-all disabled:opacity-50 text-white flex items-center justify-center gap-3 ${isSignUp ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/40' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/40'}`}
             >
               {loading ? <LoaderIcon className="w-5 h-5 animate-spin" /> : (isSignUp ? 'Enviar Solicitação' : 'Entrar na Arena')}
             </button>
-            
+
             <div className="flex flex-col gap-2">
-              <button 
-                type="button" 
-                onClick={() => { setIsSignUp(!isSignUp); setError(''); setSuccess(''); }} 
+              <button
+                type="button"
+                onClick={() => { setIsSignUp(!isSignUp); setError(''); setSuccess(''); }}
                 className={`w-full text-[10px] font-black uppercase tracking-[0.2em] py-2 transition-all rounded-xl border ${isSignUp ? 'text-white/40 border-transparent hover:text-white' : 'text-emerald-500/60 border-emerald-500/5 hover:border-emerald-500/20 hover:text-emerald-400'}`}
               >
                 {isSignUp ? 'Já possui conta? Fazer Login' : 'Novo por aqui? Criar Conta'}
               </button>
 
-              <a 
+              <a
                 href="https://wa.me/5531984211900"
                 target="_blank"
                 className="w-full flex items-center justify-center gap-2 py-2 text-[9px] font-black uppercase tracking-widest text-indigo-400/60 hover:text-indigo-400 transition-all"

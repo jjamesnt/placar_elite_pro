@@ -331,8 +331,12 @@ const App: React.FC = () => {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center p-8 bg-[#030712] text-center">
         <Background color="rose" />
-        <div className="w-24 h-24 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500 mb-8 border border-rose-500/20 shadow-[0_0_30px_rgba(244,63,94,0.3)]">
-          <ShieldIcon className="w-12 h-12" />
+        <div className="mb-10 animate-in fade-in zoom-in duration-700">
+          <img
+            src="/logo.png"
+            alt="Placar Elite Pro"
+            className="h-24 sm:h-32 w-auto object-contain drop-shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+          />
         </div>
         <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-4">{isBlocked ? 'Aguardando Aprovação' : 'Acesso Expirado'}</h1>
         <p className="text-white/40 max-w-md font-bold uppercase tracking-widest text-[10px] leading-relaxed mb-10">
