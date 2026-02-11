@@ -235,6 +235,10 @@ const App: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [currentArenaId, userLicense]);
+
+  // Audio warm-up and interaction listeners (Move out of dead code)
+  useEffect(() => {
     const handleUserInteraction = () => {
       warmUpAudioContext();
       window.removeEventListener('click', handleUserInteraction);
@@ -251,7 +255,7 @@ const App: React.FC = () => {
       window.removeEventListener('touchstart', handleUserInteraction, { capture: true });
       window.removeEventListener('keydown', handleUserInteraction, { capture: true });
     };
-  }, [currentArenaId, userLicense, refreshData]);
+  }, []);
 
 
   const handleSaveMatch = async (matchData: Omit<Match, 'id' | 'timestamp'>) => {
@@ -260,6 +264,26 @@ const App: React.FC = () => {
     if (data) {
       resetGame(true);
       refreshData();
+    }
+  };
+
+  const handleClearMatches = async (mode: 'all' | 'day', date?: Date) => {
+    if (!session || currentArenaId === 'default') return;
+
+    let query = supabase.from('matches').delete().eq('arena_id', currentArenaId);
+
+    if (mode === 'day' && date) {
+      const start = new Date(date);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(date);
+      end.setHours(23, 59, 59, 999);
+      query = query.gte('created_at', start.toISOString()).lte('created_at', end.toISOString());
+    }
+
+    const { error } = await query;
+    if (!error) {
+      refreshData();
+      if (mode === 'all') resetGame(true);
     }
   };
 
@@ -335,7 +359,7 @@ const App: React.FC = () => {
         <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} currentArena={currentArena} onLogout={handleLogout} isAdmin={isAdmin} />
         <main className="flex-1 overflow-y-auto">
           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} />}
-          {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} />}
+          {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} onClearMatches={handleClearMatches} />}
           {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} />}
           {currentView === 'ranking' && (
             <Ranking
@@ -347,6 +371,7 @@ const App: React.FC = () => {
               setFilter={setRankingFilter}
               viewDate={rankingViewDate}
               setViewDate={setRankingViewDate}
+              onClearMatches={handleClearMatches}
             />
           )}
           {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} capoteEnabled={capoteEnabled} setCapoteEnabled={setCapoteEnabled} vaiATresEnabled={vaiATresEnabled} setVaiATresEnabled={setVaiATresEnabled} />}

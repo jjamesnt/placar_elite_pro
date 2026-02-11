@@ -6,11 +6,13 @@ interface HistoricoProps {
   matches: Match[];
   setMatches: React.Dispatch<React.SetStateAction<Match[]>>;
   currentArena: Arena;
+  onClearMatches: (mode: 'all' | 'day', date?: Date) => Promise<void>;
 }
 
-const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena }) => {
+const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena, onClearMatches }) => {
   const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
   const [filterDate, setFilterDate] = useState<string>('');
+  const [showClearModal, setShowClearModal] = useState(false);
 
   const filteredMatches = useMemo(() => {
     if (!filterDate) return matches;
@@ -25,6 +27,12 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
       setMatches(prev => prev.filter(m => m.id !== matchToDelete.id));
       setMatchToDelete(null);
     }
+  };
+
+  const handleClearConfirmed = async (mode: 'all' | 'day') => {
+    const dateObj = filterDate ? new Date(filterDate + 'T12:00:00') : undefined;
+    await onClearMatches(mode, dateObj);
+    setShowClearModal(false);
   };
 
   const handleExport = () => {
@@ -170,10 +178,15 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
             )}
           </div>
 
-          <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-xl text-[9px] font-black shadow-xl hover:bg-gray-600 transition-colors uppercase">
-            <FileDownIcon className="w-3 h-3" />
-            Exportar
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowClearModal(true)} className="p-2.5 bg-red-600/20 text-red-500 rounded-xl hover:bg-red-600/30 transition-colors shadow-lg border border-red-500/20">
+              <Trash2Icon className="w-4 h-4" />
+            </button>
+            <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-xl text-[9px] font-black shadow-xl hover:bg-gray-600 transition-colors uppercase">
+              <FileDownIcon className="w-3 h-3" />
+              Exportar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -246,6 +259,42 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
             <div className="flex gap-4">
               <button onClick={() => setMatchToDelete(null)} className="flex-1 p-4 bg-gray-800 text-gray-400 rounded-2xl font-black uppercase text-[10px]">Voltar</button>
               <button onClick={handleDelete} className="flex-1 p-4 bg-red-600 text-white rounded-2xl font-black uppercase text-[10px]">Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showClearModal && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[110] flex items-center justify-center p-4 print:hidden" onClick={() => setShowClearModal(false)}>
+          <div className="bg-gray-900 border border-red-500/20 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-black text-white mb-2 uppercase tracking-tighter text-center">Limpar Dados?</h2>
+            <p className="text-gray-500 mb-8 text-center text-[10px] font-bold uppercase tracking-widest leading-relaxed">
+              Você deseja apagar as partidas da Arena <span className="text-indigo-400">{currentArena.name}</span>?
+            </p>
+
+            <div className="flex flex-col gap-3">
+              {filterDate && (
+                <button
+                  onClick={() => handleClearConfirmed('day')}
+                  className="w-full p-4 bg-gray-800 text-white border border-gray-700 rounded-2xl font-black uppercase text-[10px] flex flex-col items-center gap-1 active:scale-95 transition-transform"
+                >
+                  <span>Apagar apenas o dia</span>
+                  <span className="text-indigo-400 opacity-70">{new Date(filterDate + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => handleClearConfirmed('all')}
+                className="w-full p-5 bg-red-600 text-white rounded-2xl font-black uppercase text-[11px] shadow-[0_0_20px_rgba(220,38,38,0.3)] active:scale-95 transition-transform"
+              >
+                LIMPAR TODO O HISTÓRICO
+              </button>
+
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="w-full p-4 text-gray-500 font-black uppercase text-[10px] tracking-widest"
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         </div>

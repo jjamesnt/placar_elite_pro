@@ -3,12 +3,11 @@ import React from 'react';
 import { ZapIcon } from './icons';
 
 interface VaiATresModalProps {
-  newWinScore: number;
   onClose: () => void;
   onUndo: () => void;
 }
 
-const VaiATresModal: React.FC<VaiATresModalProps> = ({ newWinScore, onClose, onUndo }) => {
+const VaiATresModal: React.FC<VaiATresModalProps> = ({ onClose, onUndo }) => {
   return (
     <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[120] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={onClose}>
       <div
@@ -24,15 +23,19 @@ const VaiATresModal: React.FC<VaiATresModalProps> = ({ newWinScore, onClose, onU
           <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-amber-400">
             VAI A TRÊS!
           </h1>
-          <p className="text-xs sm:text-sm font-bold text-white mt-3">
-            A PARTIDA FOI ESTENDIDA.
+          <p className="text-xs sm:text-sm font-bold text-white mt-3 leading-relaxed">
+            DISPUTA DE <span className="text-amber-400">3 PONTOS CORRIDOS</span>
           </p>
-          <p className="text-[10px] sm:text-xs font-normal text-white/40 mt-1">
-            A nova pontuação para a vitória é:
+          <p className="text-[10px] sm:text-xs font-normal text-white/40 mt-1 px-4">
+            O placar principal está travado. Quem fizer 3 pontos primeiro no mini-placar vence o desempate!
           </p>
 
           <div className="my-4 sm:my-6 w-full flex items-center justify-center">
-            <p className="text-5xl sm:text-6xl font-mono font-black text-white">{newWinScore}</p>
+            <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
+              <span className="text-4xl font-mono font-black text-white/20">0</span>
+              <span className="text-xl font-black text-amber-500 italic">VS</span>
+              <span className="text-4xl font-mono font-black text-white/20">0</span>
+            </div>
           </div>
 
           <div className="w-full">

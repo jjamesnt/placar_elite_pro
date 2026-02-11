@@ -42,19 +42,26 @@ export const useAttackTimer = (initialTime: number = 24) => {
   }, [initialTime]);
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     if (isActive && !isPaused && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            if (interval) clearInterval(interval);
+            setIsActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
-    } else if (timeLeft === 0 && isActive) {
-      setIsActive(false);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = interval;
     }
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (interval) clearInterval(interval);
     };
-  }, [isActive, isPaused, timeLeft]);
+  }, [isActive, isPaused]);
 
   return { timeLeft, start, reset, isActive, isPaused, pause, resume };
 };
@@ -120,65 +127,131 @@ export const warmUpAudioContext = () => {
 
 export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme }: SensoryFeedbackProps) => {
 
-  const playSound = useCallback((type: 'point' | 'error' | 'win' | 'countdownBeep' | 'timerEndBeep' | 'timerStartBeep') => {
+  const playSound = useCallback((type: 'point' | 'error' | 'win' | 'emergencyAlert' | 'countdownBeep' | 'timerEndBeep' | 'timerStartBeep', isEmergency: boolean = false) => {
     if (!soundEnabled) return;
     const ctx = getAudioContext();
     if (!ctx) return;
 
-    // Se suspenso, tenta acordar mas NÃO espera (fire-and-forget segura)
     const isSuspended = ctx.state === 'suspended';
     if (isSuspended) {
       ctx.resume().catch(e => console.error("Audio resume error:", e));
     }
 
-    // Buffer maior se estiver acordando, menor se já estiver rodando
     const activeBuffer = isSuspended ? 0.1 : 0.05;
+    const now = ctx.currentTime + activeBuffer;
+
+    // Função auxiliar para ruído FILTRADO (mais impacto, menos chiado)
+    const playNoise = (duration: number, volume: number, filterFreq = 1000) => {
+      const bufferSize = ctx.sampleRate * duration;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(filterFreq, now);
+      filter.Q.setValueAtTime(1, now);
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(volume, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+
+      noise.start(now);
+      noise.stop(now + duration);
+    };
+
+    if (type === 'emergencyAlert') {
+      // Sirene de Guerra Duplicada (2 ciclos)
+      const cycles = 2;
+      const cycleDuration = 1.0;
+
+      for (let c = 0; c < cycles; c++) {
+        const cycleStart = now + (c * cycleDuration);
+        for (let i = 0; i < 2; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = i === 0 ? 'sawtooth' : 'square';
+          osc.frequency.setValueAtTime(300 + (i * 10), cycleStart);
+          osc.frequency.linearRampToValueAtTime(600, cycleStart + 0.5);
+          osc.frequency.linearRampToValueAtTime(300, cycleStart + 1.0);
+          gain.gain.setValueAtTime(0, cycleStart);
+          gain.gain.linearRampToValueAtTime(0.3, cycleStart + 0.1);
+          gain.gain.linearRampToValueAtTime(0.3, cycleStart + 0.9);
+          gain.gain.exponentialRampToValueAtTime(0.0001, cycleStart + 1.0);
+          osc.start(cycleStart);
+          osc.stop(cycleStart + 1.0);
+        }
+        playNoise(0.5, 0.15, 800);
+      }
+      return;
+    }
 
     if (type === 'win') {
-      const now = ctx.currentTime;
-      // Fanfarra alegre (Arpejo Dó Maior Ascendente)
-      const notes = [
-        { f: 523.25, d: 0.15, t: 0 },    // C5
-        { f: 659.25, d: 0.15, t: 0.12 }, // E5
-        { f: 783.99, d: 0.15, t: 0.24 }, // G5
-        { f: 1046.50, d: 0.6, t: 0.36 }, // C6 (Nota Final)
-      ];
-
-      notes.forEach(note => {
+      // Fanfarra de Batalha (Acorde de Poder)
+      const freqs = isEmergency ? [261.63, 329.63, 392.00, 523.25, 659.25] : [523.25, 659.25, 783.99, 1046.50];
+      freqs.forEach((f, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.type = 'triangle';
-        const startTime = now + note.t + activeBuffer; // Usa buffer dinâmico
-        osc.frequency.setValueAtTime(note.f, startTime);
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.4, startTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + note.d);
-        osc.start(startTime);
-        osc.stop(startTime + note.d);
+        osc.type = isEmergency ? 'sawtooth' : 'triangle';
+        const start = now + (isEmergency ? 0 : i * 0.12);
+        osc.frequency.setValueAtTime(f, start);
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.4, start + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 1.5);
+        osc.start(start);
+        osc.stop(start + 1.5);
       });
+      if (isEmergency) playNoise(1.5, 0.2, 500); // Grande impacto final (Low-pass 500Hz para peso)
+      return;
+    }
+
+    if (type === 'point' && isEmergency) {
+      // IMPACTO / EXPLOSÃO DE PONTUAÇÃO (Limpo)
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+      gain.gain.setValueAtTime(0.8, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+      playNoise(0.2, 0.5, 1200); // Explosão controlada (Low-pass 1200Hz para brilho sem chiado)
       return;
     }
 
     const scheme = soundSchemes[soundScheme];
     if (type === 'timerEndBeep') {
-      const now = ctx.currentTime;
-      const loopCount = soundScheme === 'intenso' ? 8 : 5;
-      const interval = soundScheme === 'intenso' ? 0.12 : 0.18;
+      const loopCount = isEmergency ? 15 : (soundScheme === 'intenso' ? 8 : 5);
+      const interval = isEmergency ? 0.06 : (soundScheme === 'intenso' ? 0.12 : 0.18);
       for (let i = 0; i < loopCount; i++) {
-        const startTime = now + i * interval + activeBuffer; // Usa buffer dinâmico
+        const startTime = now + i * interval;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.type = soundScheme === 'intenso' ? 'sawtooth' : 'sine';
-        osc.frequency.setValueAtTime(1500, startTime);
+        osc.type = isEmergency ? 'square' : (soundScheme === 'intenso' ? 'sawtooth' : 'sine');
+        osc.frequency.setValueAtTime(isEmergency ? 80 + (i * 100) : 1500, startTime);
         gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.5, startTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.00001, startTime + 0.15);
+        gain.gain.linearRampToValueAtTime(0.6, startTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.1);
         osc.start(startTime);
-        osc.stop(startTime + 0.15);
+        osc.stop(startTime + 0.1);
       }
       return;
     }
@@ -187,18 +260,17 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
     const gainNode = ctx.createGain();
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
-    const params = scheme[type as keyof typeof scheme];
-    const startTime = ctx.currentTime + activeBuffer; // Usa buffer dinâmico
+    const params = scheme[type as keyof typeof scheme] || scheme['point'];
 
-    oscillator.frequency.value = params.freq;
-    oscillator.type = params.type;
+    oscillator.frequency.value = isEmergency ? params.freq * 0.8 : params.freq;
+    oscillator.type = isEmergency ? 'square' : params.type;
 
-    gainNode.gain.setValueAtTime(0, startTime);
-    gainNode.gain.linearRampToValueAtTime(0.5, startTime + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + params.duration);
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(isEmergency ? 0.8 : 0.5, now + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + params.duration);
 
-    oscillator.start(startTime);
-    oscillator.stop(startTime + params.duration);
+    oscillator.start(now);
+    oscillator.stop(now + params.duration);
   }, [soundEnabled, soundScheme]);
 
   const vibrate = useCallback((pattern: number | number[]) => {

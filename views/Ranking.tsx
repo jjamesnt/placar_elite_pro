@@ -2,7 +2,7 @@
 import React from 'react';
 import { useState, useMemo } from 'react';
 import { Match, Player, ArenaColor } from '../types';
-import { FileDownIcon, Share2Icon } from '../components/icons';
+import { FileDownIcon, Share2Icon, Trash2Icon } from '../components/icons';
 import ExportPreviewModal from '../components/ExportPreviewModal';
 import StoryPreviewModal from '../components/StoryPreviewModal';
 
@@ -17,6 +17,7 @@ interface RankingProps {
   setFilter: (f: Filter) => void;
   viewDate: Date;
   setViewDate: (d: Date) => void;
+  onClearMatches: (mode: 'all' | 'day', date?: Date) => Promise<void>;
 }
 
 interface PlayerStats {
@@ -149,7 +150,10 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
     : `Arena ${arenaNameRaw}`;
 
   const headerTop = escapeHtml(formattedArenaName);
-  const headerTitle = "RANKING DO DIA";
+  const headerTitle = filter === 'Hoje' ? "RANKING DO DIA" :
+    filter === 'Semanal' ? "RANKING DA SEMANA" :
+      filter === 'Mensal' ? "RANKING DO MÊS" :
+        filter === 'Anual' ? "RANKING DO ANO" : "RANKING GERAL";
   const headerSubtitle = periodLabel;
 
   const logoSvg = logoDataUrl ? `
@@ -230,11 +234,17 @@ const formatDuration = (minutes: number) => {
   return `${m} m`;
 };
 
-const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaColor, filter, setFilter, viewDate, setViewDate }) => {
+const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaColor, filter, setFilter, viewDate, setViewDate, onClearMatches }) => {
   // State lifted to App.tsx for persistence
   const [exportImageUrl, setExportImageUrl] = useState<string | null>(null);
   const [isStoryMode, setIsStoryMode] = useState(false);
   const [showReportSelector, setShowReportSelector] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
+
+  const handleClearConfirmed = async (mode: 'all' | 'day') => {
+    await onClearMatches(mode, mode === 'day' ? viewDate : undefined);
+    setShowClearModal(false);
+  };
 
   const filteredMatches = useMemo(() => {
     return matches.filter(match => {
@@ -463,10 +473,13 @@ const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaCol
         )}
 
         <div className="flex gap-3 md:gap-6">
-          <button onClick={handleExportStory} className={`flex items-center gap-2 px-5 md:px-8 py-2.5 md:py-4 bg-gradient-to-br from-${arenaColor}-600 to-indigo-700 text-white rounded-xl text-[10px] md:text-sm font-black shadow-xl hover:scale-105 transition-transform active:scale-95 uppercase`}>
+          <button onClick={() => setShowClearModal(true)} className="p-2.5 md:p-4 bg-red-600/20 text-red-500 rounded-xl hover:bg-red-600/30 transition-colors shadow-lg border border-red-500/20 active:scale-95">
+            <Trash2Icon className="w-4 h-4 md:w-6 md:h-6" />
+          </button>
+          <button onClick={handleExportStory} className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 md:px-8 py-2.5 md:py-4 bg-gradient-to-br from-${arenaColor}-600 to-indigo-700 text-white rounded-xl text-[10px] md:text-sm font-black shadow-xl hover:scale-105 transition-transform active:scale-95 uppercase`}>
             <Share2Icon className="w-4 h-4 md:w-6 md:h-6" /> Exportar Story
           </button>
-          <button onClick={() => setShowReportSelector(true)} className="flex items-center gap-2 px-5 md:px-8 py-2.5 md:py-4 bg-gray-700 text-white rounded-xl text-[10px] md:text-sm font-black shadow-xl hover:bg-gray-600 transition-colors uppercase">
+          <button onClick={() => setShowReportSelector(true)} className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 md:px-8 py-2.5 md:py-4 bg-gray-700 text-white rounded-xl text-[10px] md:text-sm font-black shadow-xl hover:bg-gray-600 transition-colors uppercase">
             <FileDownIcon className="w-4 h-4 md:w-6 md:h-6" /> Relatório PDF
           </button>
         </div>
@@ -485,7 +498,7 @@ const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaCol
                     <th className="px-3 md:px-6 py-4 md:py-6 text-center print-th">JOGOS</th>
                     <th className="px-3 md:px-6 py-4 md:py-6 text-center print-th">TEMPO EM QUADRA</th>
                     <th className="px-3 md:px-6 py-4 md:py-6 text-center print-th">MÉDIA / JOGO</th>
-                    <th className={`px-3 md:px-6 py-4 md:py-6 text-center print:text-black md:text-base ${THEME_TEXT_CLASSES[arenaColor]}`}>LETALIDADE (%)</th>
+                    <th className={`px-3 md:px-6 py-4 md:py-6 text-center print:text-black md:text-base ${THEME_TEXT_CLASSES[arenaColor as ArenaColor]}`}>LETALIDADE (%)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700/20 print:divide-none">
@@ -497,7 +510,7 @@ const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaCol
                       <td className="px-3 md:px-6 py-4 md:py-6 text-center font-bold text-gray-400 print:text-black md:text-base print-td">{s.games}</td>
                       <td className="px-3 md:px-6 py-4 md:py-6 text-center font-bold text-gray-400 print:text-black md:text-base print-td">{formatDuration(s.totalDuration)}</td>
                       <td className="px-3 md:px-6 py-4 md:py-6 text-center font-bold text-gray-400 print:text-black md:text-base print-td">{s.games > 0 ? (s.totalDuration / s.games).toFixed(0) : '0'} min</td>
-                      <td className={`px-3 md:px-6 py-4 md:py-6 text-center font-mono font-black ${THEME_TEXT_CLASSES[arenaColor]} print:text-black md:text-lg print-td`}>
+                      <td className={`px-3 md:px-6 py-4 md:py-6 text-center font-mono font-black ${THEME_TEXT_CLASSES[arenaColor as ArenaColor]} print:text-black md:text-lg print-td`}>
                         {s.winRate.toFixed(0)}%
                       </td>
                     </tr>
@@ -510,6 +523,43 @@ const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaCol
       ) : (
         <div className="py-20 text-center flex flex-col items-center gap-4 bg-gray-800/20 rounded-[3rem] border border-dashed border-gray-700/30 print:hidden">
           <span className="text-gray-600 italic uppercase tracking-widest text-[9px]">Nenhum dado registrado para o período {filter}.</span>
+        </div>
+      )}
+
+      {showClearModal && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[110] flex items-center justify-center p-4 print:hidden" onClick={() => setShowClearModal(false)}>
+          <div className="bg-gray-900 border border-red-500/20 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-black text-white mb-2 uppercase tracking-tighter text-center">Limpar Ranking?</h2>
+            <p className="text-gray-500 mb-8 text-center text-[10px] font-bold uppercase tracking-widest leading-relaxed">
+              Você deseja apagar as partidas da Arena <span className="text-indigo-400">{arenaName}</span>? Isso resetará as estatísticas.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              {filter !== 'Total' && (
+                <button
+                  onClick={() => handleClearConfirmed('day')}
+                  className="w-full p-4 bg-gray-800 text-white border border-gray-700 rounded-2xl font-black uppercase text-[10px] flex flex-col items-center gap-1 active:scale-95 transition-transform"
+                >
+                  <span>Apagar dia visualizado</span>
+                  <span className="text-indigo-400 opacity-70">{viewDate.toLocaleDateString('pt-BR')}</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => handleClearConfirmed('all')}
+                className="w-full p-5 bg-red-600 text-white rounded-2xl font-black uppercase text-[11px] shadow-[0_0_20px_rgba(220,38,38,0.3)] active:scale-95 transition-transform"
+              >
+                LIMPAR TODO O HISTÓRICO
+              </button>
+
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="w-full p-4 text-gray-500 font-black uppercase text-[10px] tracking-widest"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
