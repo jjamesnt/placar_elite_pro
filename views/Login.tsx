@@ -49,7 +49,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       } else if (msg.includes('Invalid login credentials')) {
         msg = 'E-mail ou senha incorretos.';
       } else if (msg.includes('User already registered')) {
-        msg = 'Este e-mail já solicitou acesso.';
+        msg = 'Este e-mail já possui acesso. Tente fazer login acima.';
       } else if (msg.includes('Password should be at least 6 characters')) {
         msg = 'A senha deve ter pelo menos 6 caracteres.';
       }

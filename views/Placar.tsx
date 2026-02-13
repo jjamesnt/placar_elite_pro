@@ -104,17 +104,26 @@ const Placar: React.FC<PlacarProps> = ({
     }
   }, [isGameWon, victoryConfirmed, isCapoteWin, attackTimer, playSound, vibrate, teamA, teamB]);
 
+  useEffect(() => {
+    // Reseta a flag de alerta quando uma nova partida é iniciada (placar 0x0 e sem jogadores selecionados)
+    if (teamA.score === 0 && teamB.score === 0 && !teamA.players.some(p => p) && !teamB.players.some(p => p)) {
+      setAtletasAlertShown(false);
+    }
+  }, [teamA.score, teamB.score, teamA.players, teamB.players]);
+
 
   useEffect(() => {
-    if (attackTimer.isActive) {
-      if (attackTimer.timeLeft <= 10 && attackTimer.timeLeft > 0) {
-        playSound('countdownBeep', isVaiATresActive);
-      } else if (attackTimer.timeLeft === 0) {
-        playSound('timerEndBeep', isVaiATresActive);
-        vibrate([150, 50, 150]);
-      }
+    // Beeps de contagem regressiva
+    if (attackTimer.isActive && attackTimer.timeLeft <= 10 && attackTimer.timeLeft > 0) {
+      playSound('countdownBeep', isVaiATresActive);
     }
-  }, [attackTimer.timeLeft, attackTimer.isActive, playSound, vibrate, isVaiATresActive]);
+
+    // Beep final (0 segundos) - agora dispara mesmo se o timer parar (isActive mudando para false)
+    if (attackTimer.timeLeft === 0 && !victoryConfirmed) {
+      playSound('timerEndBeep', isVaiATresActive);
+      vibrate([150, 50, 150]);
+    }
+  }, [attackTimer.timeLeft, attackTimer.isActive, playSound, vibrate, isVaiATresActive, victoryConfirmed]);
 
   const teamData = useCallback((key: 'A' | 'B') => key === 'A' ? teamA : teamB, [teamA, teamB]);
 
@@ -174,10 +183,12 @@ const Placar: React.FC<PlacarProps> = ({
     setter(prev => ({ ...prev, score }));
 
     if (isIncrement) {
+      if (!gameStartTime) setGameStartTime(new Date());
       playSound('point');
       vibrate(50);
+      attackTimer.reset(); // Zera o cronômetro ao marcar um ponto (Função básica restaurada)
     }
-  }, [isGameWon, isVaiATresActive, teamA, teamB, winScore, vaiATresEnabled, playSound, vibrate, setTeamA, setTeamB, setHistory, servingTeam, teamData]);
+  }, [isGameWon, isVaiATresActive, teamA, teamB, winScore, vaiATresEnabled, playSound, vibrate, setTeamA, setTeamB, setHistory, servingTeam, teamData, attackTimer]);
 
   const handleUndo = useCallback(() => {
     if (history.length > 0) {
@@ -244,11 +255,14 @@ const Placar: React.FC<PlacarProps> = ({
     } else if (attackTimer.isPaused) {
       attackTimer.resume();
     } else {
+      const isStartOfMatch = teamA.score === 0 && teamB.score === 0;
       const athletesMissing = !teamA.players.every(p => p) || !teamB.players.every(p => p);
-      if (athletesMissing && !atletasAlertShown) {
+
+      if (isStartOfMatch && athletesMissing && !atletasAlertShown) {
         setShowAtletasAlert(true);
         return;
       }
+      if (!gameStartTime) setGameStartTime(new Date());
       attackTimer.start();
       playSound('timerStartBeep', isVaiATresActive);
     }
@@ -257,6 +271,7 @@ const Placar: React.FC<PlacarProps> = ({
   const confirmStartWithoutAthletes = () => {
     setAtletasAlertShown(true);
     setShowAtletasAlert(false);
+    if (!gameStartTime) setGameStartTime(new Date());
     attackTimer.start();
     playSound('timerStartBeep', isVaiATresActive);
   };
@@ -271,72 +286,30 @@ const Placar: React.FC<PlacarProps> = ({
   return (
     <div className="h-full w-full p-1 sm:p-2 lg:p-4 grid grid-cols-[1fr_0.8fr_1fr] md:grid-cols-[1.1fr_0.7fr_1.1fr] lg:grid-cols-[1.2fr_0.6fr_1.2fr] gap-1 sm:gap-3 lg:gap-6 relative overflow-hidden bg-transparent max-w-[1600px] mx-auto">
 
-      {/* EMERGENCY ALERT BORDER - VAI A TRES */}
-      {isVaiATresActive && (
-        <div className="fixed top-0 left-0 w-full z-[100] animate-in slide-in-from-top duration-500">
-          <div className="bg-yellow-500 overflow-hidden relative group">
-            <div className="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(45deg,#000,#000_20px,#fff_20px,#fff_40px)] animate-[pulse_1.5s_infinite]"></div>
-            <div className="relative flex items-center justify-between px-4 sm:px-12 py-3 sm:py-5 border-b-4 border-black/20">
-              <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                <div className="w-8 h-8 sm:w-12 sm:h-12 bg-black rounded-xl flex items-center justify-center animate-pulse shadow-lg">
-                  <ZapIcon className="w-5 h-5 sm:w-8 sm:h-8 text-yellow-500" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] sm:text-[14px] font-black text-black uppercase tracking-[0.2em] leading-none mb-1">Status Crítico</span>
-                  <h3 className="text-2xl sm:text-5xl font-black text-black uppercase tracking-tighter leading-none italic drop-shadow-sm">VAI A 3!</h3>
-                </div>
-              </div>
-
-              {/* MINI SCOREBOARD */}
-              <div className="flex items-center gap-4 sm:gap-14 bg-black/15 px-6 sm:px-12 py-3 sm:py-5 rounded-[2rem] border-2 border-black/10 shadow-2xl backdrop-blur-sm">
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] sm:text-[14px] font-black text-black/60 uppercase mb-2 tracking-widest">{teamNameLeft}</span>
-                  <span className="text-4xl sm:text-8xl font-mono font-black text-black leading-none drop-shadow-md">{vaiATresScore[teamLeftKey]}</span>
-                </div>
-                <div className="text-4xl sm:text-8xl font-black text-black/20 -mt-2 sm:-mt-4 italic select-none">VS</div>
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] sm:text-[14px] font-black text-black/60 uppercase mb-2 tracking-widest">{teamNameRight}</span>
-                  <span className="text-4xl sm:text-8xl font-mono font-black text-black leading-none drop-shadow-md">{vaiATresScore[teamRightKey]}</span>
-                </div>
-              </div>
-
-              <div className="hidden lg:flex flex-col items-end gap-1">
-                <span className="text-[8px] font-black text-black/60 uppercase tracking-[0.3em]">Modo Decisivo Ativo</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3].map(i => <div key={i} className="w-4 h-1 bg-black/20 rounded-full overflow-hidden">
-                    <div className="w-full h-full bg-black animate-[shimmer_2s_infinite]" style={{ animationDelay: `${i * 0.2}s` }}></div>
-                  </div>)}
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* Pulsing red overlay lines */}
-          <div className="absolute top-full left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-600 to-transparent animate-pulse"></div>
-        </div>
-      )}
+      {/* EMERGENCY ALERT BORDER - REMOVED PER NEW APPROACH */}
 
       {showAtletasAlert && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[150] flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-[#030712] border border-white/10 rounded-[2rem] p-8 w-full max-w-md shadow-2xl text-center">
-            <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl flex items-center justify-center mb-6 mx-auto text-yellow-500">
-              <ZapIcon className="w-8 h-8" />
+            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-6 mx-auto">
+              <RefreshCwIcon className="w-8 h-8 animate-spin" />
             </div>
-            <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-4">Atletas não selecionados</h2>
-            <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-              Você ainda não selecionou todos os atletas. Deseja continuar assim mesmo ou voltar para selecionar?
+            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Sincronizando Atletas</h2>
+            <p className="text-white/40 text-sm mb-8 leading-relaxed uppercase font-bold tracking-widest text-[10px]">
+              Deseja iniciar sem selecionar todos os atletas?
             </p>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <button
                 onClick={confirmStartWithoutAthletes}
-                className="w-full py-4 bg-white/5 text-white hover:bg-white/10 rounded-xl font-black uppercase text-xs tracking-widest transition-all"
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl transition-all active:scale-95"
               >
-                Continuar assim mesmo
+                Confirmar
               </button>
               <button
                 onClick={() => setShowAtletasAlert(false)}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-500/20 transition-all"
+                className="w-full py-4 bg-white/5 text-white/40 hover:text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all"
               >
-                Voltar e selecionar
+                Voltar
               </button>
             </div>
           </div>
@@ -378,6 +351,8 @@ const Placar: React.FC<PlacarProps> = ({
           isLeft={true}
           isServing={servingTeam === teamLeftKey}
           arenaColor={currentArena.color}
+          isVaiATresActive={isVaiATresActive}
+          vaiATresScore={vaiATresScore[teamLeftKey]}
         />
       </div>
 
@@ -408,6 +383,8 @@ const Placar: React.FC<PlacarProps> = ({
           isLeft={false}
           isServing={servingTeam === teamRightKey}
           arenaColor={currentArena.color}
+          isVaiATresActive={isVaiATresActive}
+          vaiATresScore={vaiATresScore[teamRightKey]}
         />
       </div>
 

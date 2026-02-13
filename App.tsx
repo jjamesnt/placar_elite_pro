@@ -108,7 +108,15 @@ const App: React.FC = () => {
       } else {
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 30);
-        await supabase.from('user_licenses').insert([{ user_id: userId, email: email.toLowerCase(), is_active: false, expires_at: expiry.toISOString(), first_access_done: false }]);
+        const newLicense = { user_id: userId, email: email.toLowerCase(), is_active: false, expires_at: expiry.toISOString(), first_access_done: false };
+        const { data: insertedData, error: insertError } = await supabase.from('user_licenses').insert([newLicense]).select().maybeSingle();
+
+        if (!insertError && insertedData) {
+          setUserLicense(insertedData);
+        } else {
+          // Fallback caso o select não retorne por algum motivo de política
+          setUserLicense(newLicense as UserLicense);
+        }
       }
     } catch (err) { console.error("Erro licença:", err); }
   }, []);
@@ -256,6 +264,33 @@ const App: React.FC = () => {
       window.removeEventListener('keydown', handleUserInteraction, { capture: true });
     };
   }, []);
+
+  // Real-time License Update
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const channel = supabase
+      .channel(`license-update-${session.user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_licenses',
+          filter: `user_id=eq.${session.user.id}`
+        },
+        (payload) => {
+          if (payload.new) {
+            setUserLicense(payload.new as UserLicense);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session]);
 
 
   const handleSaveMatch = async (matchData: Omit<Match, 'id' | 'timestamp'>) => {

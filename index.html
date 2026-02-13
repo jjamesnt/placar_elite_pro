@@ -1,147 +1,242 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Placar Elite Pro</title>
-    <!-- PWA Meta Tags -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Elite Pro">
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      window.process = { env: { NODE_ENV: 'production' } };
-    </script>
-    <style>
-      body {
-        background-color: #030712; 
-        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        overflow: hidden;
-      }
-      @keyframes rotate-device {
-        0% { transform: rotate(0deg); }
-        30% { transform: rotate(0deg); }
-        50% { transform: rotate(-90deg); }
-        80% { transform: rotate(-90deg); }
-        100% { transform: rotate(0deg); }
-      }
-      .animate-rotate-device {
-        animation: rotate-device 3s ease-in-out infinite;
-      }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #111827;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #374151;
-        border-radius: 10px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #4b5563;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Placar Elite Pro</title>
+  <!-- PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Elite Pro">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    window.process = { env: { NODE_ENV: 'production' } };
+  </script>
+  <style>
+    body {
+      background-color: #030712;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+    }
+
+    @keyframes hazard-pulse {
+
+      0%,
+      100% {
+        opacity: 1;
       }
 
-      /* PRINT STYLES */
-      @media print {
-        @page {
-          size: A4 portrait;
-          margin: 1.5cm;
-        }
-        body {
-          background: white !important;
-          color: black !important;
-          overflow: visible !important;
-          padding: 0 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          font-size: 10pt;
-        }
-        header, nav, .print\:hidden, button, .no-print, .story-preview-modal, .landscape\:hidden, [class*="OrientationLock"], .victory-modal {
-          display: none !important;
-        }
-        main {
-          overflow: visible !important;
-          display: block !important;
-          position: static !important;
-        }
-        #root {
-          height: auto !important;
-          display: block !important;
-        }
-        .bg-gray-900, .bg-gray-800, .bg-gray-800\/40, .bg-gray-700, .bg-gray-800\/90, .bg-indigo-500\/10 {
-          background-color: transparent !important;
-          color: black !important;
-          border-color: #ddd !important;
-        }
-        table, .print-table {
-          width: 100% !important;
-          border-collapse: collapse !important;
-          margin-top: 20px;
-          border: 1px solid #ccc !important;
-        }
-        th, .print-th {
-          background-color: #f2f2f2 !important;
-          border-bottom: 2px solid black !important;
-          color: black !important;
-          padding: 10px 8px !important;
-          text-align: left;
-          font-size: 9pt;
-          font-weight: 900;
-          text-transform: uppercase;
-        }
-        tr, .print-tr {
-          page-break-inside: avoid;
-        }
-        tr:nth-child(even) td {
-          background-color: #f9f9f9 !important;
-        }
-        tr:nth-child(odd) td {
-          background-color: #ffffff !important;
-        }
-        td, .print-td {
-          border-bottom: 1px solid #eee !important;
-          color: black !important;
-          padding: 10px 8px !important;
-          vertical-align: middle;
-          display: table-cell !important;
-        }
-        .text-center {
-          text-align: center !important;
-        }
-        .font-black, .font-bold {
-            font-weight: bold !important;
-        }
-        .text-indigo-400, .text-blue-400, .text-red-400, .text-gray-500 {
-            color: black !important;
-        }
-        .hidden {
-            display: none !important;
-        }
-        .print\:block {
-            display: block !important;
-        }
-        .print\:text-black {
-            color: black !important;
-        }
-        .print-history-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 10px 0;
-          border-bottom: 1px solid #eee;
-        }
-        .print-history-item div {
-          flex-basis: 30%;
-        }
+      50% {
+        opacity: 0.4;
       }
-    </style>
+    }
+
+    .animate-hazard-pulse {
+      animation: hazard-pulse 1.5s ease-in-out infinite;
+    }
+
+    /* Tablet Specific Jumbo Fields (Height aware to exclude landscape phones) */
+    @media screen and (min-width: 768px) and (min-height: 600px) {
+      .tablet-jumbo-select {
+        padding-top: 0.8rem !important;
+        padding-bottom: 0.8rem !important;
+        font-size: 18px !important;
+        border-radius: 1.2rem !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+        text-align-last: center !important;
+        text-align: center !important;
+      }
+
+      .tablet-jumbo-gap {
+        gap: 0.5rem !important;
+        margin-top: 0.25rem !important;
+      }
+    }
+
+    @keyframes rotate-device {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      30% {
+        transform: rotate(0deg);
+      }
+
+      50% {
+        transform: rotate(-90deg);
+      }
+
+      80% {
+        transform: rotate(-90deg);
+      }
+
+      100% {
+        transform: rotate(0deg);
+      }
+    }
+
+    .animate-rotate-device {
+      animation: rotate-device 3s ease-in-out infinite;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #111827;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+
+    /* PRINT STYLES */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 1.5cm;
+      }
+
+      body {
+        background: white !important;
+        color: black !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        font-size: 10pt;
+      }
+
+      header,
+      nav,
+      .print\:hidden,
+      button,
+      .no-print,
+      .story-preview-modal,
+      .landscape\:hidden,
+      [class*="OrientationLock"],
+      .victory-modal {
+        display: none !important;
+      }
+
+      main {
+        overflow: visible !important;
+        display: block !important;
+        position: static !important;
+      }
+
+      #root {
+        height: auto !important;
+        display: block !important;
+      }
+
+      .bg-gray-900,
+      .bg-gray-800,
+      .bg-gray-800\/40,
+      .bg-gray-700,
+      .bg-gray-800\/90,
+      .bg-indigo-500\/10 {
+        background-color: transparent !important;
+        color: black !important;
+        border-color: #ddd !important;
+      }
+
+      table,
+      .print-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 20px;
+        border: 1px solid #ccc !important;
+      }
+
+      th,
+      .print-th {
+        background-color: #f2f2f2 !important;
+        border-bottom: 2px solid black !important;
+        color: black !important;
+        padding: 10px 8px !important;
+        text-align: left;
+        font-size: 9pt;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      tr,
+      .print-tr {
+        page-break-inside: avoid;
+      }
+
+      tr:nth-child(even) td {
+        background-color: #f9f9f9 !important;
+      }
+
+      tr:nth-child(odd) td {
+        background-color: #ffffff !important;
+      }
+
+      td,
+      .print-td {
+        border-bottom: 1px solid #eee !important;
+        color: black !important;
+        padding: 10px 8px !important;
+        vertical-align: middle;
+        display: table-cell !important;
+      }
+
+      .text-center {
+        text-align: center !important;
+      }
+
+      .font-black,
+      .font-bold {
+        font-weight: bold !important;
+      }
+
+      .text-indigo-400,
+      .text-blue-400,
+      .text-red-400,
+      .text-gray-500 {
+        color: black !important;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .print\:block {
+        display: block !important;
+      }
+
+      .print\:text-black {
+        color: black !important;
+      }
+
+      .print-history-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+      }
+
+      .print-history-item div {
+        flex-basis: 30%;
+      }
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -155,8 +250,10 @@
 }
 </script>
 </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
-  </body>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="./index.tsx"></script>
+</body>
+
 </html>
