@@ -256,19 +256,24 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleUserInteraction = () => {
       warmUpAudioContext();
-      window.removeEventListener('click', handleUserInteraction);
-      window.removeEventListener('touchstart', handleUserInteraction);
-      window.removeEventListener('keydown', handleUserInteraction);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        warmUpAudioContext();
+      }
     };
 
     window.addEventListener('click', handleUserInteraction, { capture: true });
     window.addEventListener('touchstart', handleUserInteraction, { capture: true });
     window.addEventListener('keydown', handleUserInteraction, { capture: true });
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('click', handleUserInteraction, { capture: true });
       window.removeEventListener('touchstart', handleUserInteraction, { capture: true });
       window.removeEventListener('keydown', handleUserInteraction, { capture: true });
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -394,7 +399,7 @@ const App: React.FC = () => {
 
   return (
     <>
-      <OrientationLock />
+      {currentView !== 'admin' && <OrientationLock />}
 
       {activeModal === 'welcome' && <WelcomeModal onConfirm={handleFirstAccessConfirm} />}
       {activeModal === 'expiry' && userLicense && <LicenseExpiryModal expiryDate={userLicense.expires_at} onConfirm={handleExpiryModalClose} />}

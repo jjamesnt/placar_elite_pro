@@ -109,11 +109,11 @@ const getAudioContext = (): AudioContext | null => {
   }
 };
 
-export const warmUpAudioContext = () => {
+export const warmUpAudioContext = async () => {
   const ctx = getAudioContext();
   if (ctx) {
     if (ctx.state === 'suspended') {
-      ctx.resume();
+      await ctx.resume().catch(e => console.error("Falha ao resumir AudioContext:", e));
     }
     // Play silent buffer to unlock audio engine (iOS/Chrome policy)
     const buffer = ctx.createBuffer(1, 1, 22050);
@@ -121,6 +121,7 @@ export const warmUpAudioContext = () => {
     source.buffer = buffer;
     source.connect(ctx.destination);
     source.start(0);
+    console.log("AudioContext aquecido. Estado:", ctx.state);
   }
 };
 
@@ -134,10 +135,13 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
 
     const isSuspended = ctx.state === 'suspended';
     if (isSuspended) {
-      ctx.resume().catch(e => console.error("Audio resume error:", e));
+      ctx.resume().then(() => {
+        // Retry playing once resumed if needed, or just proceed with a bit more buffer
+      }).catch(e => console.error("Audio resume error:", e));
     }
 
-    const activeBuffer = isSuspended ? 0.1 : 0.05;
+    // iOS standalone mode adjustment: use larger lookahead if suspended
+    const activeBuffer = isSuspended ? 0.15 : 0.05;
     const now = ctx.currentTime + activeBuffer;
 
     // Função auxiliar para ruído FILTRADO (mais impacto, menos chiado)
