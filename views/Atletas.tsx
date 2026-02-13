@@ -11,9 +11,10 @@ interface AtletasProps {
   setDeletedPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   arenaId: string;
   userId?: string;
+  athletesLimit?: number;
 }
 
-const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, setDeletedPlayers, arenaId, userId }) => {
+const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, setDeletedPlayers, arenaId, userId, athletesLimit }) => {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
@@ -24,7 +25,7 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
     e.preventDefault();
     const name = newPlayerName.trim();
     if (!name || loading) return;
-    
+
     if (!userId) {
       alert("Sessão inválida. Saia e entre novamente.");
       return;
@@ -35,18 +36,23 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
       return;
     }
 
+    if (players.length >= (athletesLimit || 15)) {
+      alert(`⚠️ LIMITE ATINGIDO\n\nSeu plano permite no máximo ${athletesLimit || 15} atletas ativos por arena.`);
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('players')
-        .insert([{ 
-          name, 
+        .insert([{
+          name,
           arena_id: arenaId,
           user_id: userId
         }])
         .select()
         .single();
-      
+
       if (error) throw error;
 
       if (data) {
@@ -60,7 +66,7 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
       setLoading(false);
     }
   };
-  
+
   const handleConfirmDelete = async () => {
     if (!playerToDelete || loading) return;
     setLoading(true);
@@ -76,7 +82,7 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
           console.error("Erro delete físico:", error);
           throw error;
         }
-        
+
         setDeletedPlayers(prev => prev.filter(p => p.id !== playerToDelete.id));
       } else {
         // Inativação (lógica)
@@ -106,7 +112,7 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
     try {
       const { data, error } = await supabase
         .from('players')
-        .update({ deleted_at: null }) 
+        .update({ deleted_at: null })
         .eq('id', player.id)
         .select()
         .single();
@@ -125,26 +131,26 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
     <>
       <div className="w-full p-4 flex flex-col gap-6 max-w-2xl mx-auto pb-32">
         <h1 className="text-2xl font-black text-center text-white uppercase tracking-tighter">Atletas</h1>
-        
+
         <div className="bg-gray-900/40 backdrop-blur rounded-[2.5rem] p-8 border border-white/5 shadow-2xl">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-4">Novo Cadastro</h2>
-            <form onSubmit={handleAddPlayer} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-                placeholder="Nome do Atleta"
-                disabled={loading}
-                className="flex-1 p-4 bg-black/40 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-indigo-500/50"
-              />
-              <button 
-                type="submit" 
-                disabled={loading || !newPlayerName.trim()}
-                className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-black rounded-2xl transition-all active:scale-95 text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2"
-              >
-                {loading ? <LoaderIcon className="w-4 h-4" /> : "Salvar Atleta"}
-              </button>
-            </form>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-4">Novo Cadastro</h2>
+          <form onSubmit={handleAddPlayer} className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              placeholder="Nome do Atleta"
+              disabled={loading}
+              className="flex-1 p-4 bg-black/40 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:border-indigo-500/50"
+            />
+            <button
+              type="submit"
+              disabled={loading || !newPlayerName.trim()}
+              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-black rounded-2xl transition-all active:scale-95 text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2"
+            >
+              {loading ? <LoaderIcon className="w-4 h-4" /> : "Salvar Atleta"}
+            </button>
+          </form>
         </div>
 
         <div className="space-y-4">
@@ -194,7 +200,7 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
               {isPermanentDelete ? 'Deletar' : 'Inativar'}?
             </h2>
             <p className="text-white/30 text-[10px] mb-6 sm:mb-8 leading-relaxed text-center font-bold uppercase tracking-widest">
-              {isPermanentDelete 
+              {isPermanentDelete
                 ? `Esta ação é irreversível. O atleta será apagado do banco.`
                 : `O atleta sairá da lista principal, mas poderá ser restaurado.`
               }

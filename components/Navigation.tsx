@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ClipboardListIcon, UsersIcon, TrophyIcon, CogIcon, ShieldIcon, MaximizeIcon, MinimizeIcon, HistoryIcon, LogOutIcon, UserCogIcon } from './icons';
 import { Arena, ArenaColor } from '../types';
 
-export type View = 'placar' | 'atletas' | 'ranking' | 'historico' | 'config' | 'admin';
+export type View = 'placar' | 'atletas' | 'ranking' | 'historico' | 'config' | 'admin' | 'subscription';
 
 const THEME_COLORS: Record<string, string> = {
   indigo: 'text-indigo-400',
@@ -152,7 +152,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
           <NavButton label="Ranking" icon={<TrophyIcon />} isActive={currentView === 'ranking'} onClick={() => onNavigate('ranking')} activeColorClass={arenaColorClass} />
           <NavButton label="Config" icon={<CogIcon />} isActive={currentView === 'config'} onClick={() => onNavigate('config')} activeColorClass={arenaColorClass} />
           {isAdmin && (
-            <NavButton label="ADM" icon={<UserCogIcon />} isActive={currentView === 'admin'} onClick={() => onNavigate('admin')} activeColorClass="text-rose-500" />
+            <NavButton label="ADM" icon={<ShieldIcon />} isActive={currentView === 'admin'} onClick={() => onNavigate('admin')} activeColorClass={arenaColorClass} />
           )}
           <NavButton
             label="Focar"

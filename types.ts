@@ -48,5 +48,29 @@ export interface UserLicense {
   expires_at: string;
   is_active: boolean;
   first_access_done: boolean;
+  arenas_limit: number;
+  athletes_limit: number;
+  applied_coupon?: string;
+  created_at: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  discount_pct?: number;
+  days_bonus: number;
+  is_active: boolean;
+  used_count: number;
+  created_at: string;
+}
+
+export interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  months_duration: number;
+  arenas_limit: number;
+  athletes_limit: number;
+  is_popular: boolean;
   created_at: string;
 }

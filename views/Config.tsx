@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { SoundScheme } from '../App';
 import { Arena, ArenaColor } from '../types';
-import { Trash2Icon, PlusIcon, UsersIcon, EditIcon, UploadCloudIcon } from '../components/icons';
+import { Trash2Icon, PlusIcon, UsersIcon, EditIcon, UploadCloudIcon, ZapIcon } from '../components/icons';
+import { supabase } from '../lib/supabase';
 
 interface ConfigProps {
   winScore: number; setWinScore: (s: number) => void;
@@ -22,6 +23,9 @@ interface ConfigProps {
   setCapoteEnabled: (e: boolean) => void;
   vaiATresEnabled: boolean;
   setVaiATresEnabled: (e: boolean) => void;
+  userLicense?: any;
+  onRefreshLicense?: () => void;
+  onGoToSubscription?: () => void;
 }
 
 const ARENA_COLORS: ArenaColor[] = ['indigo', 'blue', 'emerald', 'amber', 'rose', 'violet'];
@@ -31,12 +35,16 @@ const Config: React.FC<ConfigProps> = ({
   winScore, setWinScore, attackTime, setAttackTime, soundEnabled, setSoundEnabled,
   vibrationEnabled, setVibrationEnabled, soundScheme, setSoundScheme,
   arenas, currentArenaId, setCurrentArenaId, onAddArena, onUpdateArena, onDeleteArena, onLogout, onSaveSettings,
-  capoteEnabled, setCapoteEnabled, vaiATresEnabled, setVaiATresEnabled
+  capoteEnabled, setCapoteEnabled, vaiATresEnabled, setVaiATresEnabled,
+  userLicense, onRefreshLicense, onGoToSubscription
 }) => {
   const [newName, setNewName] = useState('');
   const [selColor, setSelColor] = useState<ArenaColor>('indigo');
   const [editingArena, setEditingArena] = useState<Arena | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponStatus, setCouponStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
   const handleAdd = () => { if (newName.trim()) { onAddArena(newName.trim(), selColor); setNewName(''); } };
   const handleUpdate = () => { if (editingArena && editingArena.name.trim()) { onUpdateArena(editingArena.id, editingArena.name.trim(), editingArena.color || 'indigo'); setEditingArena(null); } };
@@ -49,6 +57,54 @@ const Config: React.FC<ConfigProps> = ({
 
   const handleLocalBackup = () => {
     alert("Função de Back-up Local: Os dados sincronizados com a nuvem já estão protegidos.");
+  };
+
+  const handleRedeemCoupon = async () => {
+    if (!couponCode.trim() || !userLicense) return;
+    setCouponLoading(true);
+    try {
+      // 1. Verificar se cupom existe e está ativo
+      const { data: coupon, error: cError } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.trim().toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (cError) throw cError;
+      if (!coupon) throw new Error("Cupom inválido ou expirado.");
+
+      // 2. Adicionar tempo à licença
+      const currentExpiry = new Date(userLicense.expires_at).getTime() > Date.now()
+        ? new Date(userLicense.expires_at)
+        : new Date();
+      const newExpiry = new Date(currentExpiry.getTime() + (coupon.days_bonus * 24 * 60 * 60 * 1000)).toISOString();
+
+      const { error: updateError } = await supabase
+        .from('user_licenses')
+        .update({
+          expires_at: newExpiry,
+          is_active: true,
+          applied_coupon: couponCode.trim().toUpperCase()
+        })
+        .eq('user_id', userLicense.user_id);
+
+      if (updateError) throw updateError;
+
+      // Incrementar uso
+      await supabase.from('coupons').update({ used_count: (coupon.used_count || 0) + 1 }).eq('id', coupon.id);
+
+      let msg = `CUPOM APLICADO! +${coupon.days_bonus} DIAS`;
+      if (coupon.discount_pct > 0) msg += ` E ${coupon.discount_pct}% DE DESCONTO NA PRÓXIMA RENOVAÇÃO!`;
+
+      setCouponStatus({ type: 'success', msg });
+      setCouponCode('');
+      if (onRefreshLicense) onRefreshLicense();
+    } catch (err: any) {
+      setCouponStatus({ type: 'error', msg: err.message || 'Erro ao validar cupom.' });
+    } finally {
+      setCouponLoading(false);
+    }
   };
 
   return (
@@ -132,6 +188,45 @@ const Config: React.FC<ConfigProps> = ({
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Resgate de Cupom */}
+      <section className="bg-gradient-to-br from-amber-500/10 to-transparent rounded-3xl p-6 border border-amber-500/20 space-y-4">
+        <div className="flex items-center gap-3">
+          <ZapIcon className="w-4 h-4 text-amber-500" />
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Resgatar Cupom</h3>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={couponCode}
+            onChange={e => setCouponCode(e.target.value)}
+            placeholder="Digite seu código..."
+            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-500 transition-all"
+          />
+          <button
+            onClick={handleRedeemCoupon}
+            disabled={couponLoading || !couponCode.trim()}
+            className="bg-amber-500 hover:bg-amber-400 text-black font-black uppercase text-[10px] tracking-widest px-6 rounded-xl transition-all active:scale-95 disabled:opacity-50"
+          >
+            {couponLoading ? '...' : 'OK'}
+          </button>
+        </div>
+
+        {onGoToSubscription && (
+          <button
+            onClick={onGoToSubscription}
+            className="w-full mt-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 font-black uppercase text-[10px] py-4 rounded-xl border border-indigo-500/20 transition-all active:scale-95"
+          >
+            Ver Planos / Renovar Assinatura
+          </button>
+        )}
+
+        {couponStatus && (
+          <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center animate-in fade-in slide-in-from-top-2 ${couponStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
+            {couponStatus.msg}
+          </div>
+        )}
       </section>
 
       <section className="bg-white/[0.02] rounded-3xl p-6 border border-white/5 space-y-6">

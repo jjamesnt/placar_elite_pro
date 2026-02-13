@@ -11,6 +11,7 @@ import Historico from './views/Historico';
 import Config from './views/Config';
 import Admin from './views/Admin';
 import Login from './views/Login';
+import Subscription from './views/Subscription';
 import ChangePassword from './views/ChangePassword';
 import { Player, Match, Arena, ArenaColor, UserLicense, Team } from './types';
 import { supabase } from './lib/supabase';
@@ -102,8 +103,14 @@ const App: React.FC = () => {
         const isMaster = email.toLowerCase() === 'jjamesnt@gmail.com';
 
         if (data.is_active && !isMaster) {
-          if (!data.first_access_done && !welcomeDone) setActiveModal('welcome');
-          else if (!expiryShown) setActiveModal('expiry');
+          const expiresAt = new Date(data.expires_at).getTime();
+          const daysRemaining = (expiresAt - Date.now()) / (1000 * 60 * 60 * 24);
+
+          if (!data.first_access_done && !welcomeDone) {
+            setActiveModal('welcome');
+          } else if (!expiryShown && daysRemaining < 7) {
+            setActiveModal('expiry');
+          }
         }
       } else {
         const expiry = new Date();
@@ -323,7 +330,13 @@ const App: React.FC = () => {
   };
 
   const handleAddArena = async (name: string, color: ArenaColor) => {
-    if (!session) return;
+    if (!session || !userLicense) return;
+
+    if (!isAdmin && arenas.length >= (userLicense.arenas_limit || 1)) {
+      alert(`⚠️ LIMITE ATINGIDO\n\nSeu plano permite no máximo ${userLicense.arenas_limit || 1} grupo(s)/arena(s).`);
+      return;
+    }
+
     const { data } = await supabase.from('arenas').insert([{ name, color, user_id: session.user.id }]).select().single();
     if (data) { setArenas(prev => [...prev, data]); setCurrentArenaId(data.id); }
   };
@@ -364,23 +377,16 @@ const App: React.FC = () => {
 
   if (isBlocked || (userLicense && isExpired)) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center p-8 bg-[#030712] text-center">
+      <div className="h-screen w-screen overflow-y-auto bg-[#030712]">
         <Background color="rose" />
-        <div className="mb-10 animate-in fade-in zoom-in duration-700">
-          <img
-            src="/logo.png"
-            alt="Placar Elite Pro"
-            className="h-24 sm:h-32 w-auto object-contain drop-shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+        <div className="pt-20 pb-20">
+          <Subscription
+            userLicense={userLicense}
+            onRefreshLicense={() => checkLicense(session.user.id, session.user.email)}
           />
-        </div>
-        <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-4">{isBlocked ? 'Aguardando Aprovação' : 'Acesso Expirado'}</h1>
-        <p className="text-white/40 max-w-md font-bold uppercase tracking-widest text-[10px] leading-relaxed mb-10">
-          {isBlocked ? 'Sua solicitação de acesso foi enviada. O administrador mestre analisará seu perfil para ativação da licença.' : 'Seu período de licença expirou. Renove seu plano para continuar tendo acesso total aos recursos.'}
-          <br /><br /> Fale com o suporte para liberação imediata.
-        </p>
-        <div className="flex flex-col gap-4 w-full max-w-xs">
-          <a href="https://wa.me/5531984211900" target="_blank" className="px-10 py-5 bg-rose-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95 text-center">Falar com Suporte</a>
-          <button onClick={handleLogout} className="text-white/20 hover:text-white font-black uppercase text-[10px] tracking-widest py-4">Sair da Conta</button>
+          <div className="max-w-md mx-auto px-4 pb-20">
+            <button onClick={handleLogout} className="w-full text-white/20 hover:text-white font-black uppercase text-[10px] tracking-widest py-4 border-t border-white/5">Sair da Conta</button>
+          </div>
         </div>
       </div>
     );
@@ -399,7 +405,7 @@ const App: React.FC = () => {
         <main className="flex-1 overflow-y-auto">
           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} />}
           {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} onClearMatches={handleClearMatches} />}
-          {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} />}
+          {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} athletesLimit={userLicense?.athletes_limit} />}
           {currentView === 'ranking' && (
             <Ranking
               players={players}
@@ -413,8 +419,30 @@ const App: React.FC = () => {
               onClearMatches={handleClearMatches}
             />
           )}
-          {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} capoteEnabled={capoteEnabled} setCapoteEnabled={setCapoteEnabled} vaiATresEnabled={vaiATresEnabled} setVaiATresEnabled={setVaiATresEnabled} />}
-          {currentView === 'admin' && <Admin />}
+          {currentView === 'config' && (
+            <Config
+              winScore={winScore} setWinScore={setWinScore}
+              attackTime={attackTime} setAttackTime={setAttackTime}
+              soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled}
+              vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled}
+              soundScheme={soundScheme} setSoundScheme={setSoundScheme}
+              arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId}
+              onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena}
+              onLogout={handleLogout} onSaveSettings={handleSaveSettings}
+              capoteEnabled={capoteEnabled} setCapoteEnabled={setCapoteEnabled}
+              vaiATresEnabled={vaiATresEnabled} setVaiATresEnabled={setVaiATresEnabled}
+              userLicense={userLicense} onRefreshLicense={() => checkLicense(session.user.id, session.user.email)}
+              onGoToSubscription={() => setCurrentView('subscription')}
+            />
+          )}
+          {currentView === 'subscription' && (
+            <Subscription
+              userLicense={userLicense}
+              onBack={() => setCurrentView('config')}
+              onRefreshLicense={() => checkLicense(session.user.id, session.user.email)}
+            />
+          )}
+          {currentView === 'admin' && isAdmin && <Admin />}
         </main>
       </div>
     </>

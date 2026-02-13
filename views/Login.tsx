@@ -14,6 +14,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,15 +24,54 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     try {
       if (isSignUp) {
-        const { error: signUpError } = await supabase.auth.signUp({
+        // 1. Verificar cupom se fornecido
+        let bonusDays = 3; // 3 dias de cortesia por padrão se não houver cupom
+        let usedCouponId = null;
+
+        if (couponCode.trim()) {
+          const { data: coupon, error: cError } = await supabase
+            .from('coupons')
+            .select('*')
+            .eq('code', couponCode.trim().toUpperCase())
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (cError) throw cError;
+          if (!coupon) throw new Error("CUPOM INVÁLIDO OU EXPIRADO.");
+
+          bonusDays = coupon.days_bonus;
+          usedCouponId = coupon.id;
+        }
+
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
           password
         });
 
         if (signUpError) throw signUpError;
+        if (!authData.user) throw new Error("Erro ao criar usuário.");
 
-        setSuccess('SOLICITAÇÃO ENVIADA! AGUARDE APROVAÇÃO DO ADM.');
+        // Criar licença inicial com bônus
+        const expiresAt = new Date(Date.now() + (bonusDays * 24 * 60 * 60 * 1000)).toISOString();
+
+        await supabase.from('user_licenses').insert({
+          user_id: authData.user.id,
+          email: email.trim().toLowerCase(),
+          expires_at: expiresAt,
+          is_active: true,
+          arenas_limit: 1,
+          athletes_limit: 15,
+          applied_coupon: couponCode.trim().toUpperCase() || null
+        });
+
+        if (usedCouponId) {
+          const { data: cData } = await supabase.from('coupons').select('used_count').eq('id', usedCouponId).single();
+          await supabase.from('coupons').update({ used_count: (cData?.used_count || 0) + 1 }).eq('id', usedCouponId);
+        }
+
+        setSuccess(`Solicitação enviada! Você ganhou ${bonusDays} dias de bônus.`);
         setIsSignUp(false);
+        setCouponCode('');
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: email.trim().toLowerCase(),
@@ -95,6 +135,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               placeholder="••••••••" required
             />
           </div>
+
+          {isSignUp && (
+            <div className="space-y-1.5 animate-in fade-in slide-in-from-right-4">
+              <div className="flex items-center gap-2 ml-1">
+                <ZapIcon className="w-3 h-3 text-emerald-500" />
+                <label className="text-[10px] font-black uppercase tracking-widest text-emerald-500/50">Cupom de Bônus (Opcional)</label>
+              </div>
+              <input
+                type="text" value={couponCode} onChange={e => setCouponCode(e.target.value)}
+                className="w-full bg-white/[0.03] border border-emerald-500/10 rounded-xl sm:rounded-2xl py-3 px-5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-all placeholder:text-white/5 uppercase"
+                placeholder="EX: PRO90"
+              />
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center animate-in fade-in slide-in-from-top-2">
