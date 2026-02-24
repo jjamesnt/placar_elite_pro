@@ -365,7 +365,7 @@ const Admin: React.FC = () => {
       if (error) throw error;
       setPlans(prev => prev.filter(p => p.id !== id));
     } catch (err: any) {
-      alert("Erro ao excluir plano.");
+      alert("Erro ao excluir plano: " + (err?.message || "Erro desconhecido"));
     } finally {
       setActionLoading(null);
     }
@@ -387,11 +387,11 @@ const Admin: React.FC = () => {
           <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Elite Pro Administration System</p>
         </div>
 
-        <div className="flex gap-2">
-          <button onClick={() => setActiveTab('geral')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'geral' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Geral</button>
-          <button onClick={() => setActiveTab('usuarios')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'usuarios' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Usuários</button>
-          <button onClick={() => setActiveTab('planos')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'planos' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Planos</button>
-          <button onClick={() => setActiveTab('cupons')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'cupons' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Cupons</button>
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x touch-pan-x">
+          <button onClick={() => setActiveTab('geral')} className={`flex-shrink-0 snap-start px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'geral' ? 'bg-white text-black shadow-lg' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Geral</button>
+          <button onClick={() => setActiveTab('usuarios')} className={`flex-shrink-0 snap-start px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'usuarios' ? 'bg-white text-black shadow-lg' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Usuários</button>
+          <button onClick={() => setActiveTab('planos')} className={`flex-shrink-0 snap-start px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'planos' ? 'bg-white text-black shadow-lg' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Planos</button>
+          <button onClick={() => setActiveTab('cupons')} className={`flex-shrink-0 snap-start px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'cupons' ? 'bg-white text-black shadow-lg' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Cupons</button>
         </div>
       </div>
 
@@ -436,28 +436,28 @@ const Admin: React.FC = () => {
                 const isProcessing = actionLoading?.startsWith(l.id);
 
                 return (
-                  <div key={l.id} className={`bg-[#090e1a]/80 border border-white/5 p-6 rounded-[2.5rem] flex flex-col lg:flex-row lg:items-center justify-between gap-8 transition-all ${!l.is_active ? 'opacity-40 grayscale blur-[1px]' : 'hover:border-white/10'}`}>
+                  <div key={l.id} className={`bg-[#090e1a]/80 border border-white/5 p-5 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8 transition-all ${!l.is_active ? 'opacity-40 grayscale blur-[1px]' : 'hover:border-white/10'}`}>
                     {/* User Info */}
                     <div className="flex-1 space-y-3 min-w-[200px]">
-                      <div className="flex items-center gap-3">
-                        <span className="text-white font-bold text-lg truncate max-w-[250px]">{l.email}</span>
-                        <div className={`px-3 py-1 rounded-full text-[7px] font-black uppercase tracking-widest ${!l.is_active ? 'bg-red-500/20 text-red-500' : isExpired ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                        <span className="text-white font-bold text-base sm:text-lg truncate max-w-full sm:max-w-[250px]">{l.email}</span>
+                        <div className={`w-fit px-3 py-1 rounded-full text-[7px] font-black uppercase tracking-widest ${!l.is_active ? 'bg-red-500/20 text-red-500' : isExpired ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'}`}>
                           {!l.is_active ? 'SUSPENSO' : isExpired ? 'EXPIRADO' : 'ATIVO'}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 text-white/20">
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-white/20">
                         <div className="flex items-center gap-2">
-                          <CalendarIcon className="w-3 h-3" />
-                          <span className="text-[9px] font-black uppercase">{new Date(l.expires_at).toLocaleDateString('pt-BR')}</span>
+                          <CalendarIcon className="w-2.5 h-2.5" />
+                          <span className="text-[8px] sm:text-[9px] font-black uppercase">{new Date(l.expires_at).toLocaleDateString('pt-BR')}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <ShieldIcon className="w-3 h-3" />
-                          <span className="text-[9px] font-black uppercase">ID: {l.id.slice(0, 8)}</span>
+                          <ShieldIcon className="w-2.5 h-2.5" />
+                          <span className="text-[8px] sm:text-[9px] font-black uppercase">ID: {l.id.slice(0, 8)}</span>
                         </div>
                         {l.applied_coupon && (
                           <div className="flex items-center gap-2 text-amber-500">
-                            <ZapIcon className="w-3 h-3" />
-                            <span className="text-[9px] font-black uppercase">Cupom: {l.applied_coupon}</span>
+                            <ZapIcon className="w-2.5 h-2.5" />
+                            <span className="text-[8px] sm:text-[9px] font-black uppercase">Cupom: {l.applied_coupon}</span>
                           </div>
                         )}
                       </div>
@@ -500,33 +500,35 @@ const Admin: React.FC = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col gap-1">
-                        <button onClick={() => setSelectingLicense(l)} disabled={isProcessing} className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl text-[8px] font-black uppercase border border-indigo-500/20 transition-all">Trocar Plano</button>
+                    <div className="flex items-center justify-between sm:justify-start gap-2 pt-4 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                      <div className="flex-1 flex flex-col gap-1 sm:w-32">
+                        <button onClick={() => setSelectingLicense(l)} disabled={isProcessing} className="w-full px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl text-[8px] font-black uppercase border border-indigo-500/20 transition-all">Trocar Plano</button>
                         <div className="flex gap-1">
                           <button onClick={() => handleAdjustTime(l, 30)} disabled={isProcessing} className="flex-1 px-3 py-2 bg-white/5 hover:bg-emerald-500/20 text-white/40 hover:text-emerald-400 rounded-xl text-[7px] font-black uppercase border border-white/5 transition-all">+30D</button>
                           <button onClick={() => handleAdjustTime(l, -30)} disabled={isProcessing} className="flex-1 px-3 py-2 bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-400 rounded-xl text-[7px] font-black uppercase border border-white/5 transition-all">-30D</button>
                         </div>
                       </div>
 
-                      <div className="w-px h-12 bg-white/5 mx-1" />
+                      <div className="hidden sm:block w-px h-12 bg-white/5 mx-1" />
 
-                      <button
-                        onClick={() => handleToggleStatus(l)}
-                        disabled={isProcessing}
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 ${l.is_active ? 'bg-red-500 text-white shadow-lg shadow-red-900/20' : 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/20'}`}
-                        title={l.is_active ? 'Suspender' : 'Ativar'}
-                      >
-                        {l.is_active ? <XCircleIcon className="w-6 h-6" /> : <CheckIcon className="w-6 h-6" />}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleStatus(l)}
+                          disabled={isProcessing}
+                          className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 ${l.is_active ? 'bg-red-500 text-white shadow-lg shadow-red-900/20' : 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/20'}`}
+                          title={l.is_active ? 'Suspender' : 'Ativar'}
+                        >
+                          {l.is_active ? <XCircleIcon className="w-5 h-5 sm:w-6 sm:h-6" /> : <CheckIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+                        </button>
 
-                      <button
-                        onClick={() => handleDeleteLicense(l)}
-                        disabled={isProcessing}
-                        className="w-12 h-12 bg-white/5 text-red-500/40 hover:text-red-500 rounded-xl flex items-center justify-center transition-all active:scale-90"
-                      >
-                        <Trash2Icon className="w-5 h-5" />
-                      </button>
+                        <button
+                          onClick={() => handleDeleteLicense(l)}
+                          disabled={isProcessing}
+                          className="w-11 h-11 sm:w-12 sm:h-12 bg-white/5 text-red-500/40 hover:text-red-500 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+                        >
+                          <Trash2Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -694,7 +696,7 @@ const Admin: React.FC = () => {
                       <h4 className="text-white font-black uppercase tracking-tight text-lg">{p.name}</h4>
                       <p className="text-[10px] font-extrabold text-violet-400/60 uppercase">R$ {p.price.toFixed(2)} / {p.months_duration} MESES</p>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 relative z-10">
                       <button onClick={() => handleEditPlan(p)} className="p-2 text-white/10 hover:text-white transition-all"><EditIcon className="w-5 h-5" /></button>
                       <button onClick={() => handleDeletePlan(p.id)} className="p-2 text-white/10 hover:text-red-500 transition-all"><Trash2Icon className="w-5 h-5" /></button>
                     </div>

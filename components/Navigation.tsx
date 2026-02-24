@@ -113,12 +113,15 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
             <span className="text-[6px] text-gray-400 font-mono opacity-80 uppercase">Atualizado {lastUpdate}</span>
           </div>
         </div>
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-1 overflow-x-auto scrollbar-none snap-x touch-pan-x flex-1 justify-end lg:justify-start">
           <NavButton label="Placar" icon={<ClipboardListIcon />} isActive={currentView === 'placar'} onClick={() => onNavigate('placar')} activeColorClass={arenaColorClass} />
           <NavButton label="Histórico" icon={<HistoryIcon />} isActive={currentView === 'historico'} onClick={() => onNavigate('historico')} activeColorClass={arenaColorClass} />
           <NavButton label="Atletas" icon={<UsersIcon />} isActive={currentView === 'atletas'} onClick={() => onNavigate('atletas')} activeColorClass={arenaColorClass} />
           <NavButton label="Ranking" icon={<TrophyIcon />} isActive={currentView === 'ranking'} onClick={() => onNavigate('ranking')} activeColorClass={arenaColorClass} />
           <NavButton label="Config" icon={<CogIcon />} isActive={currentView === 'config'} onClick={() => onNavigate('config')} activeColorClass={arenaColorClass} />
+          {isAdmin && (
+            <NavButton label="ADM" icon={<ShieldIcon />} isActive={currentView === 'admin'} onClick={() => onNavigate('admin')} activeColorClass={arenaColorClass} />
+          )}
         </nav>
         <button onClick={handleLogoutWithConfirmation} className="p-2 text-red-500 flex flex-col items-center">
           <LogOutIcon className="w-4 h-4" />

@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { ShieldIcon, LoaderIcon, UserPlusIcon, LogOutIcon, ZapIcon } from '../components/icons';
+import { ShieldIcon, LoaderIcon, UserPlusIcon, LogOutIcon, ZapIcon, TrophyIcon, UsersIcon, CalendarIcon } from '../components/icons';
 import { supabase } from '../lib/supabase';
+import { Plan, Coupon } from '../types';
 
 interface LoginProps {
   onLogin: () => void;
@@ -15,6 +16,66 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [success, setSuccess] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [couponCode, setCouponCode] = useState('');
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [activeCoupon, setActiveCoupon] = useState<Coupon | null>(null);
+
+  React.useEffect(() => {
+    if (isSignUp && plans.length === 0) {
+      fetchPlans();
+    }
+  }, [isSignUp]);
+
+  const fetchPlans = async () => {
+    setLoadingPlans(true);
+    try {
+      const { data, error } = await supabase
+        .from('plans')
+        .select('*')
+        .order('price', { ascending: true });
+      if (error) throw error;
+      if (data) {
+        setPlans(data);
+        if (data.length > 0) setSelectedPlanId(data[0].id);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar planos:", err);
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  const handleCouponBlur = async () => {
+    if (!couponCode.trim()) {
+      setActiveCoupon(null);
+      return;
+    }
+    setValidatingCoupon(true);
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.trim().toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) throw error;
+      setActiveCoupon(data || null);
+    } catch (err) {
+      console.error("Erro validar cupom:", err);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const calculateFinalPrice = (price: number) => {
+    if (activeCoupon?.discount_pct) {
+      return price * (1 - activeCoupon.discount_pct / 100);
+    }
+    return price;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,24 +85,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     try {
       if (isSignUp) {
-        // 1. Verificar cupom se fornecido
-        let bonusDays = 3; // 3 dias de cortesia por padrão se não houver cupom
-        let usedCouponId = null;
+        const selectedPlan = plans.find(p => p.id === selectedPlanId);
+        if (!selectedPlan) throw new Error("Selecione um plano.");
 
-        if (couponCode.trim()) {
-          const { data: coupon, error: cError } = await supabase
-            .from('coupons')
-            .select('*')
-            .eq('code', couponCode.trim().toUpperCase())
-            .eq('is_active', true)
-            .maybeSingle();
-
-          if (cError) throw cError;
-          if (!coupon) throw new Error("CUPOM INVÁLIDO OU EXPIRADO.");
-
-          bonusDays = coupon.days_bonus;
-          usedCouponId = coupon.id;
-        }
+        let bonusDays = activeCoupon?.days_bonus || 0;
 
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
@@ -51,27 +98,28 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         if (signUpError) throw signUpError;
         if (!authData.user) throw new Error("Erro ao criar usuário.");
 
-        // Criar licença inicial com bônus
-        const expiresAt = new Date(Date.now() + (bonusDays * 24 * 60 * 60 * 1000)).toISOString();
+        // Criar licença inicial baseada no plano escolhido
+        const totalDays = (selectedPlan.months_duration * 30) + bonusDays;
+        const expiresAt = new Date(Date.now() + (totalDays * 24 * 60 * 60 * 1000)).toISOString();
 
         await supabase.from('user_licenses').insert({
           user_id: authData.user.id,
           email: email.trim().toLowerCase(),
           expires_at: expiresAt,
           is_active: true,
-          arenas_limit: 1,
-          athletes_limit: 15,
+          arenas_limit: selectedPlan.arenas_limit,
+          athletes_limit: selectedPlan.athletes_limit,
           applied_coupon: couponCode.trim().toUpperCase() || null
         });
 
-        if (usedCouponId) {
-          const { data: cData } = await supabase.from('coupons').select('used_count').eq('id', usedCouponId).single();
-          await supabase.from('coupons').update({ used_count: (cData?.used_count || 0) + 1 }).eq('id', usedCouponId);
+        if (activeCoupon) {
+          await supabase.from('coupons').update({ used_count: (activeCoupon.used_count || 0) + 1 }).eq('id', activeCoupon.id);
         }
 
-        setSuccess(`Solicitação enviada! Você ganhou ${bonusDays} dias de bônus.`);
+        setSuccess(`Solicitação enviada! Plano ${selectedPlan.name} ativado.`);
         setIsSignUp(false);
         setCouponCode('');
+        setActiveCoupon(null);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: email.trim().toLowerCase(),
@@ -137,16 +185,84 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
 
           {isSignUp && (
-            <div className="space-y-1.5 animate-in fade-in slide-in-from-right-4">
-              <div className="flex items-center gap-2 ml-1">
-                <ZapIcon className="w-3 h-3 text-emerald-500" />
-                <label className="text-[10px] font-black uppercase tracking-widest text-emerald-500/50">Cupom de Bônus (Opcional)</label>
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/30">Escolha seu Plano</label>
+                  {loadingPlans && <LoaderIcon className="w-3 h-3 animate-spin text-indigo-500" />}
+                </div>
+
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10">
+                  {plans.length > 0 ? (
+                    plans.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setSelectedPlanId(p.id)}
+                        className={`w-full p-3 rounded-xl border transition-all text-left relative overflow-hidden flex items-center justify-between ${selectedPlanId === p.id ? 'bg-indigo-500/10 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.1)]' : 'bg-white/[0.02] border-white/5 hover:border-white/20'}`}
+                      >
+                        <div className="flex flex-col">
+                          <p className="text-[9px] font-black uppercase text-indigo-400 mb-0.5">{p.name}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1 text-white/40">
+                              <CalendarIcon className="w-2.5 h-2.5" />
+                              <span className="text-[8px] font-bold uppercase">{p.months_duration} {p.months_duration === 1 ? 'Mês' : 'Meses'}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-white/40">
+                              <UsersIcon className="w-2.5 h-2.5" />
+                              <span className="text-[8px] font-bold uppercase">{p.athletes_limit} Atletas</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm font-black text-white">R${calculateFinalPrice(p.price).toFixed(0)}</span>
+                            {activeCoupon && <span className="text-[8px] line-through text-white/20">R${p.price.toFixed(0)}</span>}
+                          </div>
+                        </div>
+
+                        {selectedPlanId === p.id && (
+                          <div className="absolute top-0 right-0 p-1">
+                            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+                          </div>
+                        )}
+                      </button>
+                    ))
+                  ) : !loadingPlans ? (
+                    <div className="w-full py-6 text-center bg-white/[0.02] border border-dashed border-white/10 rounded-2xl">
+                      <p className="text-[10px] font-black text-white/20 uppercase mb-3">Ops! Nenhum plano disponível.</p>
+                      <button
+                        type="button"
+                        onClick={fetchPlans}
+                        className="text-[9px] font-black text-indigo-400 uppercase border border-indigo-500/20 px-4 py-2 rounded-xl hover:bg-indigo-500/10 transition-all"
+                      >
+                        Tentar Novamente
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               </div>
-              <input
-                type="text" value={couponCode} onChange={e => setCouponCode(e.target.value)}
-                className="w-full bg-white/[0.03] border border-emerald-500/10 rounded-xl sm:rounded-2xl py-3 px-5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-all placeholder:text-white/5 uppercase"
-                placeholder="EX: PRO90"
-              />
+
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 ml-1">
+                  <ZapIcon className={`w-3 h-3 ${activeCoupon ? 'text-emerald-500' : 'text-white/20'}`} />
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/30">Cupom (Opcional)</label>
+                  {validatingCoupon && <LoaderIcon className="w-3 h-3 animate-spin text-indigo-500" />}
+                </div>
+                <input
+                  type="text" value={couponCode}
+                  onChange={e => setCouponCode(e.target.value)}
+                  onBlur={handleCouponBlur}
+                  className="w-full bg-white/[0.03] border border-white/10 rounded-xl sm:rounded-2xl py-3 px-5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-all placeholder:text-white/5 uppercase"
+                  placeholder="TEM CUPOM?"
+                />
+                {activeCoupon && (
+                  <p className="text-[8px] font-black text-emerald-500 uppercase ml-1">
+                    ✓ {activeCoupon.discount_pct}% OFF + {activeCoupon.days_bonus} DIAS BÔNUS
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

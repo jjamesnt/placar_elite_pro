@@ -165,6 +165,12 @@ const Placar: React.FC<PlacarProps> = ({
     const currentScore = teamData(team).score;
     const isIncrement = score > currentScore;
 
+    const athletesMissing = !teamA.players.every(p => p) || !teamB.players.every(p => p);
+    if (isIncrement && athletesMissing && !atletasAlertShown) {
+      setShowAtletasAlert(true);
+      return;
+    }
+
     setHistory(prev => [...prev, { teamA, teamB, servingTeam }]);
 
     // Gatilho do Vai a 3: Empate no Match Point-1 (Ex: 14x14 num jogo de 15)
