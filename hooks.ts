@@ -109,7 +109,10 @@ const getAudioContext = (): AudioContext | null => {
   }
 };
 
+let isAudioWarmedUp = false;
+
 export const warmUpAudioContext = async () => {
+  if (isAudioWarmedUp) return;
   const ctx = getAudioContext();
   if (ctx) {
     if (ctx.state === 'suspended') {
@@ -121,10 +124,12 @@ export const warmUpAudioContext = async () => {
     source.buffer = buffer;
     source.connect(ctx.destination);
     source.start(0);
+    isAudioWarmedUp = true;
     console.log("AudioContext aquecido. Estado:", ctx.state);
   }
 };
 
+const noiseBufferCache: Record<string, AudioBuffer> = {};
 
 export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme }: SensoryFeedbackProps) => {
 
@@ -144,13 +149,19 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
     const activeBuffer = isSuspended ? 0.15 : 0.05;
     const now = ctx.currentTime + activeBuffer;
 
-    // Função auxiliar para ruído FILTRADO (mais impacto, menos chiado)
+    // Função auxiliar para ruído FILTRADO (mais impacto, menos chiado) com Cache de Buffer
     const playNoise = (duration: number, volume: number, filterFreq = 1000) => {
-      const bufferSize = ctx.sampleRate * duration;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
+      const cacheKey = `${duration}-${filterFreq}`;
+      let buffer = noiseBufferCache[cacheKey];
+
+      if (!buffer) {
+        const bufferSize = ctx.sampleRate * duration;
+        buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        noiseBufferCache[cacheKey] = buffer;
       }
 
       const noise = ctx.createBufferSource();
@@ -168,6 +179,12 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
       noise.connect(filter);
       filter.connect(noiseGain);
       noiseGain.connect(ctx.destination);
+
+      noise.onended = () => {
+        noise.disconnect();
+        filter.disconnect();
+        noiseGain.disconnect();
+      };
 
       noise.start(now);
       noise.stop(now + duration);
@@ -195,6 +212,10 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
           gain.gain.exponentialRampToValueAtTime(0.0001, cycleStart + 1.0);
           osc.start(cycleStart);
           osc.stop(cycleStart + 1.0);
+          osc.onended = () => {
+            osc.disconnect();
+            gain.disconnect();
+          };
         }
         playNoise(0.5, 0.15, 800);
       }
@@ -217,6 +238,10 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
         gain.gain.exponentialRampToValueAtTime(0.0001, start + 1.5);
         osc.start(start);
         osc.stop(start + 1.5);
+        osc.onended = () => {
+          osc.disconnect();
+          gain.disconnect();
+        };
       });
       if (isEmergency) playNoise(1.5, 0.2, 500); // Grande impacto final (Low-pass 500Hz para peso)
       return;
@@ -235,6 +260,10 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
       osc.start(now);
       osc.stop(now + 0.3);
+      osc.onended = () => {
+        osc.disconnect();
+        gain.disconnect();
+      };
       playNoise(0.2, 0.5, 1200); // Explosão controlada (Low-pass 1200Hz para brilho sem chiado)
       return;
     }
@@ -256,6 +285,10 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
         gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.1);
         osc.start(startTime);
         osc.stop(startTime + 0.1);
+        osc.onended = () => {
+          osc.disconnect();
+          gain.disconnect();
+        };
       }
       return;
     }
@@ -275,6 +308,10 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
 
     oscillator.start(now);
     oscillator.stop(now + params.duration);
+    oscillator.onended = () => {
+      oscillator.disconnect();
+      gainNode.disconnect();
+    };
   }, [soundEnabled, soundScheme]);
 
   const vibrate = useCallback((pattern: number | number[]) => {
