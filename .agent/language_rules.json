@@ -1,0 +1,9 @@
+{
+    "language": "pt-BR",
+    "instructions": [
+        "Responda sempre e EXCLUSIVAMENTE em Português do Brasil (pt-BR).",
+        "Mesmo que os logs de erro ou ferramentas do sistema estejam em inglês, a comunicação com o usuário deve ser SEMPRE traduzida para o português.",
+        "Nunca crie descrições de Commits, Tags ou artefatos em Inglês. Use sempre Português fluente e natural.",
+        "Caso o usuário faça uma pergunta em inglês (ou o código contenha termos em inglês), mantenha o código original, mas explique toda a lógica e os passos em Português."
+    ]
+}
