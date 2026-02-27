@@ -1,18 +1,22 @@
 import React, { useState, useMemo } from 'react';
-import { Match, Arena } from '../types';
-import { Trash2Icon, FileDownIcon, CalendarIcon, XCircleIcon } from '../components/icons';
+import { Match, Arena, Player } from '../types';
+import { Trash2Icon, FileDownIcon, CalendarIcon, XCircleIcon, Edit2Icon, CheckIcon, XIcon } from '../components/icons';
 
 interface HistoricoProps {
   matches: Match[];
   setMatches: React.Dispatch<React.SetStateAction<Match[]>>;
   currentArena: Arena;
   onClearMatches: (mode: 'all' | 'day', date?: Date) => Promise<void>;
+  onUpdateMatch?: (matchId: string, updatedData: Omit<Match, 'id' | 'timestamp'>) => Promise<void>;
+  players: Player[];
 }
 
-const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena, onClearMatches }) => {
+const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena, onClearMatches, onUpdateMatch, players }) => {
   const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
-  const [filterDate, setFilterDate] = useState<string>('');
+  const [filterDate, setFilterDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [showClearModal, setShowClearModal] = useState(false);
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<Match | null>(null);
 
   const filteredMatches = useMemo(() => {
     if (!filterDate) return matches;
@@ -34,6 +38,79 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
     await onClearMatches(mode, dateObj);
     setShowClearModal(false);
   };
+
+  const startEditing = (match: Match) => {
+    setEditingMatchId(match.id);
+    setEditFormData({ ...match });
+  };
+
+  const cancelEditing = () => {
+    setEditingMatchId(null);
+    setEditFormData(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editFormData || !onUpdateMatch) return;
+
+    // Recalcular vencedor
+    const winner = editFormData.teamA.score > editFormData.teamB.score ? 'A' : 'B';
+    const updatedData = {
+      ...editFormData,
+      winner
+    };
+
+    // Remover campos que não devem ser enviados no data_json do update
+    const { id, timestamp, ...dataToSync } = updatedData as any;
+
+    await onUpdateMatch(editFormData.id, dataToSync);
+    setEditingMatchId(null);
+    setEditFormData(null);
+  };
+
+  const handleEditChange = (team: 'A' | 'B', field: 'score' | 'players', value: any, playerIndex?: number) => {
+    if (!editFormData) return;
+
+    setEditFormData(prev => {
+      if (!prev) return null;
+      const newFormData = { ...prev };
+      if (team === 'A') {
+        if (field === 'score') newFormData.teamA.score = Number(value);
+        if (field === 'players' && playerIndex !== undefined) {
+          const newPlayers = [...newFormData.teamA.players];
+          const selectedPlayer = players.find(p => p.id === value);
+          if (selectedPlayer) newPlayers[playerIndex] = selectedPlayer;
+          newFormData.teamA.players = newPlayers;
+        }
+      } else {
+        if (field === 'score') newFormData.teamB.score = Number(value);
+        if (field === 'players' && playerIndex !== undefined) {
+          const newPlayers = [...newFormData.teamB.players];
+          const selectedPlayer = players.find(p => p.id === value);
+          if (selectedPlayer) newPlayers[playerIndex] = selectedPlayer;
+          newFormData.teamB.players = newPlayers;
+        }
+      }
+      return newFormData;
+    });
+  };
+
+  const navigateDate = (amount: number) => {
+    if (!filterDate) {
+      setFilterDate(new Date().toISOString().split('T')[0]);
+      return;
+    }
+    const current = new Date(filterDate + 'T12:00:00');
+    current.setDate(current.getDate() + amount);
+    setFilterDate(current.toISOString().split('T')[0]);
+  };
+
+  const currentPeriodLabel = useMemo(() => {
+    if (!filterDate) return 'TODO O HISTÓRICO';
+    const date = new Date(filterDate + 'T12:00:00');
+    const weekday = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+    const dayMonth = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return `${weekday}, ${dayMonth}`;
+  }, [filterDate]);
 
   const handleExport = () => {
     const reportWindow = window.open('', '_blank');
@@ -153,31 +230,11 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
 
   return (
     <div className="w-full p-4 flex flex-col gap-6 animate-in fade-in duration-500 overflow-x-hidden">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 print:hidden">
-        <h1 className="text-xl sm:text-2xl font-black text-gray-100 uppercase tracking-tighter text-center sm:text-left">
-          AUDITORIA DA ARENA <span className="text-indigo-400">{currentArena.name.toUpperCase()}</span>
-        </h1>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:flex-initial">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none">
-              <CalendarIcon className="w-4 h-4" />
-            </div>
-            <input
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full sm:w-48 pl-10 pr-4 py-2 bg-gray-800 border border-gray-700/50 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none"
-            />
-            {filterDate && (
-              <button
-                onClick={() => setFilterDate('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
-              >
-                <XCircleIcon className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+      <div className="flex flex-col items-center gap-4 print:hidden">
+        <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-4">
+          <h1 className="text-xl sm:text-2xl font-black text-gray-100 uppercase tracking-tighter text-center sm:text-left">
+            AUDITORIA DA ARENA <span className="text-indigo-400">{currentArena.name.toUpperCase()}</span>
+          </h1>
 
           <div className="flex items-center gap-2">
             <button onClick={() => setShowClearModal(true)} className="p-2.5 bg-red-600/20 text-red-500 rounded-xl hover:bg-red-600/30 transition-colors shadow-lg border border-red-500/20">
@@ -186,6 +243,53 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
             <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-xl text-[9px] font-black shadow-xl hover:bg-gray-600 transition-colors uppercase">
               <FileDownIcon className="w-3 h-3" />
               Exportar
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-3 w-full">
+          <div className="flex items-center justify-between w-full max-w-xl bg-gray-800/40 p-2 rounded-2xl border border-gray-700/30">
+            <button
+              onClick={() => navigateDate(-1)}
+              className="p-3 text-indigo-400 hover:text-white transition-colors active:scale-90"
+            >
+              <span className="text-2xl">◀</span>
+            </button>
+
+            <div className="flex flex-col items-center flex-1">
+              <span className="text-sm font-black text-gray-200 uppercase tracking-tighter text-center">
+                {currentPeriodLabel}
+              </span>
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="bg-transparent text-[9px] text-gray-500 focus:outline-none uppercase font-bold cursor-pointer hover:text-indigo-400 transition-colors"
+                />
+                {!filterDate ? (
+                  <button
+                    onClick={() => setFilterDate(new Date().toISOString().split('T')[0])}
+                    className="text-[9px] font-black text-indigo-400 uppercase tracking-widest px-2 py-0.5 bg-indigo-500/10 rounded-full"
+                  >
+                    Ativar Filtro
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setFilterDate('')}
+                    className="text-[9px] font-black text-rose-400 uppercase tracking-widest px-2 py-0.5 bg-rose-500/10 rounded-full"
+                  >
+                    Ver Tudo
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigateDate(1)}
+              className="p-3 text-indigo-400 hover:text-white transition-colors active:scale-90"
+            >
+              <span className="text-2xl">▶</span>
             </button>
           </div>
         </div>
@@ -202,7 +306,7 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
           return (
             <div
               key={match.id}
-              className="bg-gray-800/40 border border-gray-700/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:border-indigo-500/30 group print:border-gray-200 print:shadow-none print:p-2 print:flex-row"
+              className={`bg-gray-800/40 border ${editingMatchId === match.id ? 'border-indigo-500' : 'border-gray-700/30'} rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:border-indigo-500/30 group print:border-gray-200 print:shadow-none print:p-2 print:flex-row transition-all`}
             >
               <div className="flex flex-col items-center sm:items-start min-w-[110px]">
                 <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{formatDate(match.timestamp)}</span>
@@ -213,34 +317,108 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                 </div>
               </div>
 
-              <div className="flex-1 flex items-center justify-center gap-4 w-full">
-                <div className="flex-1 text-right">
-                  <div className={`text-[11px] sm:text-sm font-black truncate transition-colors ${isWinnerA ? 'text-blue-400' : 'text-gray-500'}`}>
-                    {match.teamA.players.map(p => p.name).join(' \u0026 ')}
+              {editingMatchId === match.id && editFormData ? (
+                <div className="flex-1 flex flex-col gap-4 w-full">
+                  <div className="flex items-center justify-center gap-4 w-full">
+                    {/* Team A Edit */}
+                    <div className="flex-1 flex flex-col gap-2">
+                      <div className="flex flex-col gap-1">
+                        {editFormData.teamA.players.map((p, idx) => (
+                          <select
+                            key={idx}
+                            value={p.id}
+                            onChange={(e) => handleEditChange('A', 'players', e.target.value, idx)}
+                            className="bg-gray-700 text-white text-[10px] p-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          >
+                            {players.map(ap => (
+                              <option key={ap.id} value={ap.id}>{ap.name}</option>
+                            ))}
+                          </select>
+                        ))}
+                      </div>
+                      <input
+                        type="number"
+                        value={editFormData.teamA.score}
+                        onChange={(e) => handleEditChange('A', 'score', e.target.value)}
+                        className="bg-gray-700 text-white text-center font-bold p-1 rounded border border-gray-600 w-full focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div className="text-gray-500 font-bold">VS</div>
+
+                    {/* Team B Edit */}
+                    <div className="flex-1 flex flex-col gap-2">
+                      <div className="flex flex-col gap-1">
+                        {editFormData.teamB.players.map((p, idx) => (
+                          <select
+                            key={idx}
+                            value={p.id}
+                            onChange={(e) => handleEditChange('B', 'players', e.target.value, idx)}
+                            className="bg-gray-700 text-white text-[10px] p-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          >
+                            {players.map(ap => (
+                              <option key={ap.id} value={ap.id}>{ap.name}</option>
+                            ))}
+                          </select>
+                        ))}
+                      </div>
+                      <input
+                        type="number"
+                        value={editFormData.teamB.score}
+                        onChange={(e) => handleEditChange('B', 'score', e.target.value)}
+                        className="bg-gray-700 text-white text-center font-bold p-1 rounded border border-gray-600 w-full focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
                   </div>
-                  <div className={`text-xl sm:text-2xl font-mono font-bold ${isWinnerA ? 'text-blue-500' : 'text-gray-600 opacity-60'}`}>
-                    {match.teamA.score}
+                  <div className="flex justify-center gap-2">
+                    <button onClick={handleSaveEdit} className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-colors">
+                      <CheckIcon className="w-3 h-3" /> Salvar
+                    </button>
+                    <button onClick={cancelEditing} className="flex items-center gap-1 bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-colors">
+                      <XIcon className="w-3 h-3" /> Cancelar
+                    </button>
                   </div>
                 </div>
-
-                <div className="text-gray-700 font-black italic text-[10px] print:hidden">VS</div>
-
-                <div className="flex-1 text-left">
-                  <div className={`text-[11px] sm:text-sm font-black truncate transition-colors ${!isWinnerA ? 'text-red-400' : 'text-gray-500'}`}>
-                    {match.teamB.players.map(p => p.name).join(' \u0026 ')}
+              ) : (
+                <div className="flex-1 flex items-center justify-center gap-4 w-full">
+                  <div className="flex-1 text-right">
+                    <div className={`text-[11px] sm:text-sm font-black truncate transition-colors ${isWinnerA ? 'text-blue-400' : 'text-gray-500'}`}>
+                      {match.teamA.players.map(p => p.name).join(' \u0026 ')}
+                    </div>
+                    <div className={`text-xl sm:text-2xl font-mono font-bold ${isWinnerA ? 'text-blue-500' : 'text-gray-600 opacity-60'}`}>
+                      {match.teamA.score}
+                    </div>
                   </div>
-                  <div className={`text-xl sm:text-2xl font-mono font-bold ${!isWinnerA ? 'text-red-500' : 'text-gray-600 opacity-60'}`}>
-                    {match.teamB.score}
+
+                  <div className="text-gray-700 font-black italic text-[10px] print:hidden">VS</div>
+
+                  <div className="flex-1 text-left">
+                    <div className={`text-[11px] sm:text-sm font-black truncate transition-colors ${!isWinnerA ? 'text-red-400' : 'text-gray-500'}`}>
+                      {match.teamB.players.map(p => p.name).join(' \u0026 ')}
+                    </div>
+                    <div className={`text-xl sm:text-2xl font-mono font-bold ${!isWinnerA ? 'text-red-500' : 'text-gray-600 opacity-60'}`}>
+                      {match.teamB.score}
+                    </div>
                   </div>
                 </div>
+              )}
+
+              <div className="flex gap-1 print:hidden">
+                {!editingMatchId && (
+                  <button
+                    onClick={() => startEditing(match)}
+                    className="p-3 text-gray-500 hover:text-indigo-400 transition-colors rounded-xl"
+                  >
+                    <Edit2Icon className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setMatchToDelete(match)}
+                  className="p-3 text-gray-600 hover:text-red-500 transition-colors rounded-xl print:hidden"
+                >
+                  <Trash2Icon className="w-4 h-4" />
+                </button>
               </div>
-
-              <button
-                onClick={() => setMatchToDelete(match)}
-                className="p-3 text-gray-600 hover:text-red-500 transition-colors rounded-xl print:hidden"
-              >
-                <Trash2Icon className="w-4 h-4" />
-              </button>
             </div>
           );
         })}

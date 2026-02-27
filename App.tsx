@@ -334,6 +334,18 @@ const App: React.FC = () => {
     }
   };
 
+  const handleUpdateMatch = async (matchId: string, updatedData: Omit<Match, 'id' | 'timestamp'>) => {
+    if (!session || currentArenaId === 'default') return;
+    const { error } = await supabase
+      .from('matches')
+      .update({ data_json: updatedData })
+      .eq('id', matchId);
+
+    if (!error) {
+      refreshData();
+    }
+  };
+
   const handleAddArena = async (name: string, color: ArenaColor) => {
     if (!session || !userLicense) return;
 
@@ -409,7 +421,7 @@ const App: React.FC = () => {
         <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} currentArena={currentArena} onLogout={handleLogout} isAdmin={isAdmin} />
         <main className="flex-1 overflow-y-auto">
           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} />}
-          {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} onClearMatches={handleClearMatches} />}
+          {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} onClearMatches={handleClearMatches} onUpdateMatch={handleUpdateMatch} players={players} />}
           {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} athletesLimit={userLicense?.athletes_limit} />}
           {currentView === 'ranking' && (
             <Ranking
