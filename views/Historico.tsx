@@ -6,11 +6,26 @@ interface HistoricoProps {
   matches: Match[];
   setMatches: React.Dispatch<React.SetStateAction<Match[]>>;
   currentArena: Arena;
+<<<<<<< Updated upstream
 }
 
 const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena }) => {
   const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
   const [filterDate, setFilterDate] = useState<string>('');
+=======
+  onClearMatches: (mode: 'all' | 'day', date?: Date) => Promise<void>;
+  onUpdateMatch?: (matchId: string, updatedData: Omit<Match, 'id' | 'timestamp'>) => Promise<void>;
+  players: Player[];
+  showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
+  showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
+}
+
+const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena, onClearMatches, onUpdateMatch, players, showAlert, showConfirm }) => {
+  const [filterDate, setFilterDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<Match | null>(null);
+>>>>>>> Stashed changes
 
   const filteredMatches = useMemo(() => {
     if (!filterDate) return matches;
@@ -20,17 +35,14 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
     });
   }, [matches, filterDate]);
 
-  const handleDelete = () => {
-    if (matchToDelete) {
-      setMatches(prev => prev.filter(m => m.id !== matchToDelete.id));
-      setMatchToDelete(null);
-    }
+  const handleDelete = (matchId: string) => {
+    setMatches(prev => prev.filter(m => m.id !== matchId));
   };
 
   const handleExport = () => {
     const reportWindow = window.open('', '_blank');
-    if (!reportWindow) {
-      alert("Não foi possível abrir a janela de exportação. Verifique se seu navegador está bloqueando pop-ups.");
+    if (!reportWindow || reportWindow.closed || typeof reportWindow.closed === 'undefined') {
+      if (showAlert) showAlert("Pop-up Bloqueado", "Libere o acesso nas configurações do navegador para gerar o relatório.", 'warning', 'alert');
       return;
     }
 
@@ -219,6 +231,36 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                     {match.teamB.score}
                   </div>
                 </div>
+<<<<<<< Updated upstream
+=======
+              )}
+
+              <div className="flex gap-1 print:hidden">
+                {!editingMatchId && (
+                  <button
+                    onClick={() => startEditing(match)}
+                    className="p-3 text-gray-500 hover:text-indigo-400 transition-colors rounded-xl"
+                  >
+                    <Edit2Icon className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                      if (showConfirm) {
+                          showConfirm(
+                              "Remover Partida",
+                              "Deseja realmente apagar permanentemente o registro desta partida?",
+                              () => handleDelete(match.id),
+                              'danger',
+                              'trash'
+                          );
+                      }
+                  }}
+                  className="p-3 text-gray-600 hover:text-red-500 transition-colors rounded-xl print:hidden"
+                >
+                  <Trash2Icon className="w-4 h-4" />
+                </button>
+>>>>>>> Stashed changes
               </div>
 
               <button
@@ -236,20 +278,56 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
             <span className="text-gray-600 italic uppercase tracking-widest text-[9px]">Histórico vazio para a data selecionada.</span>
           </div>
         )}
-      </div>
 
-      {matchToDelete && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[110] flex items-center justify-center p-4 print:hidden" onClick={() => setMatchToDelete(null)}>
-          <div className="bg-gray-900 border border-red-500/20 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-black text-white mb-4 uppercase tracking-tighter text-center">Remover Partida?</h2>
-            <p className="text-gray-400 mb-8 text-center text-xs leading-relaxed">Esta ação apagará o registro permanentemente.</p>
-            <div className="flex gap-4">
-              <button onClick={() => setMatchToDelete(null)} className="flex-1 p-4 bg-gray-800 text-gray-400 rounded-2xl font-black uppercase text-[10px]">Voltar</button>
-              <button onClick={handleDelete} className="flex-1 p-4 bg-red-600 text-white rounded-2xl font-black uppercase text-[10px]">Excluir</button>
+        {showClearModal && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300 print:hidden" onClick={() => setShowClearModal(false)}>
+          <div className="bg-[#030712] border border-red-500/30 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200 text-center space-y-6 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center bg-red-500/10 text-red-500">
+              <Trash2Icon className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-xl font-black text-white uppercase tracking-tighter text-center">Limpar Dados?</h2>
+              <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest leading-relaxed text-center">
+                Você deseja apagar as partidas da Arena <span className="text-red-400">{currentArena.name}</span>?
+              </p>
+            </div>
+<<<<<<< Updated upstream
+          </div>
+        </div>
+      )}
+=======
+
+            <div className="flex flex-col gap-3">
+              {filterDate && (
+                <button
+                  onClick={() => handleClearConfirmed('day')}
+                  className="w-full p-4 bg-white/5 text-white/70 border border-white/5 hover:border-white/20 rounded-xl font-black uppercase text-[9px] tracking-widest flex flex-col items-center gap-1 active:scale-95 transition-all"
+                >
+                  <span>Apagar apenas o dia</span>
+                  <span className="text-red-400 opacity-70">{new Date(filterDate + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => handleClearConfirmed('all')}
+                className="w-full p-5 bg-red-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-900/20 active:scale-95 transition-all"
+              >
+                LIMPAR TODO O HISTÓRICO
+              </button>
+
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="w-full p-4 text-white/30 font-black uppercase text-[10px] tracking-widest hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         </div>
       )}
+      </div>
+>>>>>>> Stashed changes
     </div>
   );
 };

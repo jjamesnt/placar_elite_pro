@@ -11,7 +11,12 @@ interface AuthorizedUser {
   is_active: boolean;
 }
 
-const AccessControl: React.FC = () => {
+interface AccessControlProps {
+  showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
+  showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
+}
+
+const AccessControl: React.FC<AccessControlProps> = ({ showAlert, showConfirm }) => {
   const [conciergeEmail, setConciergeEmail] = useState('');
   const [tempPassword, setTempPassword] = useState('');
   
@@ -89,25 +94,35 @@ const AccessControl: React.FC = () => {
   };
 
   const handleRemove = async (id: string) => {
-    if (!window.confirm("Deseja EXCLUIR permanentemente esta licença?")) return;
-    
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('authorized_emails')
-        .delete()
-        .eq('id', id);
+    const executeDelete = async () => {
+      setLoading(true);
+      try {
+        const { error } = await supabase
+          .from('authorized_emails')
+          .delete()
+          .eq('id', id);
 
-      if (error) {
-        showMessage('ERRO: Execute o GRANT DELETE no SQL do Supabase.', 'error');
-      } else {
-        setAuthorized(prev => prev.filter(u => u.id !== id));
-        showMessage('Registro removido com sucesso!', 'success');
+        if (error) {
+          showMessage('ERRO: Execute o GRANT DELETE no SQL do Supabase.', 'error');
+        } else {
+          setAuthorized(prev => prev.filter(u => u.id !== id));
+          showMessage('Registro removido com sucesso!', 'success');
+        }
+      } catch (err: any) {
+        showMessage('Erro técnico ao excluir.', 'error');
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      showMessage('Erro técnico ao excluir.', 'error');
-    } finally {
-      setLoading(false);
+    };
+
+    if (showConfirm) {
+      showConfirm(
+        "Excluir Licença",
+        "Deseja realmente remover permanentemente esta autorização de e-mail?",
+        executeDelete,
+        'danger',
+        'trash'
+      );
     }
   };
 

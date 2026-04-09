@@ -1,6 +1,7 @@
 
 <!DOCTYPE html>
 <html lang="pt-BR">
+<<<<<<< Updated upstream
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -16,6 +17,139 @@
       window.process = { env: { NODE_ENV: 'production' } };
     </script>
     <style>
+=======
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Placar Elite Pro</title>
+  <!-- PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Elite Pro">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    window.process = { env: { NODE_ENV: 'production' } };
+  </script>
+  <style>
+    body {
+      background-color: #030712;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+    }
+
+    @keyframes hazard-pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    .animate-hazard-pulse {
+      animation: hazard-pulse 1.5s ease-in-out infinite;
+    }
+
+    /* Performance Optimizations for Scoreboard */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+
+    .clickable,
+    button,
+    select {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .gpu-accelerated {
+      will-change: transform, opacity;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+    }
+
+    /* Tablet Specific Jumbo Fields (Height aware to exclude landscape phones) */
+    @media screen and (min-width: 768px) and (min-height: 600px) {
+      .tablet-jumbo-select {
+        padding-top: 0.8rem !important;
+        padding-bottom: 0.8rem !important;
+        font-size: 18px !important;
+        border-radius: 1.2rem !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+        text-align-last: center !important;
+        text-align: center !important;
+      }
+
+      .tablet-jumbo-gap {
+        gap: 0.5rem !important;
+        margin-top: 0.25rem !important;
+      }
+    }
+
+    @keyframes rotate-device {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      30% {
+        transform: rotate(0deg);
+      }
+
+      50% {
+        transform: rotate(-90deg);
+      }
+
+      80% {
+        transform: rotate(-90deg);
+      }
+
+      100% {
+        transform: rotate(0deg);
+      }
+    }
+
+    .animate-rotate-device {
+      animation: rotate-device 3s ease-in-out infinite;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #111827;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+
+    /* PRINT STYLES */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 1.5cm;
+      }
+
+>>>>>>> Stashed changes
       body {
         background-color: #030712; 
         padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);

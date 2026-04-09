@@ -1,9 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { ClipboardListIcon, UsersIcon, TrophyIcon, CogIcon, ShieldIcon, MaximizeIcon, MinimizeIcon, HistoryIcon, LogOutIcon, UserCogIcon } from './icons';
+import { ClipboardListIcon, UsersIcon, TrophyIcon, CogIcon, ShieldIcon, MaximizeIcon, MinimizeIcon, HistoryIcon, LogOutIcon, UserCogIcon, CrownIcon } from './icons';
 import { Arena, ArenaColor } from '../types';
 
+<<<<<<< Updated upstream
 export type View = 'placar' | 'atletas' | 'ranking' | 'historico' | 'config' | 'admin';
+=======
+export type View = 'placar' | 'atletas' | 'ranking' | 'historico' | 'config' | 'admin' | 'subscription' | 'clube';
+>>>>>>> Stashed changes
 
 const THEME_COLORS: Record<string, string> = {
   indigo: 'text-indigo-400',
@@ -48,9 +52,11 @@ interface NavigationProps {
   currentArena: Arena;
   onLogout: () => void;
   isAdmin?: boolean;
+  isClub?: boolean;
+  showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUpdate, currentArena, onLogout, isAdmin }) => {
+const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUpdate, currentArena, onLogout, isAdmin, isClub, showConfirm }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showIosTip, setShowIosTip] = useState(false);
   const arenaColorClass = THEME_COLORS[currentArena.color || 'indigo'];
@@ -96,6 +102,21 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
     }
   };
 
+<<<<<<< Updated upstream
+=======
+  const handleLogoutWithConfirmation = () => {
+    if (showConfirm) {
+      showConfirm(
+        "Encerrar Sessão",
+        "Deseja realmente sair? Toda a sua sessão atual está ativa e você perderá o acesso rápido se não tiver salvo os dados.",
+        onLogout,
+        'danger',
+        'info'
+      );
+    }
+  };
+
+>>>>>>> Stashed changes
   return (
     <header className="relative w-full z-50 bg-gray-900/98 backdrop-blur-3xl border-b border-white/5 px-2 sm:px-4 h-11 sm:h-12 flex items-center justify-between flex-shrink-0">
       <div className="flex flex-col min-w-[90px] justify-center">
@@ -103,12 +124,83 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
           <ShieldIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-500" />
           <h1 className="font-black text-[9px] sm:text-[11px] uppercase tracking-tighter leading-none whitespace-nowrap">Placar Elite Pro</h1>
         </div>
+<<<<<<< Updated upstream
         <div className="flex items-center gap-1 mt-0.5 ml-3.5 sm:ml-4">
           <span className={`text-[6px] sm:text-[7px] font-black tracking-[0.1em] uppercase truncate max-w-[70px] sm:max-w-[100px] ${arenaColorClass}`}>
             {currentArena.name}
           </span>
           <div className="w-px h-1.5 bg-gray-800"></div>
           <span className="text-[5px] sm:text-[6px] text-gray-600 font-mono tracking-tighter">{lastUpdate}</span>
+=======
+        <nav className="flex items-center gap-1 overflow-x-auto scrollbar-none snap-x touch-pan-x flex-1 justify-end lg:justify-start">
+          <NavButton label="Placar" icon={<ClipboardListIcon />} isActive={currentView === 'placar'} onClick={() => onNavigate('placar')} activeColorClass={arenaColorClass} />
+          <NavButton label="Histórico" icon={<HistoryIcon />} isActive={currentView === 'historico'} onClick={() => onNavigate('historico')} activeColorClass={arenaColorClass} />
+          <NavButton label="Atletas" icon={<UsersIcon />} isActive={currentView === 'atletas'} onClick={() => onNavigate('atletas')} activeColorClass={arenaColorClass} />
+          <NavButton label="Ranking" icon={<TrophyIcon />} isActive={currentView === 'ranking'} onClick={() => onNavigate('ranking')} activeColorClass={arenaColorClass} />
+          <NavButton label="Config" icon={<CogIcon />} isActive={currentView === 'config'} onClick={() => onNavigate('config')} activeColorClass={arenaColorClass} />
+          {isClub && (
+            <NavButton label="Meu Clube" icon={<CrownIcon />} isActive={currentView === 'clube'} onClick={() => onNavigate('clube')} activeColorClass={arenaColorClass} />
+          )}
+          {isAdmin && (
+            <NavButton label="ADM" icon={<ShieldIcon />} isActive={currentView === 'admin'} onClick={() => onNavigate('admin')} activeColorClass={arenaColorClass} />
+          )}
+        </nav>
+        <button onClick={handleLogoutWithConfirmation} className="p-2 text-red-500 flex flex-col items-center">
+          <LogOutIcon className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* 2. Tablet/Desktop Layout: Standard Flexbox (Clean Slate) */}
+      <div className="hidden lg:flex w-full h-full items-center justify-between px-6 max-w-[1600px] mx-auto">
+        {/* Left Section */}
+        <div className="flex items-center gap-4">
+          <NavButton label="Placar" icon={<ClipboardListIcon />} isActive={currentView === 'placar'} onClick={() => onNavigate('placar')} activeColorClass={arenaColorClass} />
+          <NavButton label="Histórico" icon={<HistoryIcon />} isActive={currentView === 'historico'} onClick={() => onNavigate('historico')} activeColorClass={arenaColorClass} />
+          <NavButton label="Atletas" icon={<UsersIcon />} isActive={currentView === 'atletas'} onClick={() => onNavigate('atletas')} activeColorClass={arenaColorClass} />
+          <NavButton label="Ranking" icon={<TrophyIcon />} isActive={currentView === 'ranking'} onClick={() => onNavigate('ranking')} activeColorClass={arenaColorClass} />
+        </div>
+
+        {/* Central Branding: Simple Flex Item (No Absolute) */}
+        <div className="flex items-center justify-center gap-4 px-8 border-x border-white/5 bg-white/5 py-2 rounded-xl">
+          <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
+          <div className="flex flex-col">
+            <span className={`text-sm md:text-base lg:text-xl font-black uppercase tracking-widest whitespace-nowrap ${arenaColorClass}`}>
+              {currentArena.name}
+            </span>
+            <span className="text-[9px] text-gray-400 font-mono opacity-80 uppercase tracking-widest leading-none">
+              {lastUpdate}
+            </span>
+          </div>
+        </div>
+
+        {/* Right Section */}
+        <div className="flex items-center gap-4">
+          <NavButton label="Config" icon={<CogIcon />} isActive={currentView === 'config'} onClick={() => onNavigate('config')} activeColorClass={arenaColorClass} />
+          {isClub && (
+            <NavButton label="Meu Clube" icon={<CrownIcon />} isActive={currentView === 'clube'} onClick={() => onNavigate('clube')} activeColorClass={arenaColorClass} />
+          )}
+          {isAdmin && (
+            <NavButton label="ADM" icon={<ShieldIcon />} isActive={currentView === 'admin'} onClick={() => onNavigate('admin')} activeColorClass={arenaColorClass} />
+          )}
+          <NavButton
+            label="Focar"
+            icon={isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
+            isActive={false}
+            onClick={toggleFullscreen}
+            activeColorClass="text-white"
+          />
+
+          {/* Logout Button: Standard */}
+          <div className="border-l border-white/10 pl-4 ml-2">
+            <button
+              onClick={handleLogoutWithConfirmation}
+              className="text-red-500 hover:text-red-400 transition-all active:scale-95 flex flex-col items-center group px-2"
+            >
+              <LogOutIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-50 group-hover:opacity-100 transition-opacity">Sair</span>
+            </button>
+          </div>
+>>>>>>> Stashed changes
         </div>
       </div>
 

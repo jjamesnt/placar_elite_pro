@@ -22,6 +22,16 @@ interface ConfigProps {
   setCapoteEnabled: (e: boolean) => void;
   vaiATresEnabled: boolean;
   setVaiATresEnabled: (e: boolean) => void;
+<<<<<<< Updated upstream
+=======
+  matchMode: MatchMode;
+  setMatchMode: (m: MatchMode) => void;
+  matchTime: number;
+  setMatchTime: (t: number) => void;
+  onGoToSubscription?: () => void;
+  showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
+  showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
+>>>>>>> Stashed changes
 }
 
 const ARENA_COLORS: ArenaColor[] = ['indigo', 'blue', 'emerald', 'amber', 'rose', 'violet'];
@@ -31,7 +41,14 @@ const Config: React.FC<ConfigProps> = ({
   winScore, setWinScore, attackTime, setAttackTime, soundEnabled, setSoundEnabled,
   vibrationEnabled, setVibrationEnabled, soundScheme, setSoundScheme,
   arenas, currentArenaId, setCurrentArenaId, onAddArena, onUpdateArena, onDeleteArena, onLogout, onSaveSettings,
+<<<<<<< Updated upstream
   capoteEnabled, setCapoteEnabled, vaiATresEnabled, setVaiATresEnabled
+=======
+  capoteEnabled, setCapoteEnabled, vaiATresEnabled, setVaiATresEnabled,
+  matchMode, setMatchMode, matchTime, setMatchTime,
+  userLicense, onRefreshLicense, onGoToSubscription,
+  showAlert, showConfirm
+>>>>>>> Stashed changes
 }) => {
   const [newName, setNewName] = useState('');
   const [selColor, setSelColor] = useState<ArenaColor>('indigo');
@@ -48,7 +65,14 @@ const Config: React.FC<ConfigProps> = ({
   };
 
   const handleLocalBackup = () => {
-    alert("Função de Back-up Local: Os dados sincronizados com a nuvem já estão protegidos.");
+    if (showAlert) {
+      showAlert(
+        "Backup em Nuvem Ativo",
+        "A função de Back-up Local foi simplificada: todos os seus dados já estão sincronizados e protegidos automaticamente em nossos servidores Elite.",
+        'info',
+        'info'
+      );
+    }
   };
 
   return (
@@ -92,8 +116,14 @@ const Config: React.FC<ConfigProps> = ({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      if (window.confirm(`ATENÇÃO: Excluir "${a.name}" e todas as partidas deste grupo?`)) {
-                        onDeleteArena(a.id);
+                      if (showConfirm) {
+                        showConfirm(
+                          "Excluir Grupo",
+                          `ATENÇÃO: Deseja realmente excluir permanentemente o grupo "${a.name}" e todas as suas partidas? Esta ação não pode ser desfeita.`,
+                          () => onDeleteArena(a.id),
+                          'danger',
+                          'trash'
+                        );
                       }
                     }}
                     className="p-2 text-white/5 hover:text-red-500 transition-all active:scale-75"

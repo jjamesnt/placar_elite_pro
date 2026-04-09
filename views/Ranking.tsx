@@ -10,9 +10,20 @@ type Filter = 'Hoje' | 'Semanal' | 'Mensal' | 'Anual' | 'Total';
 
 interface RankingProps {
   matches: Match[];
+<<<<<<< Updated upstream
   players: Player[];
   arenaName?: string;
   arenaColor?: ArenaColor;
+=======
+  arenaName: string;
+  arenaColor: string;
+  filter: Filter;
+  setFilter: (f: Filter) => void;
+  viewDate: Date;
+  setViewDate: (d: Date) => void;
+  onClearMatches: (mode: 'all' | 'day', date?: Date) => Promise<void>;
+  showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
+>>>>>>> Stashed changes
 }
 
 interface PlayerStats {
@@ -176,9 +187,14 @@ const formatDuration = (minutes: number) => {
     return `${m}m`;
 };
 
+<<<<<<< Updated upstream
 const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaColor = 'indigo' }) => {
   const [filter, setFilter] = useState<Filter>('Hoje');
   const [viewDate, setViewDate] = useState(new Date());
+=======
+const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaColor, filter, setFilter, viewDate, setViewDate, onClearMatches, showAlert }) => {
+  // State lifted to App.tsx for persistence
+>>>>>>> Stashed changes
   const [exportImageUrl, setExportImageUrl] = useState<string | null>(null);
   const [isStoryMode, setIsStoryMode] = useState(false);
   const [showReportSelector, setShowReportSelector] = useState(false);
@@ -277,10 +293,17 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
   
   const handleExport = () => {
     setShowReportSelector(false);
+<<<<<<< Updated upstream
     const reportWindow = window.open('', '_blank');
     if (!reportWindow) {
         alert("Pop-up bloqueado. Libere para gerar o relatório.");
         return;
+=======
+    const newWindow = window.open('', '_blank');
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      if (showAlert) showAlert("Pop-up Bloqueado", "Libere o acesso nas configurações do navegador para gerar o relatório.", 'warning', 'alert');
+      return;
+>>>>>>> Stashed changes
     }
     const reportTitle = `Ranking - ${arenaName || 'Arena'}`;
     const periodLabel = `${filter}: ${currentPeriodLabel}`;
@@ -352,14 +375,44 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
     </html>
     `;
 
-    reportWindow.document.write(htmlContent);
-    reportWindow.document.close();
+    newWindow.document.write(htmlContent);
+    newWindow.document.close();
   };
 
+<<<<<<< Updated upstream
   const handleExportStory = () => {
     if (stats.length === 0) {
         alert("Não há dados de ranking para gerar um story.");
         return;
+=======
+  const handleExportStory = async () => {
+    if (players.length === 0) {
+      if (showAlert) showAlert("Sem Dados", "Não há informações de ranking suficientes para gerar um story no momento.", 'info', 'info');
+      return;
+    }
+    try {
+      // Fetch logo and convert to Data URL for embedding
+      let logoDataUrl = '';
+      try {
+        const logoResponse = await fetch('/logo.png');
+        const logoBlob = await logoResponse.blob();
+        logoDataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(logoBlob);
+        });
+      } catch (e) {
+        console.warn("Logo not found for story export, proceeding without it.");
+      }
+
+      const svgUrl = generateStoryImage(stats, arenaName || 'Arena', arenaColor, currentPeriodLabel, filter, viewDate, logoDataUrl);
+      // Converter SVG para JPEG (1080x1920 é o padrão do story gerado)
+      const jpegUrl = await convertSvgToJpeg(svgUrl, 1080, 1920);
+      setExportImageUrl(jpegUrl);
+      setIsStoryMode(true);
+    } catch (err) {
+      if (showAlert) showAlert("Falha na Imagem", "Ocorreu um erro técnico ao gerar o story. Tente novamente.", 'danger', 'alert');
+>>>>>>> Stashed changes
     }
     const imageUrl = generateStoryImage(stats, arenaName || 'Arena', arenaColor, currentPeriodLabel, filter, viewDate);
     setExportImageUrl(imageUrl);
@@ -435,7 +488,54 @@ const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaCol
         </div>
       ) : (
         <div className="py-20 text-center flex flex-col items-center gap-4 bg-gray-800/20 rounded-[3rem] border border-dashed border-gray-700/30 print:hidden">
+<<<<<<< Updated upstream
             <span className="text-gray-600 italic uppercase tracking-widest text-[9px]">Nenhum dado registrado para o período {filter}.</span>
+=======
+          <span className="text-gray-600 italic uppercase tracking-widest text-[9px]">Nenhum dado registrado para o período {filter}.</span>
+        </div>
+      )}
+
+      {showClearModal && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[110] flex items-center justify-center p-6 animate-in fade-in duration-300 print:hidden" onClick={() => setShowClearModal(false)}>
+          <div className="bg-[#030712] border border-red-500/30 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200 text-center space-y-6 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center bg-red-500/10 text-red-500">
+              <Trash2Icon className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-xl font-black text-white uppercase tracking-tighter text-center">Limpar Ranking?</h2>
+              <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest leading-relaxed text-center">
+                Você deseja apagar as partidas da Arena <span className="text-red-400">{arenaName}</span>? Isso resetará as estatísticas.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {filter !== 'Total' && (
+                <button
+                  onClick={() => handleClearConfirmed('day')}
+                  className="w-full p-4 bg-white/5 text-white/70 border border-white/5 hover:border-white/20 rounded-xl font-black uppercase text-[9px] tracking-widest flex flex-col items-center gap-1 active:scale-95 transition-all"
+                >
+                  <span>Apagar dia visualizado</span>
+                  <span className="text-red-400 opacity-70">{viewDate.toLocaleDateString('pt-BR')}</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => handleClearConfirmed('all')}
+                className="w-full p-5 bg-red-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-900/20 active:scale-95 transition-all"
+              >
+                LIMPAR TODO O HISTÓRICO
+              </button>
+
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="w-full p-4 text-white/30 font-black uppercase text-[10px] tracking-widest hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+>>>>>>> Stashed changes
         </div>
       )}
 

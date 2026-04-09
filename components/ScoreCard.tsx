@@ -1,6 +1,11 @@
 
+<<<<<<< Updated upstream
 import React, { useState, useEffect } from 'react';
 import { Player, Team, ArenaColor } from '../types';
+=======
+import React, { useState, useEffect, memo } from 'react';
+import { Player, Team, ArenaColor, MatchMode } from '../types';
+>>>>>>> Stashed changes
 import { PlusIcon, MinusIcon, ZapIcon } from './icons';
 
 interface ScoreCardProps {
@@ -58,6 +63,7 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
           </div>
       </div>
 
+<<<<<<< Updated upstream
       <h2 className="text-[7px] sm:text-[9px] lg:text-[11px] font-black text-center text-white/20 uppercase tracking-[0.3em] mb-1 lg:mb-2">{teamName}</h2>
       
       <div 
@@ -66,6 +72,45 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
       >
           <span style={{ fontSize: 'clamp(80px, 24vh, 260px)' }} className={`
             block font-mono font-black bg-clip-text text-transparent bg-gradient-to-br leading-none transition-all duration-300
+=======
+      <div className={`flex items-center gap-3 mb-4 lg:mb-6 ${isLeft ? 'justify-start' : 'justify-end'}`}>
+        <div className={`flex flex-col ${isLeft ? 'items-start' : 'items-end'} gap-2`}>
+          <h2 className={`text-[10px] sm:text-xs lg:text-sm font-black uppercase tracking-[0.3em] ${isServing ? 'text-white' : 'text-white/30'}`}>
+            {teamName}
+          </h2>
+          {matchMode === 'oficial' && (
+            <div className="flex items-center gap-2 animate-in slide-in-from-top-1 duration-500">
+              <span className="text-[6px] lg:text-[8px] font-black text-white/10 uppercase tracking-widest">Sets</span>
+              <div className="flex gap-1.5 bg-black/40 px-2 py-1.5 rounded-full border border-white/5 backdrop-blur-md shadow-inner">
+                {[1, 2].map(s => (
+                  <div 
+                    key={s} 
+                    className={`
+                      w-2 h-2 sm:w-3 sm:h-3 lg:w-4 lg:h-4 rounded-full border-2 transition-all duration-700 relative
+                      ${setsWon >= s 
+                        ? `${THEME_COLORS[arenaColor].replace('bg-', 'border-')} ${THEME_COLORS[arenaColor]} shadow-[0_0_12px_rgba(255,255,255,0.4)] scale-110` 
+                        : 'bg-white/5 border-white/10'
+                      }
+                    `}
+                  >
+                    {setsWon >= s && (
+                      <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${THEME_COLORS[arenaColor]}`}></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        className="flex-1 flex items-center justify-center relative min-h-0 cursor-pointer select-none active:scale-[0.98] transition-all -mt-2 sm:-mt-4 clickable"
+        onClick={handleIncrement}
+      >
+        <span style={{ fontSize: 'clamp(30px, 20vmin, 260px)' }} className={`
+            block font-mono font-black bg-clip-text text-transparent bg-gradient-to-br leading-none transition-all duration-300 gpu-accelerated
+>>>>>>> Stashed changes
             ${teamColor} 
             ${animate ? 'scale-105' : 'scale-100'}
           `}>
@@ -108,4 +153,4 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
   );
 };
 
-export default ScoreCard;
+export default memo(ScoreCard);

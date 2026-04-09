@@ -9,11 +9,19 @@ interface AtletasProps {
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   deletedPlayers: Player[];
   setDeletedPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
-  arenaId: string;
   userId?: string;
+<<<<<<< Updated upstream
 }
 
 const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, setDeletedPlayers, arenaId, userId }) => {
+=======
+  athletesLimit?: number;
+  showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
+  showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
+}
+
+const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, setDeletedPlayers, arenaId, userId, athletesLimit, showAlert, showConfirm }) => {
+>>>>>>> Stashed changes
   const [newPlayerName, setNewPlayerName] = useState('');
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
@@ -26,15 +34,23 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
     if (!name || loading) return;
     
     if (!userId) {
-      alert("Sessão inválida. Saia e entre novamente.");
+      if (showAlert) showAlert("Sessão Expirada", "Sessão inválida. Saia e entre novamente.", 'danger', 'alert');
       return;
     }
 
     if (!arenaId || arenaId === 'default') {
-      alert("⚠️ ARENA NÃO SELECIONADA\n\nVá em CONFIGURAÇÕES e selecione um grupo primeiro.");
+      if (showAlert) showAlert("Arena Necessária", "Vá em CONFIGURAÇÕES e selecione um grupo primeiro.", 'warning', 'alert');
       return;
     }
 
+<<<<<<< Updated upstream
+=======
+    if (players.length >= (athletesLimit || 15)) {
+      if (showAlert) showAlert("Limite Atingido", `Seu plano permite no máximo ${athletesLimit || 15} atletas ativos por arena.`, 'warning', 'alert');
+      return;
+    }
+
+>>>>>>> Stashed changes
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -55,7 +71,7 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
       }
     } catch (err: any) {
       console.error("Erro ao salvar atleta:", err);
-      alert("ERRO AO SALVAR: " + err.message);
+      if (showAlert) showAlert("Erro ao Salvar", "Não foi possível registrar o atleta: " + err.message, 'danger', 'alert');
     } finally {
       setLoading(false);
     }
@@ -96,7 +112,7 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
       setPlayerToDelete(null);
     } catch (err: any) {
       console.error("Erro na exclusão:", err);
-      alert("FALHA AO EXCLUIR:\n" + err.message + "\n\nExecute o comando GRANT ALL no SQL Editor do Supabase.");
+      if (showAlert) showAlert("Falha na Exclusão", "Execute o comando GRANT ALL no SQL Editor do Supabase se o erro persistir: " + err.message, 'danger', 'alert');
     } finally {
       setLoading(false);
     }
@@ -117,7 +133,7 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
         setPlayers(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
       }
     } catch (err: any) {
-      alert("Erro ao restaurar: " + err.message);
+      if (showAlert) showAlert("Erro ao Restaurar", "Falha ao recuperar atleta: " + err.message, 'danger', 'alert');
     }
   };
 
@@ -158,7 +174,26 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
                 <span className="text-sm text-white font-bold">{player.name}</span>
                 <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => setEditingPlayer(player)} className="text-indigo-400 hover:text-white text-[9px] font-black uppercase tracking-widest">Editar</button>
-                  <button onClick={() => { setPlayerToDelete(player); setIsPermanentDelete(false); }} className="text-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest">Inativar</button>
+                  <button onClick={() => { 
+                    if (showConfirm) {
+                      showConfirm(
+                        "Inativar Atleta",
+                        `Deseja tirar ${player.name} da lista principal? Ele poderá ser restaurado depois.`,
+                        () => {
+                          setPlayerToDelete(player);
+                          setIsPermanentDelete(false);
+                          // Chamada manual da confirmação para manter lógica atual do useEffect se necessário, 
+                          // mas aqui podemos chamar direto a lógica de inativação se refatorarmos mais.
+                          // Por agora, vamos apenas disparar o showConfirm e passar a função de inativação.
+                        },
+                        'warning',
+                        'info'
+                      );
+                    } else {
+                      setPlayerToDelete(player); 
+                      setIsPermanentDelete(false);
+                    }
+                  }} className="text-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest">Inativar</button>
                 </div>
               </li>
             ))}
@@ -175,7 +210,23 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
                   <span className="text-sm text-white/50">{player.name}</span>
                   <div className="flex gap-4">
                     <button onClick={() => handleRestorePlayer(player)} className="text-indigo-400 text-[9px] font-black uppercase tracking-widest">Restaurar</button>
-                    <button onClick={() => { setPlayerToDelete(player); setIsPermanentDelete(true); }} className="text-red-600 text-[9px] font-black uppercase tracking-widest">Excluir</button>
+                    <button onClick={() => { 
+                       if (showConfirm) {
+                        showConfirm(
+                          "Excluir Atleta",
+                          `Deseja apagar permanentemente ${player.name}? Esta ação não pode ser desfeita.`,
+                          () => {
+                            setPlayerToDelete(player);
+                            setIsPermanentDelete(true);
+                          },
+                          'danger',
+                          'trash'
+                        );
+                      } else {
+                        setPlayerToDelete(player); 
+                        setIsPermanentDelete(true);
+                      }
+                    }} className="text-red-600 text-[9px] font-black uppercase tracking-widest">Excluir</button>
                   </div>
                 </li>
               ))}
@@ -184,6 +235,7 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
         )}
       </div>
 
+<<<<<<< Updated upstream
       {playerToDelete && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[110] flex items-center justify-center p-4" onClick={() => setPlayerToDelete(null)}>
           <div className="bg-[#090e1a] border border-red-500/20 rounded-[1.5rem] p-4 sm:p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
@@ -208,6 +260,8 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
           </div>
         </div>
       )}
+=======
+>>>>>>> Stashed changes
     </>
   );
 };

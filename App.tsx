@@ -1,15 +1,17 @@
 
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef, memo } from 'react';
 import Navigation, { View } from './components/Navigation';
 import OrientationLock from './components/OrientationLock';
 import WelcomeModal from './components/WelcomeModal';
 import LicenseExpiryModal from './components/LicenseExpiryModal';
+import ConfirmModal, { ModalType } from './components/ConfirmModal';
 import Placar from './views/Placar';
 import Atletas from './views/Atletas';
 import Ranking from './views/Ranking';
 import Historico from './views/Historico';
 import Config from './views/Config';
 import Admin from './views/Admin';
+import ClubManagement from './views/ClubManagement';
 import Login from './views/Login';
 import ChangePassword from './views/ChangePassword';
 import { Player, Match, Arena, ArenaColor, UserLicense, Team } from './types';
@@ -19,7 +21,7 @@ import { warmUpAudioContext } from './hooks';
 
 export type SoundScheme = 'moderno' | 'classico' | 'intenso';
 
-const Background: React.FC<{ color: ArenaColor }> = ({ color }) => {
+const Background: React.FC<{ color: ArenaColor }> = memo(({ color }) => {
   const bgMap: Record<ArenaColor, string> = {
     indigo: '#1e1b4b', blue: '#172554', emerald: '#064e3b', amber: '#451a03', rose: '#4c0519', violet: '#2e1065'
   };
@@ -34,7 +36,7 @@ const Background: React.FC<{ color: ArenaColor }> = ({ color }) => {
       <div className="absolute inset-0 transition-all duration-1000" style={{ background: `radial-gradient(circle at 50% 50%, ${glowMap[color]} 0%, transparent 85%)` }}></div>
     </div>
   );
-};
+});
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -48,6 +50,50 @@ const App: React.FC = () => {
 
   const [activeModal, setActiveModal] = useState<'none' | 'welcome' | 'expiry'>('none');
   const modalFlowHandled = useRef(false);
+
+  // Global Modal State
+  const [globalModal, setGlobalModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: ModalType;
+    icon?: 'trash' | 'alert' | 'info' | 'check' | 'crown';
+    confirmLabel?: string;
+    showCancel?: boolean;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  const showAlert = useCallback((title: string, message: string, type: ModalType = 'info', icon?: any) => {
+    setGlobalModal({
+      isOpen: true,
+      title,
+      message,
+      type,
+      icon,
+      showCancel: false,
+      onConfirm: () => setGlobalModal(prev => ({ ...prev, isOpen: false }))
+    });
+  }, []);
+
+  const showConfirm = useCallback((title: string, message: string, onConfirm: () => void, type: ModalType = 'warning', icon?: any) => {
+    setGlobalModal({
+      isOpen: true,
+      title,
+      message,
+      type,
+      icon,
+      showCancel: true,
+      onConfirm: () => {
+        onConfirm();
+        setGlobalModal(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  }, []);
 
   const [arenas, setArenas] = useState<Arena[]>([]);
   const [currentArenaId, setCurrentArenaId] = useState<string>('default');
@@ -260,7 +306,17 @@ const App: React.FC = () => {
   };
 
   const handleAddArena = async (name: string, color: ArenaColor) => {
+<<<<<<< Updated upstream
     if (!session) return;
+=======
+    if (!session || !userLicense) return;
+
+    if (!isAdmin && arenas.length >= (userLicense.arenas_limit || 1)) {
+      showAlert("Limite Atingido", `Seu plano permite no máximo ${userLicense.arenas_limit || 1} grupo(s)/arena(s).`, 'warning', 'alert');
+      return;
+    }
+
+>>>>>>> Stashed changes
     const { data } = await supabase.from('arenas').insert([{ name, color, user_id: session.user.id }]).select().single();
     if (data) { setArenas(prev => [...prev, data]); setCurrentArenaId(data.id); }
   };
@@ -271,12 +327,21 @@ const App: React.FC = () => {
   };
 
   const handleDeleteArena = async (id: string) => {
-    if (!window.confirm("Excluir este grupo?")) return;
-    const { error } = await supabase.from('arenas').delete().eq('id', id);
-    if (!error) {
-      setArenas(prev => prev.filter(a => a.id !== id));
-      if (currentArenaId === id) setCurrentArenaId(arenas[0]?.id || 'default');
-    }
+    const executeDelete = async () => {
+        const { error } = await supabase.from('arenas').delete().eq('id', id);
+        if (!error) {
+          setArenas(prev => prev.filter(a => a.id !== id));
+          if (currentArenaId === id) setCurrentArenaId(arenas[0]?.id || 'default');
+        }
+    };
+
+    showConfirm(
+        "Excluir Arena",
+        "Deseja realmente apagar este grupo? Todos os dados vinculados serão inacessíveis.",
+        executeDelete,
+        'danger',
+        'trash'
+    );
   };
 
   const handleSaveSettings = () => {
@@ -328,16 +393,85 @@ const App: React.FC = () => {
 
       <Background color={(currentArena.color || 'indigo') as ArenaColor} />
       <div className="h-screen w-screen flex flex-col text-white font-sans overflow-hidden bg-transparent">
-        <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} currentArena={currentArena} onLogout={handleLogout} isAdmin={isAdmin} />
+        <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} currentArena={currentArena} onLogout={handleLogout} isAdmin={isAdmin} isClub={userLicense?.is_club} showConfirm={showConfirm} />
         <main className="flex-1 overflow-y-auto">
+<<<<<<< Updated upstream
           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} />}
           {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} />}
           {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} />}
           {currentView === 'ranking' && <Ranking matches={matches} players={[...players, ...deletedPlayers]} arenaName={currentArena.name} arenaColor={currentArena.color} />}
           {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} capoteEnabled={capoteEnabled} setCapoteEnabled={setCapoteEnabled} vaiATresEnabled={vaiATresEnabled} setVaiATresEnabled={setVaiATresEnabled} />}
           {currentView === 'admin' && <Admin />}
+=======
+          {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={resetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} matchMode={matchMode} matchTime={matchTime} showAlert={showAlert} showConfirm={showConfirm} />}
+          {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} onClearMatches={handleClearMatches} onUpdateMatch={handleUpdateMatch} players={players} showAlert={showAlert} showConfirm={showConfirm} />}
+          {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} athletesLimit={userLicense?.athletes_limit} showAlert={showAlert} showConfirm={showConfirm} />}
+          {currentView === 'ranking' && (
+            <Ranking
+              players={players}
+              matches={matches}
+              arenaName={currentArena.name}
+              arenaColor={currentArena.color}
+              filter={rankingFilter}
+              setFilter={setRankingFilter}
+              viewDate={rankingViewDate}
+              setViewDate={setRankingViewDate}
+              onClearMatches={handleClearMatches}
+              showAlert={showAlert}
+            />
+          )}
+          {currentView === 'config' && (
+            <Config
+              winScore={winScore} setWinScore={setWinScore}
+              attackTime={attackTime} setAttackTime={setAttackTime}
+              soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled}
+              vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled}
+              soundScheme={soundScheme} setSoundScheme={setSoundScheme}
+              arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId}
+              onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena}
+              onLogout={handleLogout} onSaveSettings={handleSaveSettings}
+              capoteEnabled={capoteEnabled} setCapoteEnabled={setCapoteEnabled}
+              vaiATresEnabled={vaiATresEnabled} setVaiATresEnabled={setVaiATresEnabled}
+              matchMode={matchMode} setMatchMode={setMatchMode}
+              matchTime={matchTime} setMatchTime={setMatchTime}
+              userLicense={userLicense} onRefreshLicense={() => checkLicense(session.user.id, session.user.email)}
+              onGoToSubscription={() => setCurrentView('subscription')}
+              showAlert={showAlert}
+              showConfirm={showConfirm}
+            />
+          )}
+          {currentView === 'subscription' && (
+            <Subscription
+              userLicense={userLicense}
+              onBack={() => setCurrentView('config')}
+              onRefreshLicense={() => checkLicense(session.user.id, session.user.email)}
+              showAlert={showAlert}
+            />
+          )}
+          {currentView === 'admin' && isAdmin && <Admin showAlert={showAlert} showConfirm={showConfirm} />}
+          {currentView === 'clube' && userLicense && (
+            <ClubManagement 
+              ownerLicense={userLicense} 
+              onRefresh={() => checkLicense(session.user.id, session.user.email)}
+              showAlert={showAlert}
+              showConfirm={showConfirm}
+            />
+          )}
+>>>>>>> Stashed changes
         </main>
       </div>
+
+      <ConfirmModal 
+        isOpen={globalModal.isOpen}
+        title={globalModal.title}
+        message={globalModal.message}
+        type={globalModal.type}
+        icon={globalModal.icon}
+        confirmLabel={globalModal.confirmLabel}
+        showCancel={globalModal.showCancel}
+        onConfirm={globalModal.onConfirm || (() => {})}
+        onCancel={() => setGlobalModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </>
   );
 };

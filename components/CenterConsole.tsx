@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { RefreshCwIcon, SaveIcon, PlayIcon, PauseIcon, RotateCcwIcon, ZapIcon, RepeatIcon } from './icons';
 import { ArenaColor } from '../types';
 
@@ -45,6 +45,7 @@ const CenterConsole: React.FC<CenterConsoleProps> = ({
             <div className={`font-mono text-5xl sm:text-7xl lg:text-9xl font-black transition-all duration-300 ${timerColor} leading-none mb-3 lg:mb-6`}>
               {String(timeLeft).padStart(2, '0')}
             </div>
+<<<<<<< Updated upstream
             {!isGameWon && (
                 <div className="flex gap-3 lg:gap-6">
                    <button onClick={(e) => { e.stopPropagation(); onToggleTimer(); }} className={`p-2 lg:p-5 rounded-xl lg:rounded-3xl transition-all active:scale-90 shadow-md ${isTimerActive ? 'bg-orange-600/30 text-orange-400 border border-orange-500/20' : 'bg-green-600/30 text-green-400 border border-green-500/20'}`}>
@@ -55,6 +56,27 @@ const CenterConsole: React.FC<CenterConsoleProps> = ({
                   </button>
                 </div>
             )}
+=======
+          )}
+
+          <span className="text-[5px] lg:text-[9px] font-black uppercase tracking-[0.3em] lg:tracking-[0.5em] text-white/10 mb-0.5 lg:mb-2">CRONÔMETRO POSSE</span>
+          <div 
+            key={timeLeft <= 10 ? 'warning' : 'normal'}
+            className={`font-mono text-3xl sm:text-7xl lg:text-9xl font-black ${timerColor} leading-none mb-1.5 lg:mb-6 gpu-accelerated`}
+          >
+            {String(timeLeft).padStart(2, '0')}
+          </div>
+          {!isGameWon && (
+            <div className="flex gap-3 lg:gap-6">
+              <button onClick={(e) => { e.stopPropagation(); onToggleTimer(); }} className={`p-2 lg:p-5 rounded-xl lg:rounded-3xl transition-all active:scale-90 shadow-md ${isTimerActive ? 'bg-orange-600/30 text-orange-400 border border-orange-500/20' : 'bg-green-600/30 text-green-400 border border-green-500/20'}`}>
+                {isTimerActive ? <PauseIcon className="w-5 h-5 lg:w-8 lg:h-8" /> : <PlayIcon className="w-5 h-5 lg:w-8 lg:h-8" />}
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); onResetTimer(); }} className="p-2 lg:p-5 bg-white/5 text-gray-600 rounded-xl lg:rounded-3xl active:scale-90 transition-all border border-white/5">
+                <RotateCcwIcon className="w-5 h-5 lg:w-8 lg:h-8" />
+              </button>
+            </div>
+          )}
+>>>>>>> Stashed changes
         </div>
       </div>
 
@@ -88,4 +110,4 @@ const CenterConsole: React.FC<CenterConsoleProps> = ({
   );
 };
 
-export default CenterConsole;
+export default memo(CenterConsole);
