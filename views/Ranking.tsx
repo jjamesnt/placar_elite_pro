@@ -2,7 +2,7 @@
 import React from 'react';
 import { useState, useMemo } from 'react';
 import { Match, Player, ArenaColor } from '../types';
-import { FileDownIcon, Share2Icon } from '../components/icons';
+import { FileDownIcon, Share2Icon, Trash2Icon } from '../components/icons';
 import ExportPreviewModal from '../components/ExportPreviewModal';
 import StoryPreviewModal from '../components/StoryPreviewModal';
 
@@ -10,20 +10,15 @@ type Filter = 'Hoje' | 'Semanal' | 'Mensal' | 'Anual' | 'Total';
 
 interface RankingProps {
   matches: Match[];
-<<<<<<< Updated upstream
   players: Player[];
-  arenaName?: string;
-  arenaColor?: ArenaColor;
-=======
   arenaName: string;
-  arenaColor: string;
+  arenaColor: ArenaColor;
   filter: Filter;
   setFilter: (f: Filter) => void;
   viewDate: Date;
   setViewDate: (d: Date) => void;
   onClearMatches: (mode: 'all' | 'day', date?: Date) => Promise<void>;
   showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
->>>>>>> Stashed changes
 }
 
 interface PlayerStats {
@@ -187,14 +182,12 @@ const formatDuration = (minutes: number) => {
     return `${m}m`;
 };
 
-<<<<<<< Updated upstream
-const Ranking: React.FC<RankingProps> = ({ matches, players, arenaName, arenaColor = 'indigo' }) => {
-  const [filter, setFilter] = useState<Filter>('Hoje');
-  const [viewDate, setViewDate] = useState(new Date());
-=======
-const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaColor, filter, setFilter, viewDate, setViewDate, onClearMatches, showAlert }) => {
-  // State lifted to App.tsx for persistence
->>>>>>> Stashed changes
+const Ranking: React.FC<RankingProps> = ({ 
+  players, matches, arenaName, arenaColor = 'indigo', 
+  filter, setFilter, viewDate, setViewDate, 
+  onClearMatches, showAlert 
+}) => {
+  const [showClearModal, setShowClearModal] = useState(false);
   const [exportImageUrl, setExportImageUrl] = useState<string | null>(null);
   const [isStoryMode, setIsStoryMode] = useState(false);
   const [showReportSelector, setShowReportSelector] = useState(false);
@@ -293,17 +286,10 @@ const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaCol
   
   const handleExport = () => {
     setShowReportSelector(false);
-<<<<<<< Updated upstream
-    const reportWindow = window.open('', '_blank');
-    if (!reportWindow) {
-        alert("Pop-up bloqueado. Libere para gerar o relatório.");
-        return;
-=======
     const newWindow = window.open('', '_blank');
     if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
       if (showAlert) showAlert("Pop-up Bloqueado", "Libere o acesso nas configurações do navegador para gerar o relatório.", 'warning', 'alert');
       return;
->>>>>>> Stashed changes
     }
     const reportTitle = `Ranking - ${arenaName || 'Arena'}`;
     const periodLabel = `${filter}: ${currentPeriodLabel}`;
@@ -379,40 +365,17 @@ const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaCol
     newWindow.document.close();
   };
 
-<<<<<<< Updated upstream
-  const handleExportStory = () => {
-    if (stats.length === 0) {
-        alert("Não há dados de ranking para gerar um story.");
-        return;
-=======
   const handleExportStory = async () => {
-    if (players.length === 0) {
+    if (stats.length === 0) {
       if (showAlert) showAlert("Sem Dados", "Não há informações de ranking suficientes para gerar um story no momento.", 'info', 'info');
       return;
     }
     try {
-      // Fetch logo and convert to Data URL for embedding
-      let logoDataUrl = '';
-      try {
-        const logoResponse = await fetch('/logo.png');
-        const logoBlob = await logoResponse.blob();
-        logoDataUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(logoBlob);
-        });
-      } catch (e) {
-        console.warn("Logo not found for story export, proceeding without it.");
-      }
-
-      const svgUrl = generateStoryImage(stats, arenaName || 'Arena', arenaColor, currentPeriodLabel, filter, viewDate, logoDataUrl);
-      // Converter SVG para JPEG (1080x1920 é o padrão do story gerado)
-      const jpegUrl = await convertSvgToJpeg(svgUrl, 1080, 1920);
-      setExportImageUrl(jpegUrl);
+      const imageUrl = generateStoryImage(stats, arenaName || 'Arena', arenaColor, currentPeriodLabel, filter, viewDate);
+      setExportImageUrl(imageUrl);
       setIsStoryMode(true);
     } catch (err) {
       if (showAlert) showAlert("Falha na Imagem", "Ocorreu um erro técnico ao gerar o story. Tente novamente.", 'danger', 'alert');
->>>>>>> Stashed changes
     }
     const imageUrl = generateStoryImage(stats, arenaName || 'Arena', arenaColor, currentPeriodLabel, filter, viewDate);
     setExportImageUrl(imageUrl);
@@ -488,9 +451,6 @@ const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaCol
         </div>
       ) : (
         <div className="py-20 text-center flex flex-col items-center gap-4 bg-gray-800/20 rounded-[3rem] border border-dashed border-gray-700/30 print:hidden">
-<<<<<<< Updated upstream
-            <span className="text-gray-600 italic uppercase tracking-widest text-[9px]">Nenhum dado registrado para o período {filter}.</span>
-=======
           <span className="text-gray-600 italic uppercase tracking-widest text-[9px]">Nenhum dado registrado para o período {filter}.</span>
         </div>
       )}
@@ -512,7 +472,7 @@ const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaCol
             <div className="flex flex-col gap-3">
               {filter !== 'Total' && (
                 <button
-                  onClick={() => handleClearConfirmed('day')}
+                  onClick={() => { onClearMatches('day', viewDate); setShowClearModal(false); }}
                   className="w-full p-4 bg-white/5 text-white/70 border border-white/5 hover:border-white/20 rounded-xl font-black uppercase text-[9px] tracking-widest flex flex-col items-center gap-1 active:scale-95 transition-all"
                 >
                   <span>Apagar dia visualizado</span>
@@ -521,7 +481,7 @@ const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaCol
               )}
 
               <button
-                onClick={() => handleClearConfirmed('all')}
+                onClick={() => { onClearMatches('all'); setShowClearModal(false); }}
                 className="w-full p-5 bg-red-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-900/20 active:scale-95 transition-all"
               >
                 LIMPAR TODO O HISTÓRICO
@@ -535,7 +495,6 @@ const Ranking: React.FC<RankingProps> = ({ players, matches, arenaName, arenaCol
               </button>
             </div>
           </div>
->>>>>>> Stashed changes
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2Icon, AlertTriangleIcon, InfoIcon, CheckIcon, XIcon, CrownIcon } from './icons';
+import { Trash2Icon, AlertTriangleIcon, InfoIcon, CheckIcon, XCircleIcon, CrownIcon } from './icons';
 
 export type ModalType = 'danger' | 'warning' | 'info' | 'success';
 
@@ -110,7 +110,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           onClick={onCancel}
           className="absolute top-6 right-6 p-2 text-white/10 hover:text-white transition-colors"
         >
-          <XIcon className="w-5 h-5" />
+          <XCircleIcon className="w-5 h-5" />
         </button>
       </div>
     </div>

@@ -48,8 +48,6 @@ export interface UserLicense {
   expires_at: string;
   is_active: boolean;
   first_access_done: boolean;
-<<<<<<< Updated upstream
-=======
   arenas_limit: number;
   athletes_limit: number;
   is_club: boolean;
@@ -58,6 +56,8 @@ export interface UserLicense {
   applied_coupon?: string;
   created_at: string;
 }
+
+export type MatchMode = 'normal' | 'set' | 'tempo';
 
 export interface Coupon {
   id: string;
@@ -78,6 +78,5 @@ export interface Plan {
   athletes_limit: number;
   club_members_limit: number;
   is_popular: boolean;
->>>>>>> Stashed changes
   created_at: string;
 }

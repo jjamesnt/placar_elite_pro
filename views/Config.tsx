@@ -22,16 +22,15 @@ interface ConfigProps {
   setCapoteEnabled: (e: boolean) => void;
   vaiATresEnabled: boolean;
   setVaiATresEnabled: (e: boolean) => void;
-<<<<<<< Updated upstream
-=======
-  matchMode: MatchMode;
-  setMatchMode: (m: MatchMode) => void;
+  matchMode: 'normal' | 'set' | 'tempo';
+  setMatchMode: (m: 'normal' | 'set' | 'tempo') => void;
   matchTime: number;
   setMatchTime: (t: number) => void;
+  userLicense: any;
+  onRefreshLicense?: () => void;
   onGoToSubscription?: () => void;
   showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
->>>>>>> Stashed changes
 }
 
 const ARENA_COLORS: ArenaColor[] = ['indigo', 'blue', 'emerald', 'amber', 'rose', 'violet'];
@@ -41,14 +40,10 @@ const Config: React.FC<ConfigProps> = ({
   winScore, setWinScore, attackTime, setAttackTime, soundEnabled, setSoundEnabled,
   vibrationEnabled, setVibrationEnabled, soundScheme, setSoundScheme,
   arenas, currentArenaId, setCurrentArenaId, onAddArena, onUpdateArena, onDeleteArena, onLogout, onSaveSettings,
-<<<<<<< Updated upstream
-  capoteEnabled, setCapoteEnabled, vaiATresEnabled, setVaiATresEnabled
-=======
   capoteEnabled, setCapoteEnabled, vaiATresEnabled, setVaiATresEnabled,
   matchMode, setMatchMode, matchTime, setMatchTime,
   userLicense, onRefreshLicense, onGoToSubscription,
   showAlert, showConfirm
->>>>>>> Stashed changes
 }) => {
   const [newName, setNewName] = useState('');
   const [selColor, setSelColor] = useState<ArenaColor>('indigo');

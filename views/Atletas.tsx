@@ -10,18 +10,16 @@ interface AtletasProps {
   deletedPlayers: Player[];
   setDeletedPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   userId?: string;
-<<<<<<< Updated upstream
-}
-
-const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, setDeletedPlayers, arenaId, userId }) => {
-=======
+  arenaId?: string;
   athletesLimit?: number;
   showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
 }
 
-const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, setDeletedPlayers, arenaId, userId, athletesLimit, showAlert, showConfirm }) => {
->>>>>>> Stashed changes
+const Atletas: React.FC<AtletasProps> = ({ 
+  players, setPlayers, deletedPlayers, setDeletedPlayers, 
+  arenaId, userId, athletesLimit, showAlert, showConfirm 
+}) => {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
@@ -43,14 +41,10 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
       return;
     }
 
-<<<<<<< Updated upstream
-=======
     if (players.length >= (athletesLimit || 15)) {
       if (showAlert) showAlert("Limite Atingido", `Seu plano permite no máximo ${athletesLimit || 15} atletas ativos por arena.`, 'warning', 'alert');
       return;
     }
-
->>>>>>> Stashed changes
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -235,7 +229,6 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
         )}
       </div>
 
-<<<<<<< Updated upstream
       {playerToDelete && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[110] flex items-center justify-center p-4" onClick={() => setPlayerToDelete(null)}>
           <div className="bg-[#090e1a] border border-red-500/20 rounded-[1.5rem] p-4 sm:p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
@@ -260,8 +253,6 @@ const Atletas: React.FC<AtletasProps> = ({ players, setPlayers, deletedPlayers, 
           </div>
         </div>
       )}
-=======
->>>>>>> Stashed changes
     </>
   );
 };

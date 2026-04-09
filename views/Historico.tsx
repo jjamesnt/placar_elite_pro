@@ -1,18 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Match, Arena } from '../types';
+import { Match, Arena, Player } from '../types';
 import { Trash2Icon, FileDownIcon, CalendarIcon, XCircleIcon } from '../components/icons';
 
 interface HistoricoProps {
   matches: Match[];
   setMatches: React.Dispatch<React.SetStateAction<Match[]>>;
   currentArena: Arena;
-<<<<<<< Updated upstream
-}
-
-const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena }) => {
-  const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
-  const [filterDate, setFilterDate] = useState<string>('');
-=======
   onClearMatches: (mode: 'all' | 'day', date?: Date) => Promise<void>;
   onUpdateMatch?: (matchId: string, updatedData: Omit<Match, 'id' | 'timestamp'>) => Promise<void>;
   players: Player[];
@@ -25,7 +18,6 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
   const [showClearModal, setShowClearModal] = useState(false);
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Match | null>(null);
->>>>>>> Stashed changes
 
   const filteredMatches = useMemo(() => {
     if (!filterDate) return matches;
@@ -231,19 +223,9 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                     {match.teamB.score}
                   </div>
                 </div>
-<<<<<<< Updated upstream
-=======
-              )}
+              </div>
 
               <div className="flex gap-1 print:hidden">
-                {!editingMatchId && (
-                  <button
-                    onClick={() => startEditing(match)}
-                    className="p-3 text-gray-500 hover:text-indigo-400 transition-colors rounded-xl"
-                  >
-                    <Edit2Icon className="w-4 h-4" />
-                  </button>
-                )}
                 <button
                   onClick={() => {
                       if (showConfirm) {
@@ -254,21 +236,15 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                               'danger',
                               'trash'
                           );
+                      } else {
+                          handleDelete(match.id);
                       }
                   }}
-                  className="p-3 text-gray-600 hover:text-red-500 transition-colors rounded-xl print:hidden"
+                  className="p-3 text-gray-600 hover:text-red-500 transition-colors rounded-xl"
                 >
                   <Trash2Icon className="w-4 h-4" />
                 </button>
->>>>>>> Stashed changes
               </div>
-
-              <button
-                onClick={() => setMatchToDelete(match)}
-                className="p-3 text-gray-600 hover:text-red-500 transition-colors rounded-xl print:hidden"
-              >
-                <Trash2Icon className="w-4 h-4" />
-              </button>
             </div>
           );
         })}
@@ -278,6 +254,7 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
             <span className="text-gray-600 italic uppercase tracking-widest text-[9px]">Histórico vazio para a data selecionada.</span>
           </div>
         )}
+      </div>
 
         {showClearModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300 print:hidden" onClick={() => setShowClearModal(false)}>
@@ -292,16 +269,10 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                 Você deseja apagar as partidas da Arena <span className="text-red-400">{currentArena.name}</span>?
               </p>
             </div>
-<<<<<<< Updated upstream
-          </div>
-        </div>
-      )}
-=======
-
             <div className="flex flex-col gap-3">
               {filterDate && (
                 <button
-                  onClick={() => handleClearConfirmed('day')}
+                  onClick={() => { onClearMatches('day', new Date(filterDate + 'T12:00:00')); setShowClearModal(false); }}
                   className="w-full p-4 bg-white/5 text-white/70 border border-white/5 hover:border-white/20 rounded-xl font-black uppercase text-[9px] tracking-widest flex flex-col items-center gap-1 active:scale-95 transition-all"
                 >
                   <span>Apagar apenas o dia</span>
@@ -310,7 +281,7 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
               )}
 
               <button
-                onClick={() => handleClearConfirmed('all')}
+                onClick={() => { onClearMatches('all'); setShowClearModal(false); }}
                 className="w-full p-5 bg-red-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-900/20 active:scale-95 transition-all"
               >
                 LIMPAR TODO O HISTÓRICO
@@ -319,15 +290,13 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
               <button
                 onClick={() => setShowClearModal(false)}
                 className="w-full p-4 text-white/30 font-black uppercase text-[10px] tracking-widest hover:text-white transition-colors"
-              >
+               >
                 Cancelar
               </button>
             </div>
           </div>
         </div>
       )}
-      </div>
->>>>>>> Stashed changes
     </div>
   );
 };
