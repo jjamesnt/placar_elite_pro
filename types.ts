@@ -15,6 +15,7 @@ export interface Arena {
 export interface Team {
   players: (Player | undefined)[];
   score: number;
+  sets: number;
 }
 
 export interface TeamInMatch {

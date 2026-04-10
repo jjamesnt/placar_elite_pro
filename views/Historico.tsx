@@ -13,19 +13,32 @@ interface HistoricoProps {
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
 }
 
+const THEME_TEXT_CLASSES: Record<string, string> = {
+  indigo: 'text-indigo-400', blue: 'text-blue-400', emerald: 'text-emerald-400', amber: 'text-amber-400', rose: 'text-rose-400', violet: 'text-violet-400'
+};
+
 const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena, onClearMatches, onUpdateMatch, players, showAlert, showConfirm }) => {
-  const [filterDate, setFilterDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [viewDate, setViewDate] = useState<Date | null>(new Date());
   const [showClearModal, setShowClearModal] = useState(false);
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Match | null>(null);
 
+  const arenaColor = currentArena.color || 'indigo';
+
+  const navigateDate = (amount: number) => {
+    const base = viewDate || new Date();
+    const newDate = new Date(base);
+    newDate.setDate(base.getDate() + amount);
+    setViewDate(newDate);
+  };
+
   const filteredMatches = useMemo(() => {
-    if (!filterDate) return matches;
+    if (!viewDate) return matches;
+    const targetStr = viewDate.toDateString();
     return matches.filter(match => {
-      const matchDateStr = new Date(match.timestamp).toISOString().split('T')[0];
-      return matchDateStr === filterDate;
+      return new Date(match.timestamp).toDateString() === targetStr;
     });
-  }, [matches, filterDate]);
+  }, [matches, viewDate]);
 
   const handleDelete = (matchId: string) => {
     setMatches(prev => prev.filter(m => m.id !== matchId));
@@ -39,7 +52,7 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
     }
 
     const reportTitle = `Histórico de Partidas - ${currentArena.name}`;
-    const reportSubtitle = `Data: ${filterDate ? new Date(filterDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Todas as datas'}`;
+    const reportSubtitle = `Data: ${viewDate ? viewDate.toLocaleDateString('pt-BR') : 'Todas as datas'}`;
 
     const htmlContent = `
         <!DOCTYPE html>
@@ -151,28 +164,47 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 print:hidden">
         <h1 className="text-xl sm:text-2xl font-black text-gray-100 uppercase tracking-tighter text-center sm:text-left">
           AUDITORIA DA ARENA <span className="text-indigo-400">{currentArena.name.toUpperCase()}</span>
-        </h1>
+               </h1>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:flex-initial">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none">
-              <CalendarIcon className="w-4 h-4" />
-            </div>
-            <input
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full sm:w-48 pl-10 pr-4 py-2 bg-gray-800 border border-gray-700/50 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none"
-            />
-            {filterDate && (
-              <button
-                onClick={() => setFilterDate('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+          {viewDate && (
+            <div className="flex items-center gap-2 sm:gap-4 bg-gray-800/40 px-2 sm:px-4 py-2 rounded-full border border-gray-700/30">
+              <button 
+                onClick={() => navigateDate(-1)} 
+                className={`${THEME_TEXT_CLASSES[arenaColor]} hover:text-white p-2 text-xl active:scale-90 transition-transform`}
               >
-                <XCircleIcon className="w-4 h-4" />
+                ◀
               </button>
-            )}
-          </div>
+              <span className="text-sm sm:text-lg font-black text-gray-200 capitalize w-32 sm:w-40 text-center tracking-tighter">
+                {viewDate.toLocaleDateString('pt-BR')}
+              </span>
+              <button 
+                onClick={() => navigateDate(1)} 
+                className={`${THEME_TEXT_CLASSES[arenaColor]} hover:text-white p-2 text-xl active:scale-90 transition-transform`}
+              >
+                ▶
+              </button>
+            </div>
+          )}
+          
+          {!viewDate && (
+            <button 
+              onClick={() => setViewDate(new Date())}
+              className="px-4 py-2 bg-gray-800 border border-gray-700/30 rounded-xl text-[10px] font-black uppercase text-indigo-400"
+            >
+              Ativar Filtro Diário
+            </button>
+          )}
+
+          {viewDate && (
+            <button 
+              onClick={() => setViewDate(null)}
+              className="p-2 text-gray-500 hover:text-white bg-gray-800/40 rounded-full border border-gray-700/20"
+              title="Ver Tudo"
+            >
+              <XCircleIcon className="w-5 h-5" />
+            </button>
+          )}
 
           <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-xl text-[9px] font-black shadow-xl hover:bg-gray-600 transition-colors uppercase">
             <FileDownIcon className="w-3 h-3" />
@@ -183,7 +215,7 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
 
       <div className="hidden print:block text-center mb-8 border-b-2 border-black pb-4">
         <h1 className="text-3xl font-black uppercase tracking-tighter">Histórico de Partidas - {currentArena.name}</h1>
-        <p className="text-lg font-bold mt-2">Data: {filterDate ? new Date(filterDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Todas'}</p>
+        <p className="text-lg font-bold mt-2">Data: {viewDate ? viewDate.toLocaleDateString('pt-BR') : 'Todas'}</p>
       </div>
 
       <div className="space-y-3">
@@ -270,13 +302,13 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
               </p>
             </div>
             <div className="flex flex-col gap-3">
-              {filterDate && (
+              {viewDate && (
                 <button
-                  onClick={() => { onClearMatches('day', new Date(filterDate + 'T12:00:00')); setShowClearModal(false); }}
+                  onClick={() => { onClearMatches('day', viewDate || undefined); setShowClearModal(false); }}
                   className="w-full p-4 bg-white/5 text-white/70 border border-white/5 hover:border-white/20 rounded-xl font-black uppercase text-[9px] tracking-widest flex flex-col items-center gap-1 active:scale-95 transition-all"
                 >
                   <span>Apagar apenas o dia</span>
-                  <span className="text-red-400 opacity-70">{new Date(filterDate + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                  <span className="text-red-400 opacity-70">{(viewDate || new Date()).toLocaleDateString('pt-BR')}</span>
                 </button>
               )}
 

@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { SoundScheme } from '../App';
-import { Arena, ArenaColor } from '../types';
-import { Trash2Icon, PlusIcon, UsersIcon, EditIcon, UploadCloudIcon } from '../components/icons';
+import { Arena, ArenaColor, MatchMode } from '../types';
+import { Trash2Icon, PlusIcon, UsersIcon, EditIcon, UploadCloudIcon, ZapIcon } from '../components/icons';
+import { supabase } from '../lib/supabase';
 
 interface ConfigProps {
   winScore: number; setWinScore: (s: number) => void;
@@ -22,12 +23,10 @@ interface ConfigProps {
   setCapoteEnabled: (e: boolean) => void;
   vaiATresEnabled: boolean;
   setVaiATresEnabled: (e: boolean) => void;
-  matchMode: 'normal' | 'set' | 'tempo';
-  setMatchMode: (m: 'normal' | 'set' | 'tempo') => void;
+  matchMode: MatchMode;
+  setMatchMode: (m: MatchMode) => void;
   matchTime: number;
   setMatchTime: (t: number) => void;
-  userLicense: any;
-  onRefreshLicense?: () => void;
   onGoToSubscription?: () => void;
   showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
@@ -49,6 +48,9 @@ const Config: React.FC<ConfigProps> = ({
   const [selColor, setSelColor] = useState<ArenaColor>('indigo');
   const [editingArena, setEditingArena] = useState<Arena | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponStatus, setCouponStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
   const handleAdd = () => { if (newName.trim()) { onAddArena(newName.trim(), selColor); setNewName(''); } };
   const handleUpdate = () => { if (editingArena && editingArena.name.trim()) { onUpdateArena(editingArena.id, editingArena.name.trim(), editingArena.color || 'indigo'); setEditingArena(null); } };
@@ -59,6 +61,17 @@ const Config: React.FC<ConfigProps> = ({
     setTimeout(() => setSaveStatus('idle'), 2500);
   };
 
+  const toggleMode = (mode: MatchMode) => {
+    setMatchMode(mode);
+    if (mode === 'oficial') {
+      setWinScore(25);
+      setAttackTime(24);
+      setMatchTime(20);
+    } else {
+      setWinScore(15);
+    }
+  };
+
   const handleLocalBackup = () => {
     if (showAlert) {
       showAlert(
@@ -67,6 +80,54 @@ const Config: React.FC<ConfigProps> = ({
         'info',
         'info'
       );
+    }
+  };
+
+  const handleRedeemCoupon = async () => {
+    if (!couponCode.trim() || !userLicense) return;
+    setCouponLoading(true);
+    try {
+      // 1. Verificar se cupom existe e está ativo
+      const { data: coupon, error: cError } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.trim().toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (cError) throw cError;
+      if (!coupon) throw new Error("Cupom inválido ou expirado.");
+
+      // 2. Adicionar tempo à licença
+      const currentExpiry = new Date(userLicense.expires_at).getTime() > Date.now()
+        ? new Date(userLicense.expires_at)
+        : new Date();
+      const newExpiry = new Date(currentExpiry.getTime() + (coupon.days_bonus * 24 * 60 * 60 * 1000)).toISOString();
+
+      const { error: updateError } = await supabase
+        .from('user_licenses')
+        .update({
+          expires_at: newExpiry,
+          is_active: true,
+          applied_coupon: couponCode.trim().toUpperCase()
+        })
+        .eq('user_id', userLicense.user_id);
+
+      if (updateError) throw updateError;
+
+      // Incrementar uso
+      await supabase.from('coupons').update({ used_count: (coupon.used_count || 0) + 1 }).eq('id', coupon.id);
+
+      let msg = `CUPOM APLICADO! +${coupon.days_bonus} DIAS`;
+      if (coupon.discount_pct > 0) msg += ` E ${coupon.discount_pct}% DE DESCONTO NA PRÓXIMA RENOVAÇÃO!`;
+
+      setCouponStatus({ type: 'success', msg });
+      setCouponCode('');
+      if (onRefreshLicense) onRefreshLicense();
+    } catch (err: any) {
+      setCouponStatus({ type: 'error', msg: err.message || 'Erro ao validar cupom.' });
+    } finally {
+      setCouponLoading(false);
     }
   };
 
@@ -159,42 +220,115 @@ const Config: React.FC<ConfigProps> = ({
         </div>
       </section>
 
+      {/* Resgate de Cupom */}
+      <section className="bg-gradient-to-br from-amber-500/10 to-transparent rounded-3xl p-6 border border-amber-500/20 space-y-4">
+        <div className="flex items-center gap-3">
+          <ZapIcon className="w-4 h-4 text-amber-500" />
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Resgatar Cupom</h3>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={couponCode}
+            onChange={e => setCouponCode(e.target.value)}
+            placeholder="Digite seu código..."
+            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-500 transition-all"
+          />
+          <button
+            onClick={handleRedeemCoupon}
+            disabled={couponLoading || !couponCode.trim()}
+            className="bg-amber-500 hover:bg-amber-400 text-black font-black uppercase text-[10px] tracking-widest px-6 rounded-xl transition-all active:scale-95 disabled:opacity-50"
+          >
+            {couponLoading ? '...' : 'OK'}
+          </button>
+        </div>
+
+        {onGoToSubscription && (
+          <button
+            onClick={onGoToSubscription}
+            className="w-full mt-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 font-black uppercase text-[10px] py-4 rounded-xl border border-indigo-500/20 transition-all active:scale-95"
+          >
+            Ver Planos / Renovar Assinatura
+          </button>
+        )}
+
+        {couponStatus && (
+          <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center animate-in fade-in slide-in-from-top-2 ${couponStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
+            {couponStatus.msg}
+          </div>
+        )}
+      </section>
+
       <section className="bg-white/[0.02] rounded-3xl p-6 border border-white/5 space-y-6">
         <div className="space-y-4">
-          <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400 text-center">Regras da Partida</h3>
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] md:text-xs font-black uppercase tracking-widest text-white/20">Pontuação Alvo</span>
-            <div className="flex items-center gap-4 bg-black/20 p-1 rounded-xl">
-              <button onClick={() => setWinScore(Math.max(1, winScore - 1))} className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center text-white/40 hover:text-white">-</button>
-              <span className="font-mono text-xs md:text-xl font-black w-4 md:w-8 text-center">{winScore}</span>
-              <button onClick={() => setWinScore(winScore + 1)} className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center text-white/40 hover:text-white">+</button>
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] md:text-xs font-black uppercase tracking-widest text-white/20">Tempo Posse (Seg)</span>
-            <div className="flex items-center gap-4 bg-black/20 p-1 rounded-xl">
-              <button onClick={() => setAttackTime(Math.max(5, attackTime - 1))} className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center text-white/40 hover:text-white">-</button>
-              <span className="font-mono text-xs md:text-xl font-black w-4 md:w-8 text-center">{attackTime}</span>
-              <button onClick={() => setAttackTime(attackTime + 1)} className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center text-white/40 hover:text-white">+</button>
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-4 border-t border-white/5">
-            <div className="flex flex-col">
-              <span className="text-[9px] md:text-xs font-black uppercase tracking-widest text-white/20">REGRA "CAPOTE"</span>
-              <span className="text-[8px] md:text-[10px] font-bold text-white/30 uppercase mt-1 max-w-[150px] sm:max-w-none">Finaliza se placar for 50% vs 0.</span>
-            </div>
-            <button onClick={() => setCapoteEnabled(!capoteEnabled)} className={`px-4 py-2 text-[8px] md:text-xs font-black uppercase rounded-lg transition-all ${capoteEnabled ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white/30'}`}>
-              {capoteEnabled ? 'ATIVADO' : 'OFF'}
+          <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400 text-center">Modo de Jogo</h3>
+          
+          <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5">
+            <button 
+              onClick={() => toggleMode('casual')}
+              className={`flex-1 py-3 px-4 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all ${matchMode === 'casual' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-white/20 hover:text-white/40'}`}
+            >
+              Casual / Arena
+            </button>
+            <button 
+              onClick={() => toggleMode('oficial')}
+              className={`flex-1 py-3 px-4 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all ${matchMode === 'oficial' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-white/20 hover:text-white/40'}`}
+            >
+              Modo Oficial
             </button>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-[9px] md:text-xs font-black uppercase tracking-widest text-white/20">REGRA "VAI A 3"</span>
-              <span className="text-[8px] md:text-[10px] font-bold text-white/30 uppercase mt-1 max-w-[150px] sm:max-w-none">Resolve empates em pontos decisivos.</span>
+
+          <div className="pt-4 space-y-4">
+            <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400 text-center">Configurações da Regra</h3>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] md:text-xs font-black uppercase tracking-widest text-white/20">Pontuação Alvo</span>
+              <div className="flex items-center gap-4 bg-black/20 p-1 rounded-xl">
+                <button onClick={() => setWinScore(Math.max(1, winScore - 1))} className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center text-white/40 hover:text-white">-</button>
+                <span className="font-mono text-xs md:text-xl font-black w-4 md:w-8 text-center">{winScore}</span>
+                <button onClick={() => setWinScore(winScore + 1)} className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center text-white/40 hover:text-white">+</button>
+              </div>
             </div>
-            <button onClick={() => setVaiATresEnabled(!vaiATresEnabled)} className={`px-4 py-2 text-[8px] md:text-xs font-black uppercase rounded-lg transition-all ${vaiATresEnabled ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white/30'}`}>
-              {vaiATresEnabled ? 'ATIVADO' : 'OFF'}
-            </button>
+
+            {matchMode === 'oficial' && (
+              <div className="flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                <span className="text-[9px] md:text-xs font-black uppercase tracking-widest text-white/20">Tempo Partida (Min)</span>
+                <div className="flex items-center gap-4 bg-black/20 p-1 rounded-xl">
+                  <button onClick={() => setMatchTime(Math.max(1, matchTime - 1))} className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center text-white/40 hover:text-white">-</button>
+                  <span className="font-mono text-xs md:text-xl font-black w-4 md:w-8 text-center">{matchTime}</span>
+                  <button onClick={() => setMatchTime(matchTime + 1)} className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center text-white/40 hover:text-white">+</button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] md:text-xs font-black uppercase tracking-widest text-white/20">Tempo Posse (Seg)</span>
+              <div className="flex items-center gap-4 bg-black/20 p-1 rounded-xl">
+                <button onClick={() => setAttackTime(Math.max(5, attackTime - 1))} className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center text-white/40 hover:text-white">-</button>
+                <span className="font-mono text-xs md:text-xl font-black w-4 md:w-8 text-center">{attackTime}</span>
+                <button onClick={() => setAttackTime(attackTime + 1)} className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center text-white/40 hover:text-white">+</button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+              <div className="flex flex-col">
+                <span className="text-[9px] md:text-xs font-black uppercase tracking-widest text-white/20">REGRA "CAPOTE"</span>
+                <span className="text-[8px] md:text-[10px] font-bold text-white/30 uppercase mt-1 max-w-[150px] sm:max-w-none">Finaliza se placar for 50% vs 0.</span>
+              </div>
+              <button onClick={() => setCapoteEnabled(!capoteEnabled)} className={`px-4 py-2 text-[8px] md:text-xs font-black uppercase rounded-lg transition-all ${capoteEnabled ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white/30'}`}>
+                {capoteEnabled ? 'ATIVADO' : 'OFF'}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[9px] md:text-xs font-black uppercase tracking-widest text-white/20">REGRA "VAI A 3"</span>
+                <span className="text-[8px] md:text-[10px] font-bold text-white/30 uppercase mt-1 max-w-[150px] sm:max-w-none">Resolve empates em pontos decisivos.</span>
+              </div>
+              <button onClick={() => setVaiATresEnabled(!vaiATresEnabled)} className={`px-4 py-2 text-[8px] md:text-xs font-black uppercase rounded-lg transition-all ${vaiATresEnabled ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white/30'}`}>
+                {vaiATresEnabled ? 'ATIVADO' : 'OFF'}
+              </button>
+            </div>
           </div>
         </div>
 

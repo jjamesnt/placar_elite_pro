@@ -73,8 +73,9 @@ export const ShieldIcon: React.FC<IconProps> = ({ className }) => (
   </svg>
 );
 export const UserCogIcon: React.FC<IconProps> = ({ className = "w-6 h-6" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className={className}>
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M10.5 22l.5-2.5 2-1 2.5.5 1-2-2.5-.5V14l2.5-.5-1-2-2.5.5-2-1-.5-2.5-2 1 .5 2.5-2.5.5-1 2 2.5.5V19l-2.5.5 1 2 2.5-.5 2 1z"/>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className={className} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+    <circle cx="19" cy="16" r="3"/><path d="m19 13v1"/><path d="m19 18v1"/><path d="m22 16h-1"/><path d="m17 16h-1"/><path d="m21.1 13.9-.7.7"/><path d="m16.9 18.1-.7.7"/><path d="m16.9 13.9.7.7"/><path d="m21.1 18.1.7.7"/>
   </svg>
 );
 export const LockIcon: React.FC<IconProps> = ({ className }) => (

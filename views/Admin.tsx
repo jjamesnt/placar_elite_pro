@@ -5,9 +5,9 @@ import {
   ShieldIcon, UsersIcon, ZapIcon, PlusIcon, MinusIcon,
   CogIcon, XCircleIcon, CheckIcon, FileTextIcon, TrophyIcon, EditIcon, CrownIcon
 } from '../components/icons';
-import { UserLicense, Coupon, Plan } from '../types';
+import { UserLicense, Coupon, Plan, Arena } from '../types';
 
-type AdminTab = 'geral' | 'usuarios' | 'cupons' | 'planos';
+type AdminTab = 'geral' | 'usuarios' | 'cupons' | 'planos' | 'manutencao';
 
 interface AdminProps {
   showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
@@ -29,6 +29,19 @@ const Admin: React.FC<AdminProps> = ({ showAlert, showConfirm }) => {
   
   const [newCoupon, setNewCoupon] = useState({ code: '', days_bonus: 30, discount_pct: 0 });
   const [newPlan, setNewPlan] = useState({ name: '', price: 0, months_duration: 1, arenas_limit: 1, athletes_limit: 15, club_members_limit: 1 });
+  
+  // Data Fix Logic
+  const [fixArenas, setFixArenas] = useState<Arena[]>([]);
+  const [fixPlayers, setFixPlayers] = useState<any[]>([]);
+  const [loadingArenas, setLoadingArenas] = useState(false);
+  const [selectedArenaId, setSelectedArenaId] = useState<string>('');
+  const [playerA, setPlayerA] = useState<string>(''); // Oficial
+  const [playerB, setPlayerB] = useState<string>(''); // Duplicado
+
+  // Super Admin / Deep Search
+  const [searchEmail, setSearchEmail] = useState('');
+  const [isDeepSearching, setIsDeepSearching] = useState(false);
+  const [sqlCopied, setSqlCopied] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -373,6 +386,198 @@ const Admin: React.FC<AdminProps> = ({ showAlert, showConfirm }) => {
     if (showConfirm) showConfirm('Excluir Plano', 'Confirmar remoção?', executeDelete, 'danger', 'trash');
   };
 
+  // Maintenance Logic
+  const loadFixData = async () => {
+    setLoadingArenas(true);
+    try {
+      const { data: aData, error } = await supabase.from('arenas').select('*').order('name');
+      if (error) throw error;
+      if (aData) setFixArenas(aData);
+    } catch (err) {
+      console.error("Erro ao carregar arenas para manutenção:", err);
+    } finally {
+      setLoadingArenas(false);
+    }
+  };
+
+  const handleDeepSearch = async () => {
+    if (!searchEmail.trim()) return;
+    setIsDeepSearching(true);
+    try {
+      // 1. Buscar a licença para obter o user_id
+      const { data: lData, error: lError } = await supabase
+        .from('user_licenses')
+        .select('user_id, email')
+        .ilike('email', `%${searchEmail.trim()}%`)
+        .maybeSingle();
+
+      if (lError) throw lError;
+      if (!lData || !lData.user_id) {
+        if (showAlert) showAlert("Usuário não encontrado", "Não localizamos nenhuma conta com esse e-mail ou fragmento.", 'warning', 'alert');
+        return;
+      }
+
+      // 2. Buscar arenas desse user_id
+      const { data: aData, error: aError } = await supabase
+        .from('arenas')
+        .select('*')
+        .eq('user_id', lData.user_id);
+
+      if (aError) throw aError;
+      
+      if (aData && aData.length > 0) {
+        setFixArenas(prev => {
+           const existingIds = new Set(prev.map(a => a.id));
+           const newArenas = aData.filter(a => !existingIds.has(a.id));
+           return [...prev, ...newArenas];
+        });
+        if (showAlert) showAlert("Arenas Localizadas!", `Encontramos ${aData.length} arena(s) vinculada(s) a ${lData.email}. Elas agora aparecem na sua lista de seleção.`, 'success', 'check');
+      } else {
+        if (showAlert) showAlert("Sem Arenas", `O usuário ${lData.email} existe, mas não possui nenhuma arena criada.`, 'info', 'info');
+      }
+    } catch (err: any) {
+      if (showAlert) showAlert("Erro na Busca Profunda", err.message, 'danger', 'alert');
+    } finally {
+      setIsDeepSearching(false);
+    }
+  };
+
+  const handleCopySQLRepair = () => {
+    const currentEmail = 'jjamesnt@gmail.com'; // O e-mail mestre para a regra
+    const sql = `-- REPARO DE ACESSO ADMIN TOTAL - ELITE PRO
+-- Copie e cole este comando no SQL Editor do Supabase para dar acesso TOTAL ao Admin.
+
+-- 1. Permitir que Admins tenham PODER TOTAL sobre as arenas
+DROP POLICY IF EXISTS "Admins podem ver todas as arenas" ON arenas;
+CREATE POLICY "Admins podem gerir todas as arenas" ON arenas
+FOR ALL TO authenticated
+USING (
+  auth.email() = '${currentEmail}' OR 
+  auth.email() = 'jamesrizo@gmail.com'
+)
+WITH CHECK (
+  auth.email() = '${currentEmail}' OR 
+  auth.email() = 'jamesrizo@gmail.com'
+);
+
+-- 2. Permitir que Admins tenham PODER TOTAL sobre os jogadores
+DROP POLICY IF EXISTS "Admins podem ver todos os jogadores" ON players;
+CREATE POLICY "Admins podem gerir todos os jogadores" ON players
+FOR ALL TO authenticated
+USING (
+  auth.email() = '${currentEmail}' OR 
+  auth.email() = 'jamesrizo@gmail.com'
+)
+WITH CHECK (
+  auth.email() = '${currentEmail}' OR 
+  auth.email() = 'jamesrizo@gmail.com'
+);
+
+-- 3. Permitir que Admins tenham PODER TOTAL sobre as partidas
+DROP POLICY IF EXISTS "Admins podem ver todas as partidas" ON matches;
+CREATE POLICY "Admins podem gerir todas as partidas" ON matches
+FOR ALL TO authenticated
+USING (
+  auth.email() = '${currentEmail}' OR 
+  auth.email() = 'jamesrizo@gmail.com'
+)
+WITH CHECK (
+  auth.email() = '${currentEmail}' OR 
+  auth.email() = 'jamesrizo@gmail.com'
+);
+
+-- 4. Permitir que usuários comuns vejam APENAS suas próprias arenas
+DROP POLICY IF EXISTS "Visualização para Licenciados" ON arenas;
+DROP POLICY IF EXISTS "Usuários veem suas próprias arenas" ON arenas;
+CREATE POLICY "Usuários veem suas próprias arenas" ON arenas
+FOR SELECT TO authenticated
+USING (user_id = auth.uid());
+`;
+
+    navigator.clipboard.writeText(sql);
+    setSqlCopied(true);
+    setTimeout(() => setSqlCopied(false), 3000);
+    if (showAlert) showAlert("SQL Copiado!", "O código de reparo já está na sua área de transferência. Cole no SQL Editor do Supabase.", 'success', 'check');
+  };
+
+  useEffect(() => {
+    if (activeTab === 'manutencao') loadFixData();
+  }, [activeTab]);
+
+  useEffect(() => {
+    const loadPlayers = async () => {
+        if (!selectedArenaId) return;
+        const { data: pData } = await supabase.from('players').select('*').eq('arena_id', selectedArenaId).order('name');
+        if (pData) setFixPlayers(pData);
+    };
+    loadPlayers();
+  }, [selectedArenaId]);
+
+  const handleUnifyPlayers = async () => {
+    if (!playerA || !playerB || playerA === playerB) return;
+    const pA = fixPlayers.find(p => p.id === playerA);
+    const pB = fixPlayers.find(p => p.id === playerB);
+    if (!pA || !pB) return;
+
+    setActionLoading('unify');
+    try {
+        const startOfDay = new Date();
+        startOfDay.setDate(startOfDay.getDate() - 1);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const { data: matches, error: mError } = await supabase
+            .from('matches')
+            .select('*')
+            .eq('arena_id', selectedArenaId)
+            .gte('created_at', startOfDay.toISOString());
+
+        if (mError) throw mError;
+        let count = 0;
+
+        for (const match of (matches || [])) {
+            let changed = false;
+            const newData = JSON.parse(JSON.stringify(match.data_json));
+            
+            [newData.teamA, newData.teamB].forEach(team => {
+                team.players.forEach((p: any) => {
+                    if (p && p.id === playerB) {
+                        p.id = playerA;
+                        p.name = pA.name; // Use official name
+                        changed = true;
+                    }
+                });
+            });
+
+            if (changed) {
+                const { error: uError } = await supabase.from('matches').update({ data_json: newData }).eq('id', match.id);
+                if (uError) throw uError;
+                count++;
+            }
+        }
+
+        // Delete duplicate player and verify
+        const { error: dError, count: dCount } = await supabase
+            .from('players')
+            .delete({ count: 'exact' })
+            .eq('id', playerB);
+
+        if (dError) throw dError;
+        
+        // Se dCount for 0, significa que o banco de dados filtrou a linha (RLS) e não permitiu a exclusão
+        if (dCount === 0) {
+            throw new Error("O banco de dados recusou a exclusão do jogador. Verifique se as permissões (SQL Repair) foram aplicadas corretamente.");
+        }
+        
+        if (showAlert) showAlert("Sucesso", `${count} partidas foram atualizadas. O jogador duplicado foi removido.`, 'success', 'check');
+        setFixPlayers(prev => prev.filter(p => p.id !== playerB));
+        setPlayerB('');
+    } catch (err: any) {
+        if (showAlert) showAlert("Erro na Unificação", err.message, 'danger', 'alert');
+    } finally {
+        setActionLoading(null);
+    }
+  };
+
   if (loading && licenses.length === 0) return (
     <div className="h-full w-full flex flex-col items-center justify-center p-20 gap-4">
       <LoaderIcon className="w-12 h-12 animate-spin text-indigo-500" />
@@ -390,7 +595,7 @@ const Admin: React.FC<AdminProps> = ({ showAlert, showConfirm }) => {
         
         {/* Navigation Tabs */}
         <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar">
-          {(['usuarios', 'cupons', 'planos', 'geral'] as AdminTab[]).map(tab => (
+          {(['usuarios', 'cupons', 'planos', 'manutencao', 'geral'] as AdminTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -602,6 +807,138 @@ const Admin: React.FC<AdminProps> = ({ showAlert, showConfirm }) => {
                  <p className="text-[9px] font-black uppercase text-white/20 tracking-widest">Promoções</p>
               </div>
            </div>
+        </div>
+      )}
+
+      {activeTab === 'manutencao' && (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+            {/* Super Admin Diagnostics */}
+            <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-[2.5rem] p-8 space-y-6">
+                <div className="flex items-center gap-4">
+                    <ShieldIcon className="w-6 h-6 text-indigo-400" />
+                    <h2 className="text-xl font-black text-white uppercase tracking-tighter">Diagnóstico & Super Admin</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest leading-relaxed">
+                            Se você não encontrar a arena de um usuário na lista abaixo (ex: teste4), use a busca profunda para localizá-la manualmente.
+                        </p>
+                        <div className="flex gap-2">
+                            <input 
+                                type="text" 
+                                placeholder="E-mail do usuário (ex: teste4)" 
+                                value={searchEmail}
+                                onChange={e => setSearchEmail(e.target.value)}
+                                className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-[10px] uppercase font-black tracking-widest outline-none focus:border-indigo-500/50"
+                            />
+                            <button 
+                                onClick={handleDeepSearch}
+                                disabled={isDeepSearching || !searchEmail}
+                                className="px-6 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-500 active:scale-95 transition-all disabled:opacity-30"
+                            >
+                                {isDeepSearching ? 'Buscando...' : 'Buscar Arena'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 bg-white/5 p-6 rounded-3xl border border-white/5">
+                        <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest leading-relaxed">
+                            Problemas de permissão (RLS)? Clique abaixo para copiar o script de reparo e rodar no Supabase.
+                        </p>
+                        <div className="flex flex-col gap-2">
+                            <button 
+                                onClick={handleCopySQLRepair}
+                                className={`w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${sqlCopied ? 'bg-emerald-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-white/80'}`}
+                            >
+                                {sqlCopied ? 'SQL Copiado para o Clipboard!' : 'Gerar SQL de Reparo'}
+                            </button>
+                            <a 
+                                href="https://supabase.com/dashboard/project/uuqgcpojxrwixbmpxyoe/sql/new" 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="text-[9px] font-bold text-indigo-400 hover:text-white transition-colors text-center uppercase tracking-widest"
+                            >
+                                Abrir SQL Editor do Supabase ↗
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-red-500/5 border border-red-500/20 rounded-[2.5rem] p-8 space-y-6">
+                <div className="flex items-center gap-4">
+                    <RefreshCwIcon className="w-6 h-6 text-red-500" />
+                    <h2 className="text-xl font-black text-white uppercase tracking-tighter">Unificar Jogadores</h2>
+                </div>
+                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest leading-relaxed">
+                    Esta ferramenta mescla o histórico de dois jogadores. Útil para corrigir nomes duplicados ou lançamentos errados.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-[8px] font-black uppercase text-white/20 tracking-widest ml-4">Passo 1: Selecionar Arena</label>
+                        <select 
+                            value={selectedArenaId} 
+                            onChange={e => setSelectedArenaId(e.target.value)}
+                            disabled={loadingArenas}
+                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white font-black uppercase text-[10px] outline-none disabled:opacity-50"
+                        >
+                            <option value="">{loadingArenas ? 'Carregando Arenas...' : fixArenas.length === 0 ? 'Nenhuma Arena Encontrada' : 'Selecione a Arena'}</option>
+                            {fixArenas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        </select>
+                        {fixArenas.length === 0 && !loadingArenas && (
+                            <p className="text-[7px] text-red-400/60 uppercase font-black tracking-widest mt-2 ml-4">
+                                * Use a busca profunda acima ou o script de reparo SQL se você sabe que existem arenas.
+                            </p>
+                        )}
+                    </div>
+
+                    {selectedArenaId && (
+                        <>
+                            <div className="space-y-2">
+                                <label className="text-[8px] font-black uppercase text-emerald-500/40 tracking-widest ml-4">Passo 2: Perfil Oficial (Manter)</label>
+                                <select 
+                                    value={playerA} 
+                                    onChange={e => setPlayerA(e.target.value)}
+                                    className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-2xl px-5 py-4 text-white font-black uppercase text-[10px] outline-none"
+                                >
+                                    <option value="">Selecione o Jogador Oficial</option>
+                                    {fixPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[8px] font-black uppercase text-red-500/40 tracking-widest ml-4">Passo 3: Perfil Duplicado (Excluir)</label>
+                                <select 
+                                    value={playerB} 
+                                    onChange={e => setPlayerB(e.target.value)}
+                                    className="w-full bg-red-500/5 border border-red-500/20 rounded-2xl px-5 py-4 text-white font-black uppercase text-[10px] outline-none"
+                                >
+                                    <option value="">Selecione o Jogador Errado</option>
+                                    {fixPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div className="sm:col-span-2 pt-4">
+                                <button 
+                                    onClick={() => showConfirm && showConfirm(
+                                        "Confirmar Unificação", 
+                                        "Isso irá reescrever o histórico de partidas de ontem e APAGAR o perfil duplicado. Deseja continuar?",
+                                        handleUnifyPlayers,
+                                        'danger',
+                                        'trash'
+                                    )}
+                                    disabled={!playerA || !playerB || playerA === playerB || actionLoading === 'unify'}
+                                    className="w-full bg-red-600 text-white font-black uppercase text-xs tracking-widest py-5 rounded-2xl shadow-xl shadow-red-900/20 hover:bg-red-500 transition-all active:scale-95 disabled:opacity-30 disabled:grayscale"
+                                >
+                                    {actionLoading === 'unify' ? 'Processando Unificação...' : 'UNIFICAR RESULTADOS AGORA'}
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
         </div>
       )}
 

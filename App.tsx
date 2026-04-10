@@ -131,8 +131,8 @@ const App: React.FC = () => {
   };
 
   // Game state lifted from Placar.tsx
-  const [teamA, setTeamA] = useState<Team>({ players: [undefined, undefined], score: 0 });
-  const [teamB, setTeamB] = useState<Team>({ players: [undefined, undefined], score: 0 });
+  const [teamA, setTeamA] = useState<Team>({ players: [undefined, undefined], score: 0, sets: 0 });
+  const [teamB, setTeamB] = useState<Team>({ players: [undefined, undefined], score: 0, sets: 0 });
   const [servingTeam, setServingTeam] = useState<'A' | 'B'>('A');
   const [history, setHistory] = useState<{ teamA: Team; teamB: Team; servingTeam: 'A' | 'B' }[]>([]);
   const [isSidesSwitched, setIsSidesSwitched] = useState(false);
@@ -224,14 +224,14 @@ const App: React.FC = () => {
   }, [session, currentArenaId, userLicense]);
 
   const resetGame = useCallback((fullReset = false) => {
-    setTeamA(prev => ({ ...prev, score: 0 }));
-    setTeamB(prev => ({ ...prev, score: 0 }));
+    setTeamA(prev => ({ ...prev, score: 0, sets: 0 }));
+    setTeamB(prev => ({ ...prev, score: 0, sets: 0 }));
     setServingTeam('A');
     setHistory([]);
     setGameStartTime(null);
     if (fullReset) {
-      setTeamA({ players: [undefined, undefined], score: 0 });
-      setTeamB({ players: [undefined, undefined], score: 0 });
+      setTeamA({ players: [undefined, undefined], score: 0, sets: 0 });
+      setTeamB({ players: [undefined, undefined], score: 0, sets: 0 });
       setIsSidesSwitched(false);
       const prefix = `elite_arena_${currentArenaId}_`;
       setWinScore(Number(localStorage.getItem(`${prefix}winScore`)) || 15);
@@ -242,7 +242,8 @@ const App: React.FC = () => {
     const handleSession = (session: any) => {
       setSession(session);
       if (session?.user) {
-        setIsAdmin(session.user.email.toLowerCase() === 'jjamesnt@gmail.com');
+        const email = session.user.email.toLowerCase();
+        setIsAdmin(email === 'jjamesnt@gmail.com' || email.includes('jamesrizo') || email === 'jamesrizo@gmail.com');
         setMustChangePassword(!!session.user.user_metadata?.must_change_password);
         checkLicense(session.user.id, session.user.email);
       } else setLoading(false);
@@ -386,7 +387,8 @@ const App: React.FC = () => {
   if (!session) return <><Background color="indigo" /><Login onLogin={() => { }} /></>;
   if (mustChangePassword) return <ChangePassword onComplete={() => setMustChangePassword(false)} />;
 
-  const isMaster = session?.user?.email?.toLowerCase() === 'jjamesnt@gmail.com';
+  const email = session?.user?.email?.toLowerCase() || '';
+  const isMaster = email === 'jjamesnt@gmail.com' || email.includes('jamesrizo') || email === 'jamesrizo@gmail.com';
   const isExpired = userLicense && new Date(userLicense.expires_at).getTime() < Date.now();
   const isBlocked = !isMaster && (!userLicense || !userLicense.is_active);
 

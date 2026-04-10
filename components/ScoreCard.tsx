@@ -13,8 +13,10 @@ interface ScoreCardProps {
   isLeft: boolean;
   isServing: boolean;
   arenaColor?: ArenaColor;
-  matchMode?: MatchMode;
+  isVaiATresActive?: boolean;
+  vaiATresScore?: number;
   setsWon?: number;
+  matchMode?: MatchMode;
 }
 
 const THEME_CONFIG: Record<ArenaColor, { gradient: string; border: string; text: string; shadow: string; bg: string }> = {
@@ -25,7 +27,22 @@ const THEME_CONFIG: Record<ArenaColor, { gradient: string; border: string; text:
   rose: { gradient: 'from-rose-500 to-pink-400', border: 'border-rose-400/30', text: 'text-rose-400', shadow: 'shadow-rose-500/50', bg: 'bg-rose-600/90' },
   violet: { gradient: 'from-violet-500 to-purple-400', border: 'border-violet-400/30', text: 'text-violet-400', shadow: 'shadow-violet-500/50', bg: 'bg-violet-600/90' }
 };
-const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange, onPlayerSelect, allPlayers, isGameWon, isLeft, isServing, arenaColor = 'indigo', matchMode = 'normal', setsWon = 0 }) => {
+
+const THEME_COLORS: Record<ArenaColor, string> = {
+  indigo: 'bg-indigo-500',
+  blue: 'bg-blue-500',
+  emerald: 'bg-emerald-500',
+  amber: 'bg-amber-500',
+  rose: 'bg-rose-500',
+  violet: 'bg-violet-500'
+};
+
+const ScoreCard: React.FC<ScoreCardProps> = ({ 
+  teamName, teamData, onScoreChange, onPlayerSelect, allPlayers, 
+  isGameWon, isLeft, isServing, arenaColor = 'indigo', 
+  isVaiATresActive = false, vaiATresScore = 0, setsWon = 0,
+  matchMode = 'casual'
+}) => {
   const [animate, setAnimate] = useState(false);
   const theme = THEME_CONFIG[arenaColor];
 
@@ -50,13 +67,36 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
   const buttonBg = isLeft ? theme.bg : 'bg-red-600/90';
 
   return (
-    <div className={`relative flex flex-col bg-black/40 backdrop-blur-3xl rounded-[1.2rem] sm:rounded-[1.5rem] lg:rounded-[2.5rem] p-2 sm:p-3 lg:p-6 border-t border-white/5 shadow-2xl h-full min-h-0 ${borderColor} ${isServing ? 'ring-1 ring-white/10 lg:ring-2' : ''} overflow-hidden`}>
-      
-      <div className={`absolute top-1.5 sm:top-3 ${isLeft ? 'right-2 lg:right-4' : 'left-2 lg:left-4'} transition-opacity duration-300 z-10 ${isServing ? 'opacity-100' : 'opacity-0'}`}>
-          <div className={`flex flex-col items-center gap-0 lg:gap-1 ${servingColor}`}>
-             <ZapIcon className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 lg:w-5 lg:h-5 animate-pulse" />
-             <span className="text-[5px] sm:text-[6px] lg:text-[8px] font-black uppercase tracking-tighter">Saque</span>
+    <div className={`relative flex flex-col backdrop-blur-3xl rounded-[1.2rem] sm:rounded-[1.5rem] lg:rounded-[2.5rem] p-2 sm:p-3 lg:p-6 border-t border-white/5 shadow-2xl h-full min-h-0 ${borderColor} ${isServing ? 'ring-1 ring-white/10 lg:ring-2' : ''} overflow-hidden transition-all duration-500 ${isVaiATresActive ? 'bg-red-600/20 animate-[pulse_2s_infinite]' : 'bg-black/40'}`}>
+
+      {/* HAZARD TAPE BORDERS (FITA ZEBRADA) */}
+      {isVaiATresActive && (
+        <>
+          <div className="absolute top-0 left-0 w-full h-1.5 lg:h-3 z-30 bg-[repeating-linear-gradient(45deg,#fbbf24,#fbbf24_10px,#000_10px,#000_20px)] animate-hazard-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-full h-1.5 lg:h-3 z-30 bg-[repeating-linear-gradient(45deg,#fbbf24,#fbbf24_10px,#000_10px,#000_20px)] animate-hazard-pulse"></div>
+          <div className="absolute top-0 left-0 h-full w-1.5 lg:w-3 z-30 bg-[repeating-linear-gradient(45deg,#fbbf24,#fbbf24_10px,#000_10px,#000_20px)] animate-hazard-pulse"></div>
+          <div className="absolute top-0 right-0 h-full w-1.5 lg:w-3 z-30 bg-[repeating-linear-gradient(45deg,#fbbf24,#fbbf24_10px,#000_10px,#000_20px)] animate-hazard-pulse"></div>
+        </>
+      )}
+
+      {/* MINI SCOREBOARD (VAI A TRES) */}
+      {isVaiATresActive && (
+        <div className="absolute top-2 lg:top-3 left-1/2 -translate-x-1/2 flex flex-col items-center z-20 animate-in zoom-in duration-300">
+          <div className="bg-yellow-500 px-2 lg:px-4 py-0.5 lg:py-1.5 rounded-full border-2 border-black/20 shadow-xl flex items-center gap-1 lg:gap-2 mb-0.5 lg:mb-1">
+            <ZapIcon className="w-2 h-2 lg:w-4 lg:h-4 text-black animate-pulse" />
+            <span className="text-[7px] lg:text-[14px] font-black text-black uppercase tracking-[0.1em] lg:tracking-[0.2em] whitespace-nowrap">Desafio 3</span>
           </div>
+          <div className="text-3xl lg:text-9xl font-mono font-black text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.6)] leading-none">
+            {vaiATresScore}
+          </div>
+        </div>
+      )}
+
+      <div className={`absolute top-1.5 sm:top-3 ${isLeft ? 'right-2 lg:right-4' : 'left-2 lg:left-4'} transition-opacity duration-300 z-10 ${isServing ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`flex flex-col items-center gap-0 lg:gap-1 ${servingColor}`}>
+          <ZapIcon className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 lg:w-5 lg:h-5 animate-pulse" />
+          <span className="text-[5px] sm:text-[6px] lg:text-[8px] font-black uppercase tracking-tighter">Saque</span>
+        </div>
       </div>
 
       <div className={`flex items-center gap-3 mb-4 lg:mb-6 ${isLeft ? 'justify-start' : 'justify-end'}`}>
@@ -64,7 +104,7 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
           <h2 className={`text-[10px] sm:text-xs lg:text-sm font-black uppercase tracking-[0.3em] ${isServing ? 'text-white' : 'text-white/30'}`}>
             {teamName}
           </h2>
-          {matchMode === 'set' && (
+          {matchMode === 'oficial' && (
             <div className="flex items-center gap-2 animate-in slide-in-from-top-1 duration-500">
               <span className="text-[6px] lg:text-[8px] font-black text-white/10 uppercase tracking-widest">Sets</span>
               <div className="flex gap-1.5 bg-black/40 px-2 py-1.5 rounded-full border border-white/5 backdrop-blur-md shadow-inner">
@@ -73,14 +113,14 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
                     key={s} 
                     className={`
                       w-2 h-2 sm:w-3 sm:h-3 lg:w-4 lg:h-4 rounded-full border-2 transition-all duration-700 relative
-                      ${(setsWon || 0) >= s 
-                        ? `${theme.text.replace('text-', 'border-')} ${theme.bg.replace('600/90', '500')} shadow-[0_0_12px_rgba(255,255,255,0.4)] scale-110` 
+                      ${setsWon >= s 
+                        ? `${THEME_COLORS[arenaColor].replace('bg-', 'border-')} ${THEME_COLORS[arenaColor]} shadow-[0_0_12px_rgba(255,255,255,0.4)] scale-110` 
                         : 'bg-white/5 border-white/10'
                       }
                     `}
                   >
-                    {(setsWon || 0) >= s && (
-                      <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${theme.bg.replace('600/90', '500')}`}></div>
+                    {setsWon >= s && (
+                      <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${THEME_COLORS[arenaColor]}`}></div>
                     )}
                   </div>
                 ))}
@@ -99,40 +139,40 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ teamName, teamData, onScoreChange
             ${teamColor} 
             ${animate ? 'scale-105' : 'scale-100'}
           `}>
-              {String(teamData.score).padStart(2, '0')}
-          </span>
+          {String(teamData.score).padStart(2, '0')}
+        </span>
       </div>
 
-      <div className="mt-1 lg:mt-2 flex flex-col gap-1.5 lg:gap-3 flex-shrink-0">
-          <div className="grid grid-cols-2 gap-1.5 lg:gap-3">
-               <button onClick={(e) => { e.stopPropagation(); handleDecrement(); }} disabled={isGameWon || teamData.score === 0} className="flex items-center justify-center py-2 sm:py-3 lg:py-5 bg-white/5 rounded-lg lg:rounded-2xl text-gray-500 disabled:opacity-5 active:scale-95 transition-all">
-                  <MinusIcon className="w-4 h-4 lg:w-6 lg:h-6" />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); handleIncrement(); }} disabled={isGameWon} className={`flex items-center justify-center py-2 sm:py-3 lg:py-5 rounded-lg lg:rounded-2xl text-white disabled:opacity-5 active:scale-95 transition-all shadow-lg ${buttonBg}`}>
-                  <PlusIcon className="w-4 h-4 lg:w-6 lg:h-6" />
-              </button>
-          </div>
-          
-          <div className="flex flex-col gap-1.5 lg:gap-2">
-            {[0, 1].map(index => (
-              <div key={index} className="relative w-full">
-                <select 
-                  value={teamData.players[index]?.id || ''}
-                  onChange={(e) => {
-                    const selectedPlayer = allPlayers.find(p => p.id === e.target.value);
-                    if (selectedPlayer) onPlayerSelect(selectedPlayer, index);
-                  }}
-                  disabled={isGameWon}
-                  className="w-full px-2 py-2 lg:py-3.5 lg:px-4 bg-black/60 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-[11px] font-black appearance-none border border-white/5 focus:outline-none focus:border-indigo-500/50 transition-all uppercase tracking-tighter truncate"
-                >
-                  <option value="" disabled>{`Atleta ${index + 1}`}</option>
-                  {allPlayers.map(player => (
-                    <option key={player.id} value={player.id}>{player.name}</option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
+      <div className="mt-1 md:mt-2 lg:mt-2 flex flex-col gap-1.5 md:gap-2 lg:gap-3 flex-shrink-0">
+        <div className="grid grid-cols-2 gap-1.5 md:gap-2 lg:gap-3">
+          <button onClick={(e) => { e.stopPropagation(); handleDecrement(); }} disabled={isGameWon || teamData.score === 0} className="flex items-center justify-center py-2 sm:py-3 lg:py-5 bg-white/5 rounded-lg lg:rounded-2xl text-gray-500 disabled:opacity-5 active:scale-95 transition-all">
+            <MinusIcon className="w-4 h-4 lg:w-6 lg:h-6" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); handleIncrement(); }} disabled={isGameWon} className={`flex items-center justify-center py-2 sm:py-3 lg:py-5 rounded-lg lg:rounded-2xl text-white disabled:opacity-5 active:scale-95 transition-all shadow-lg ${buttonBg}`}>
+            <PlusIcon className="w-4 h-4 lg:w-6 lg:h-6" />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-1.5 lg:gap-2 tablet-jumbo-gap">
+          {[0, 1].map(index => (
+            <div key={index} className="relative w-full">
+              <select
+                value={teamData.players[index]?.id || ''}
+                onChange={(e) => {
+                  const selectedPlayer = allPlayers.find(p => p.id === e.target.value);
+                  if (selectedPlayer) onPlayerSelect(selectedPlayer, index);
+                }}
+                disabled={isGameWon}
+                className="w-full px-2 py-2 lg:py-3.5 lg:px-4 bg-black/60 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-[11px] font-black appearance-none border border-white/5 focus:outline-none focus:border-indigo-500/50 transition-all uppercase tracking-tighter truncate tablet-jumbo-select text-center"
+              >
+                <option value="" disabled>{`Atleta ${index + 1}`}</option>
+                {allPlayers.map(player => (
+                  <option key={player.id} value={player.id}>{player.name}</option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

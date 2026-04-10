@@ -110,18 +110,16 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
   };
 
   return (
-    <header className="relative w-full z-50 bg-gray-900/98 backdrop-blur-3xl border-b border-white/5 px-2 sm:px-4 h-11 sm:h-12 flex items-center justify-between flex-shrink-0">
+    <header className="relative w-full z-50 bg-gray-900/98 backdrop-blur-3xl border-b border-white/5 h-16 lg:h-20 flex items-center flex-shrink-0">
       
       {/* 1. Mobile Layout: Scrollable Nav + Small Branding */}
-      <div className="flex lg:hidden items-center justify-between w-full h-full gap-2 overflow-hidden">
-        <div className="flex flex-col min-w-[60px] justify-center">
-          <div className="flex items-center gap-1 text-white">
-            <ShieldIcon className="w-2 h-2 text-indigo-500" />
-            <h1 className="font-black text-[8px] uppercase tracking-tighter leading-none">Elite Pro</h1>
+      <div className="flex lg:hidden w-full items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="Logo" className="h-8 w-auto object-contain" />
+          <div className="flex flex-col border-l border-white/10 pl-3">
+            <span className={`text-[10px] font-black uppercase truncate max-w-[150px] ${arenaColorClass}`}>{currentArena.name}</span>
+            <span className="text-[6px] text-gray-400 font-mono opacity-80 uppercase">Atualizado {lastUpdate}</span>
           </div>
-          <span className={`text-[6px] font-black tracking-widest uppercase truncate max-w-[60px] mt-0.5 ${arenaColorClass}`}>
-            {currentArena.name}
-          </span>
         </div>
 
         <nav className="flex items-center gap-1 overflow-x-auto scrollbar-none snap-x touch-pan-x flex-1 justify-end">
@@ -154,11 +152,11 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
           <NavButton label="Ranking" icon={<TrophyIcon />} isActive={currentView === 'ranking'} onClick={() => onNavigate('ranking')} activeColorClass={arenaColorClass} />
         </div>
 
-        {/* Central Branding */}
+        {/* Central Branding: Simple Flex Item (No Absolute) */}
         <div className="flex items-center justify-center gap-4 px-8 border-x border-white/5 bg-white/5 py-2 rounded-xl mx-4">
-          <ShieldIcon className="w-6 h-6 text-indigo-500" />
+          <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
           <div className="flex flex-col">
-            <span className={`text-sm md:text-base lg:text-lg font-black uppercase tracking-[0.2em] whitespace-nowrap ${arenaColorClass}`}>
+            <span className={`text-sm md:text-base lg:text-xl font-black uppercase tracking-widest whitespace-nowrap ${arenaColorClass}`}>
               {currentArena.name}
             </span>
             <span className="text-[9px] text-gray-400 font-mono opacity-80 uppercase tracking-widest leading-none">
@@ -181,7 +179,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
             activeColorClass="text-white"
           />
           {isAdmin && (
-            <NavButton label="ADM" icon={<UserCogIcon />} isActive={currentView === 'admin'} onClick={() => onNavigate('admin')} activeColorClass="text-rose-500 underline decoration-rose-500/30 underline-offset-4" />
+            <NavButton label="ADM" icon={<UserCogIcon />} isActive={currentView === 'admin'} onClick={() => onNavigate('admin')} activeColorClass="text-rose-500 font-bold" />
           )}
 
           {/* Logout Button: Standard */}
