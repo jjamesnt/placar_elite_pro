@@ -11,7 +11,9 @@ import {
   CircleIcon,
   Loader2Icon,
   PlusIcon,
-  SearchIcon
+  SearchIcon,
+  CheckIcon,
+  ZapIcon
 } from '../components/icons';
 
 interface ClubManagementProps {
@@ -73,6 +75,8 @@ const ClubManagement: React.FC<ClubManagementProps> = ({ ownerLicense, onRefresh
     };
   }, [ownerLicense]);
 
+  const [lastAddedEmail, setLastAddedEmail] = useState<string | null>(null);
+
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberEmail) return;
@@ -94,61 +98,72 @@ const ClubManagement: React.FC<ClubManagementProps> = ({ ownerLicense, onRefresh
 
     setActionLoading('add');
     try {
-      // 1. Procurar o usuário pelo email
-      const { data: userData, error: userError } = await supabase
+      // 1. Procurar o licenciamento existente
+      const { data: licenseData, error: licenseError } = await supabase
         .from('user_licenses')
-        .select('id, user_id, club_id, email')
+        .select('*')
         .eq('email', emailLower)
         .maybeSingle();
 
-      if (userError) throw userError;
+      if (licenseError) throw licenseError;
 
-      if (!userData) {
-        setErrorMessage("Usuário não encontrado.");
-        setTimeout(() => setErrorMessage(null), 4000);
-        return;
-      }
-
-      if (userData.club_id) {
+      if (licenseData && licenseData.club_id && licenseData.club_id !== ownerLicense.user_id) {
         setErrorMessage("Já pertence a outro clube.");
         setTimeout(() => setErrorMessage(null), 4000);
         return;
       }
 
-      if (userData.user_id === ownerLicense.user_id) {
-        setErrorMessage("Você é o dono.");
-        setTimeout(() => setErrorMessage(null), 4000);
-        return;
-      }
+      const clubData = {
+        club_id: ownerLicense.user_id,
+        expires_at: ownerLicense.expires_at, 
+        is_active: true
+      };
 
-      // Optimistic Update
-      const optimisticMember = { ...userData, club_id: ownerLicense.user_id } as UserLicense;
-      setMembers(prev => [...prev, optimisticMember]);
-
-      // 2. Vincular ao clube
-      const { error: updateError } = await supabase
-        .from('user_licenses')
-        .update({ 
-          club_id: ownerLicense.user_id,
-          expires_at: ownerLicense.expires_at, 
-          is_active: true
-        })
-        .eq('id', userData.id);
-
-      if (updateError) {
-        // Rollback
-        setMembers(prev => prev.filter(m => m.id !== userData.id));
-        throw updateError;
+      if (licenseData) {
+        // Atualiza licença existente
+        const { error: updateError } = await supabase
+          .from('user_licenses')
+          .update(clubData)
+          .eq('id', licenseData.id);
+        if (updateError) throw updateError;
+      } else {
+        // Cria nova licença ativa para e-mail ainda não registrado
+        const { error: insertError } = await supabase
+          .from('user_licenses')
+          .insert([{ 
+            email: emailLower, 
+            ...clubData,
+            first_access_done: false,
+            arenas_limit: 1,
+            athletes_limit: 15
+          }]);
+        if (insertError) throw insertError;
       }
 
       setNewMemberEmail('');
+      setLastAddedEmail(emailLower);
+      fetchMembers();
       onRefresh();
+      
+      if (showAlert) {
+        showAlert("Membro Adicionado", `O e-mail ${emailLower} agora faz parte do seu clube. Envie o convite via WhatsApp!`, 'success', 'check');
+      }
+
     } catch (err: any) {
       setErrorMessage(err.message);
       setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const generateWhatsAppLink = (email: string) => {
+    const appLink = "https://placar.elitepro.cloud";
+    const arenaName = ownerLicense.email.split('@')[0].toUpperCase();
+    
+    const message = `Olá! 🎾\n\nVocê acaba de ser convidado por *${arenaName}* para integrar a equipe profissional no app *Elite Pro*!\n\nSeu acesso já foi pré-liberado pela nossa arena. Confira seus dados de acesso:\n\n🔗 *Link do App:* ${appLink}\n👤 *Usuário:* ${email}\n🔑 *Senha:* No primeiro acesso, clique em 'Criar Conta' e defina uma senha de sua preferência.\n\nSeja bem-vindo(a) à equipe! 🔥`;
+    
+    return `https://wa.me/?text=${encodeURIComponent(message)}`;
   };
 
   const handleRemoveMember = (memberId: string) => {
@@ -273,6 +288,28 @@ const ClubManagement: React.FC<ClubManagementProps> = ({ ownerLicense, onRefresh
             {actionLoading === 'add' ? <Loader2Icon className="w-4 h-4 animate-spin" /> : <><PlusIcon className="w-4 h-4" /> Vincular ao Clube</>}
           </button>
         </form>
+
+        {lastAddedEmail && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-500">
+                <CheckIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-white text-xs font-bold uppercase tracking-tight">Vínculo Criado com Sucesso!</p>
+                <p className="text-emerald-500/60 text-[10px] font-black uppercase tracking-widest">{lastAddedEmail}</p>
+              </div>
+            </div>
+            <a 
+              href={generateWhatsAppLink(lastAddedEmail)}
+              target="_blank"
+              onClick={() => setLastAddedEmail(null)}
+              className="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[9px] tracking-widest rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              <ZapIcon className="w-4 h-4" /> Enviar Convite WhatsApp
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Lista de Membros */}

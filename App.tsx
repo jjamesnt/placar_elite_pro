@@ -116,7 +116,7 @@ const App: React.FC = () => {
   const [matchMode, setMatchMode] = useState<'normal' | 'set' | 'tempo'>('normal');
   const [matchTime, setMatchTime] = useState(12);
 
-  const [rankingFilter, setRankingFilter] = useState<'geral' | 'mensal' | 'semanal'>('geral');
+  const [rankingFilter, setRankingFilter] = useState<'Hoje' | 'Semanal' | 'Mensal' | 'Anual' | 'Total'>('Hoje');
   const [rankingViewDate, setRankingViewDate] = useState(new Date());
 
   const handleClearMatches = async () => {
@@ -157,11 +157,25 @@ const App: React.FC = () => {
       const { data } = await supabase.from('user_licenses').select('*').eq('email', email.toLowerCase()).maybeSingle();
 
       if (data) {
-        setUserLicense(data);
+        let updatedData = data;
+        // Se a licença existe (ex: criada por clube) mas não tem user_id vinculado
+        if (!data.user_id) {
+          const { data: newData, error: updateError } = await supabase
+            .from('user_licenses')
+            .update({ user_id: userId })
+            .eq('id', data.id)
+            .select()
+            .single();
+          if (!updateError && newData) {
+            updatedData = newData;
+          }
+        }
+        
+        setUserLicense(updatedData);
         const isMaster = email.toLowerCase() === 'jjamesnt@gmail.com';
 
-        if (data.is_active && !isMaster) {
-          if (!data.first_access_done && !welcomeDone) setActiveModal('welcome');
+        if (updatedData.is_active && !isMaster) {
+          if (!updatedData.first_access_done && !welcomeDone) setActiveModal('welcome');
           else if (!expiryShown) setActiveModal('expiry');
         }
       } else {

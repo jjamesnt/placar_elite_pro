@@ -72,11 +72,11 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
             <g transform="translate(340, 480)">
                 <rect x="0" y="0" width="400" height="400" rx="40" fill="rgba(255, 255, 255, 0.05)" stroke="${theme.primary}" stroke-width="4" />
                 <text x="200" y="90" font-size="90" font-weight="900" fill="${theme.primary}" text-anchor="middle">1º</text>
-                <text x="200" y="155" font-size="45" font-weight="700" fill="${theme.text}" text-anchor="middle" style="text-transform: uppercase;">${escapeHtml(p1.player.name)}</text>
+                <text x="200" y="155" font-size="45" font-weight="700" fill="${theme.text}" text-anchor="middle" style="text-transform: uppercase;">${escapeHtml(p1.player?.name || 'Atleta')}</text>
                 <text x="200" y="195" font-size="25" font-weight="500" fill="${theme.text}" opacity="0.6" text-anchor="middle" style="text-transform: uppercase;">Vitórias</text>
                 <text x="200" y="275" font-size="90" font-weight="900" fill="${theme.text}" text-anchor="middle">${p1.wins}</text>
                 <text x="200" y="330" font-size="25" font-weight="500" fill="${theme.text}" opacity="0.6" text-anchor="middle" style="text-transform: uppercase;">Letalidade</text>
-                <text x="200" y="365" font-size="40" font-weight="700" fill="${theme.primary}" text-anchor="middle">${p1.winRate.toFixed(0)}%</text>
+                <text x="200" y="365" font-size="40" font-weight="700" fill="${theme.primary}" text-anchor="middle">${(p1.winRate || 0).toFixed(0)}%</text>
             </g>
         ` : '';
 
@@ -84,11 +84,11 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
             <g transform="translate(10, 560)">
                 <rect x="0" y="0" width="320" height="320" rx="40" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2" />
                 <text x="160" y="70" font-size="70" font-weight="900" fill="${theme.secondary}" text-anchor="middle">2º</text>
-                <text x="160" y="125" font-size="38" font-weight="700" fill="${theme.text}" text-anchor="middle" style="text-transform: uppercase;">${escapeHtml(p2.player.name)}</text>
+                <text x="160" y="125" font-size="38" font-weight="700" fill="${theme.text}" text-anchor="middle" style="text-transform: uppercase;">${escapeHtml(p2.player?.name || 'Atleta')}</text>
                 <text x="160" y="165" font-size="20" font-weight="500" fill="${theme.text}" opacity="0.6" text-anchor="middle" style="text-transform: uppercase;">Vitórias</text>
                 <text x="160" y="220" font-size="70" font-weight="900" fill="${theme.text}" text-anchor="middle">${p2.wins}</text>
                 <text x="160" y="265" font-size="20" font-weight="500" fill="${theme.text}" opacity="0.6" text-anchor="middle" style="text-transform: uppercase;">Letalidade</text>
-                <text x="160" y="295" font-size="30" font-weight="700" fill="${theme.secondary}" text-anchor="middle">${p2.winRate.toFixed(0)}%</text>
+                <text x="160" y="295" font-size="30" font-weight="700" fill="${theme.secondary}" text-anchor="middle">${(p2.winRate || 0).toFixed(0)}%</text>
             </g>
         ` : '';
 
@@ -96,11 +96,11 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
             <g transform="translate(750, 560)">
                 <rect x="0" y="0" width="320" height="320" rx="40" fill="rgba(255, 255, 255, 0.05)" stroke="#f59e0b" stroke-width="2" />
                 <text x="160" y="70" font-size="70" font-weight="900" fill="#fbbf24" text-anchor="middle">3º</text>
-                <text x="160" y="125" font-size="38" font-weight="700" fill="${theme.text}" text-anchor="middle" style="text-transform: uppercase;">${escapeHtml(p3.player.name)}</text>
+                <text x="160" y="125" font-size="38" font-weight="700" fill="${theme.text}" text-anchor="middle" style="text-transform: uppercase;">${escapeHtml(p3.player?.name || 'Atleta')}</text>
                 <text x="160" y="165" font-size="20" font-weight="500" fill="${theme.text}" opacity="0.6" text-anchor="middle" style="text-transform: uppercase;">Vitórias</text>
                 <text x="160" y="220" font-size="70" font-weight="900" fill="${theme.text}" text-anchor="middle">${p3.wins}</text>
                 <text x="160" y="265" font-size="20" font-weight="500" fill="${theme.text}" opacity="0.6" text-anchor="middle" style="text-transform: uppercase;">Letalidade</text>
-                <text x="160" y="295" font-size="30" font-weight="700" fill="#fbbf24" text-anchor="middle">${p3.winRate.toFixed(0)}%</text>
+                <text x="160" y="295" font-size="30" font-weight="700" fill="#fbbf24" text-anchor="middle">${(p3.winRate || 0).toFixed(0)}%</text>
             </g>
         ` : '';
         
@@ -220,18 +220,22 @@ const Ranking: React.FC<RankingProps> = ({
     const playerDailyStats = new Map<string, Map<string, { wins: number, games: number, duration: number }>>();
     
     filteredMatches.forEach(match => {
+      // Safety check for match teams and winner
+      if (!match.teamA?.players || !match.teamB?.players || !match.winner) return;
+      
       const winningTeam = match.winner === 'A' ? match.teamA : match.teamB;
       const dateKey = new Date(match.timestamp).toDateString();
       
       [match.teamA, match.teamB].forEach(team => {
         team.players.forEach(p => {
+          if (!p?.id) return;
           if (!playerDailyStats.has(p.id)) playerDailyStats.set(p.id, new Map());
           const daily = playerDailyStats.get(p.id)!;
           if (!daily.has(dateKey)) daily.set(dateKey, { wins: 0, games: 0, duration: 0 });
           const dStats = daily.get(dateKey)!;
           dStats.games += 1;
           dStats.duration += match.duration || 0;
-          if (winningTeam.players.some(wp => wp.id === p.id)) dStats.wins += 1;
+          if (winningTeam.players?.some(wp => wp?.id === p.id)) dStats.wins += 1;
         });
       });
     });
