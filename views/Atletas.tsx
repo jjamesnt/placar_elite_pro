@@ -26,25 +26,46 @@ const Atletas: React.FC<AtletasProps> = ({
   const [isPermanentDelete, setIsPermanentDelete] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleAddPlayer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = newPlayerName.trim();
-    if (!name || loading) return;
+  // Função para normalizar nome (remover acentos, espaços extras e minúsculas)
+  const normalize = (str: string) => 
+    str.toLowerCase()
+       .normalize("NFD")
+       .replace(/[\u0300-\u036f]/g, "")
+       .trim()
+       .replace(/\s+/g, ' ');
+
+  // Algoritmo de Distância de Levenshtein para medir similaridade
+  const getLevenshteinDistance = (a: string, b: string) => {
+    const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+    return matrix[a.length][b.length];
+  };
+
+  const isSimilar = (n1: string, n2: string) => {
+    const s1 = normalize(n1);
+    const s2 = normalize(n2);
+    if (s1 === s2) return 'exact';
     
-    if (!userId) {
-      if (showAlert) showAlert("Sessão Expirada", "Sessão inválida. Saia e entre novamente.", 'danger', 'alert');
-      return;
-    }
+    // Distância curta indica nome parecido
+    const dist = getLevenshteinDistance(s1, s2);
+    // Se a distância for pequena em relação ao tamanho do nome
+    const maxLen = Math.max(s1.length, s2.length);
+    if (dist <= 2 && maxLen > 4) return 'similar';
+    return 'different';
+  };
 
-    if (!arenaId || arenaId === 'default') {
-      if (showAlert) showAlert("Arena Necessária", "Vá em CONFIGURAÇÕES e selecione um grupo primeiro.", 'warning', 'alert');
-      return;
-    }
-
-    if (players.length >= (athletesLimit || 15)) {
-      if (showAlert) showAlert("Limite Atingido", `Seu plano permite no máximo ${athletesLimit || 15} atletas ativos por arena.`, 'warning', 'alert');
-      return;
-    }
+  const savePlayerToDb = async (name: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -69,6 +90,64 @@ const Atletas: React.FC<AtletasProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddPlayer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newPlayerName.trim();
+    if (!name || loading) return;
+    
+    if (!userId) {
+      if (showAlert) showAlert("Sessão Expirada", "Sessão inválida. Saia e entre novamente.", 'danger', 'alert');
+      return;
+    }
+
+    if (!arenaId || arenaId === 'default') {
+      if (showAlert) showAlert("Arena Necessária", "Vá em CONFIGURAÇÕES e selecione um grupo primeiro.", 'warning', 'alert');
+      return;
+    }
+
+    if (players.length >= (athletesLimit || 15)) {
+      if (showAlert) showAlert("Limite Atingido", `Seu plano permite no máximo ${athletesLimit || 15} atletas ativos por arena.`, 'warning', 'alert');
+      return;
+    }
+
+    // Verificação de nomes existentes (ativos e inativos)
+    const allExisting = [...players, ...deletedPlayers];
+    const exactMatch = allExisting.find(p => isSimilar(p.name, name) === 'exact');
+    const similarMatch = allExisting.find(p => isSimilar(p.name, name) === 'similar');
+
+    if (exactMatch) {
+      if (showConfirm) {
+        showConfirm(
+          "Atleta Já Existe",
+          `O nome "${name}" já está na sua lista (pode estar inativo). Deseja cadastrar novamente assim mesmo?`,
+          () => savePlayerToDb(name),
+          'warning',
+          'alert'
+        );
+      } else {
+        savePlayerToDb(name);
+      }
+      return;
+    }
+
+    if (similarMatch) {
+      if (showConfirm) {
+        showConfirm(
+          "Nome Parecido Encontrado",
+          `Já existe um atleta chamado "${similarMatch.name}". Deseja cadastrar "${name}" como um novo atleta?`,
+          () => savePlayerToDb(name),
+          'warning',
+          'info'
+        );
+      } else {
+        savePlayerToDb(name);
+      }
+      return;
+    }
+
+    savePlayerToDb(name);
   };
   
   const handleConfirmDelete = async () => {
