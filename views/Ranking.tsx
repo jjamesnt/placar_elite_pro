@@ -172,6 +172,29 @@ const generateStoryImage = (stats: PlayerStats[], arenaName: string, arenaColor:
     return 'data:image/svg+xml;base64,' + base64;
 }
 
+const convertSvgToPng = (svgDataUrl: string, width = 1080, height = 1920): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error("Não foi possível obter o contexto do canvas"));
+                return;
+            }
+            // Garantir fundo preto antes do draw
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => reject(new Error("Erro ao carregar imagem SVG para conversão"));
+        img.src = svgDataUrl;
+    });
+};
+
 const formatDuration = (minutes: number) => {
     if (minutes < 1) return '0m';
     const h = Math.floor(minutes / 60);
@@ -375,15 +398,14 @@ const Ranking: React.FC<RankingProps> = ({
       return;
     }
     try {
-      const imageUrl = generateStoryImage(stats, arenaName || 'Arena', arenaColor, currentPeriodLabel, filter, viewDate);
-      setExportImageUrl(imageUrl);
+      const svgDataUrl = generateStoryImage(stats, arenaName || 'Arena', arenaColor, currentPeriodLabel, filter, viewDate);
+      const pngDataUrl = await convertSvgToPng(svgDataUrl);
+      setExportImageUrl(pngDataUrl);
       setIsStoryMode(true);
     } catch (err) {
+      console.error("Export Error:", err);
       if (showAlert) showAlert("Falha na Imagem", "Ocorreu um erro técnico ao gerar o story. Tente novamente.", 'danger', 'alert');
     }
-    const imageUrl = generateStoryImage(stats, arenaName || 'Arena', arenaColor, currentPeriodLabel, filter, viewDate);
-    setExportImageUrl(imageUrl);
-    setIsStoryMode(true);
   };
 
   return (

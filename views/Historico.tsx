@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Match, Arena, Player } from '../types';
-import { Trash2Icon, FileDownIcon, CalendarIcon, XCircleIcon } from '../components/icons';
+import { Trash2Icon, FileDownIcon, CalendarIcon, XCircleIcon, EditIcon, CheckIcon } from '../components/icons';
 
 interface HistoricoProps {
   matches: Match[];
@@ -42,6 +42,35 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
 
   const handleDelete = (matchId: string) => {
     setMatches(prev => prev.filter(m => m.id !== matchId));
+  };
+
+  const handleEdit = (match: Match) => {
+    setEditingMatchId(match.id);
+    setEditFormData({ ...match });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editFormData || !editingMatchId) return;
+
+    // Recalcular winner
+    const winner = editFormData.teamA.score > editFormData.teamB.score ? 'A' : 'B';
+    const updatedMatch = { ...editFormData, winner };
+
+    if (onUpdateMatch) {
+      await onUpdateMatch(editingMatchId, {
+        teamA: updatedMatch.teamA,
+        teamB: updatedMatch.teamB,
+        winner: updatedMatch.winner,
+        duration: updatedMatch.duration,
+        capoteApplied: updatedMatch.capoteApplied,
+        vaiATresTriggered: updatedMatch.vaiATresTriggered
+      });
+    }
+
+    setMatches(prev => prev.map(m => m.id === editingMatchId ? { ...m, ...updatedMatch } : m));
+    setEditingMatchId(null);
+    setEditFormData(null);
+    if (showAlert) showAlert("Sucesso", "Partida atualizada com sucesso!", 'success', 'check');
   };
 
   const handleExport = () => {
@@ -259,6 +288,13 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
 
               <div className="flex gap-1 print:hidden">
                 <button
+                  onClick={() => handleEdit(match)}
+                  className="p-3 text-gray-600 hover:text-indigo-400 transition-colors rounded-xl"
+                  title="Editar Partida"
+                >
+                  <EditIcon className="w-4 h-4" />
+                </button>
+                <button
                   onClick={() => {
                       if (showConfirm) {
                           showConfirm(
@@ -273,6 +309,7 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                       }
                   }}
                   className="p-3 text-gray-600 hover:text-red-500 transition-colors rounded-xl"
+                  title="Excluir Partida"
                 >
                   <Trash2Icon className="w-4 h-4" />
                 </button>
@@ -324,6 +361,122 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
                 className="w-full p-4 text-white/30 font-black uppercase text-[10px] tracking-widest hover:text-white transition-colors"
                >
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição de Partida */}
+      {editingMatchId && editFormData && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[250] flex items-center justify-center p-4 animate-in fade-in duration-300 print:hidden" onClick={() => setEditingMatchId(null)}>
+          <div className="bg-[#090e1a] border border-white/10 rounded-[2rem] p-6 w-full max-w-xl shadow-2xl animate-in zoom-in-95 duration-200 space-y-6" onClick={e => e.stopPropagation()}>
+            <div className="text-center">
+              <h2 className="text-xl font-black text-white uppercase tracking-tighter">Editar Auditoria</h2>
+              <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{formatDate(editFormData.timestamp)}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Equipe A */}
+              <div className="space-y-4 bg-blue-500/5 p-4 rounded-2xl border border-blue-500/10">
+                <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest text-center">Equipe 1</h3>
+                <div className="space-y-2">
+                  {[0, 1].map(idx => (
+                    <select
+                      key={`a-${idx}`}
+                      value={editFormData.teamA.players[idx]?.id || ''}
+                      onChange={(e) => {
+                        const player = players.find(p => p.id === e.target.value);
+                        const newPlayers = [...editFormData.teamA.players];
+                        newPlayers[idx] = player!;
+                        setEditFormData({ ...editFormData, teamA: { ...editFormData.teamA, players: newPlayers } });
+                      }}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 transition-all font-bold"
+                    >
+                      <option value="">(Selecione)</option>
+                      {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  ))}
+                </div>
+                <div className="pt-2">
+                    <label className="text-[9px] font-black text-white/10 uppercase block text-center mb-1">Placar Final</label>
+                    <div className="flex items-center justify-between bg-black/40 border border-blue-500/20 rounded-xl p-1">
+                        <button 
+                            onClick={() => setEditFormData({ ...editFormData, teamA: { ...editFormData.teamA, score: Math.max(0, editFormData.teamA.score - 1) } })}
+                            className="w-10 h-10 flex items-center justify-center text-blue-400/40 hover:text-blue-400 text-2xl font-black active:scale-90 transition-all"
+                        >
+                            -
+                        </button>
+                        <span className="font-mono text-2xl font-black text-blue-400 min-w-[3rem] text-center">
+                            {editFormData.teamA.score}
+                        </span>
+                        <button 
+                            onClick={() => setEditFormData({ ...editFormData, teamA: { ...editFormData.teamA, score: editFormData.teamA.score + 1 } })}
+                            className="w-10 h-10 flex items-center justify-center text-blue-400/40 hover:text-blue-400 text-2xl font-black active:scale-90 transition-all"
+                        >
+                            +
+                        </button>
+                    </div>
+                </div>
+              </div>
+
+              {/* Equipe B */}
+              <div className="space-y-4 bg-red-500/5 p-4 rounded-2xl border border-red-500/10">
+                <h3 className="text-[10px] font-black text-red-400 uppercase tracking-widest text-center">Equipe 2</h3>
+                <div className="space-y-2">
+                  {[0, 1].map(idx => (
+                    <select
+                      key={`b-${idx}`}
+                      value={editFormData.teamB.players[idx]?.id || ''}
+                      onChange={(e) => {
+                        const player = players.find(p => p.id === e.target.value);
+                        const newPlayers = [...editFormData.teamB.players];
+                        newPlayers[idx] = player!;
+                        setEditFormData({ ...editFormData, teamB: { ...editFormData.teamB, players: newPlayers } });
+                      }}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 transition-all font-bold"
+                    >
+                      <option value="">(Selecione)</option>
+                      {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  ))}
+                </div>
+                <div className="pt-2">
+                    <label className="text-[9px] font-black text-white/10 uppercase block text-center mb-1">Placar Final</label>
+                    <div className="flex items-center justify-between bg-black/40 border border-red-500/20 rounded-xl p-1">
+                        <button 
+                            onClick={() => setEditFormData({ ...editFormData, teamB: { ...editFormData.teamB, score: Math.max(0, editFormData.teamB.score - 1) } })}
+                            className="w-10 h-10 flex items-center justify-center text-red-400/40 hover:text-red-400 text-2xl font-black active:scale-90 transition-all"
+                        >
+                            -
+                        </button>
+                        <span className="font-mono text-2xl font-black text-red-400 min-w-[3rem] text-center">
+                            {editFormData.teamB.score}
+                        </span>
+                        <button 
+                            onClick={() => setEditFormData({ ...editFormData, teamB: { ...editFormData.teamB, score: editFormData.teamB.score + 1 } })}
+                            className="w-10 h-10 flex items-center justify-center text-red-400/40 hover:text-red-400 text-2xl font-black active:scale-90 transition-all"
+                        >
+                            +
+                        </button>
+                    </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <button
+                onClick={() => setEditingMatchId(null)}
+                className="flex-1 py-4 bg-white/5 text-white/40 hover:text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <CheckIcon className="w-4 h-4" />
+                Salvar Alterações
               </button>
             </div>
           </div>
