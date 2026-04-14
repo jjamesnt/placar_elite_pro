@@ -388,7 +388,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteMatch = async (matchId: string) => {
-    if (!isAdmin) return; // Trava de segurança: apenas admin apaga do banco
+    if (!session?.user?.id) return; // Apenas usuários logados
     try {
       setMatches(prev => prev.filter(m => m.id !== matchId));
       const { error } = await supabase.from('matches').delete().eq('id', matchId);
