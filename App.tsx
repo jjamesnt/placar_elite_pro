@@ -145,7 +145,10 @@ const App: React.FC = () => {
       });
 
       const ranking = Array.from(playerStats.values()).sort((a, b) => b.wins - a.wins || (b.wins/b.games) - (a.wins/a.games)).slice(0, 5);
-      const history = arenaMatches.slice(0, 20).map(match => ({ // Aumentado para 20 para o novo Auto-Scroll na TV
+      // James: Filtra apenas partidas do dia atual para o histórico da TV
+      const today = new Date().toDateString();
+      const todayMatches = arenaMatches.filter(match => new Date(match.timestamp).toDateString() === today);
+      const history = todayMatches.slice(0, 20).map(match => ({
           id: match.id,
           teamA: { score: match.teamA.score, players: match.teamA.players.map((plyr: any) => nameMap.get(plyr?.id) || plyr?.name || '---') },
           teamB: { score: match.teamB.score, players: match.teamB.players.map((plyr: any) => nameMap.get(plyr?.id) || plyr?.name || '---') },
