@@ -271,29 +271,24 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
 
     if (type === 'emergencyAlert') {
       if (!masterGain) return;
-      // Sirene de Guerra Duplicada (2 ciclos)
-      const cycles = 2;
-      const cycleDuration = 1.0;
-
-      for (let c = 0; c < cycles; c++) {
-        const cycleStart = now + (c * cycleDuration);
-        for (let i = 0; i < 2; i++) {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(masterGain);
-          osc.type = i === 0 ? 'sawtooth' : 'square';
-          osc.frequency.setValueAtTime(300 + (i * 10), cycleStart);
-          osc.frequency.linearRampToValueAtTime(600, cycleStart + 0.5);
-          osc.frequency.linearRampToValueAtTime(300, cycleStart + 1.0);
-          gain.gain.setValueAtTime(0, cycleStart);
-          gain.gain.linearRampToValueAtTime(0.3, cycleStart + 0.1);
-          gain.gain.setTargetAtTime(0.0001, cycleStart + 0.9, 0.03);
-          osc.start(cycleStart);
-          osc.stop(cycleStart + 1.1);
-        }
-        playNoise(0.5, 0.15, 800);
-      }
+      // James: Arpejo Ascendente 'Cyber' para o Desafio (Mais limpo e épico)
+      const freqs = [440, 554.37, 659.25, 880]; // Acorde de Lá Maior
+      freqs.forEach((f, i) => {
+        const startTime = now + (i * 0.15);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, startTime);
+        osc.frequency.exponentialRampToValueAtTime(f * 2, startTime + 0.1);
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+        gain.gain.setTargetAtTime(0.0001, startTime + 0.1, 0.05);
+        osc.start(startTime);
+        osc.stop(startTime + 0.5);
+      });
+      playNoise(0.3, 0.1, 1500);
       return;
     }
 
@@ -321,19 +316,21 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
 
     if (type === 'point' && isEmergency) {
       if (!masterGain) return;
-      // IMPACTO / EXPLOSÃO DE PONTUAÇÃO (Limpo)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(masterGain);
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, now);
-      osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
-      gain.gain.setValueAtTime(0.8, now);
-      gain.gain.setTargetAtTime(0.0001, now, 0.1);
-      osc.start(now);
-      osc.stop(now + 0.4);
-      playNoise(0.2, 0.5, 1200);
+      // James: Bip Duplo Cyber-Tenso para pontos do Desafio
+      for (let i = 0; i < 2; i++) {
+        const startTime = now + (i * 0.1);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200 + (i * 200), startTime);
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.5, startTime + 0.01);
+        gain.gain.setTargetAtTime(0.0001, startTime + 0.04, 0.02);
+        osc.start(startTime);
+        osc.stop(startTime + 0.1);
+      }
       return;
     }
 

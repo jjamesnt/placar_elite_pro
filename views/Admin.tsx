@@ -41,6 +41,7 @@ const Admin: React.FC<AdminProps> = ({ showAlert, showConfirm }) => {
   // Super Admin / Deep Search
   const [searchEmail, setSearchEmail] = useState('');
   const [isDeepSearching, setIsDeepSearching] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
   const [sqlCopied, setSqlCopied] = useState(false);
 
   const fetchData = async () => {
@@ -578,6 +579,65 @@ USING (user_id = auth.uid());
     }
   };
 
+  const handleSuperCleanup = async () => {
+    if (showConfirm) {
+        showConfirm(
+            "Limpeza de Dados de Teste",
+            "Deseja apagar permanentemente todas as partidas, jogadores e a arena 'Principal' vinculada ao usuário 'teste4'?",
+            async () => {
+                setIsCleaning(true);
+                try {
+                    // 1. Achar o user_id do teste4
+                    const { data: userData, error: uError } = await supabase
+                        .from('user_licenses')
+                        .select('user_id, email')
+                        .ilike('email', '%teste4%')
+                        .limit(1)
+                        .maybeSingle();
+                    
+                    if (uError) throw uError;
+                    if (!userData?.user_id) {
+                        if (showAlert) showAlert("Usuário não encontrado", "Não localizamos o usuário 'teste4' no banco.", 'warning', 'alert');
+                        return;
+                    }
+
+                    // 2. Achar a arena 'Principal' desse usuário
+                    const { data: arenaData, error: aError } = await supabase
+                        .from('arenas')
+                        .select('id')
+                        .eq('user_id', userData.user_id)
+                        .eq('name', 'Principal')
+                        .maybeSingle();
+                    
+                    if (aError) throw aError;
+                    if (!arenaData) {
+                        if (showAlert) showAlert("Arena não encontrada", `O usuário ${userData.email} existe, mas não tem uma arena chamada 'Principal'.`, 'info', 'info');
+                        return;
+                    }
+
+                    // 3. Deletar em cascata
+                    const { error: mError } = await supabase.from('matches').delete().eq('arena_id', arenaData.id);
+                    if (mError) throw mError;
+
+                    const { error: pError } = await supabase.from('players').delete().eq('arena_id', arenaData.id);
+                    if (pError) throw pError;
+
+                    const { error: dError } = await supabase.from('arenas').delete().eq('id', arenaData.id);
+                    if (dError) throw dError;
+
+                    if (showAlert) showAlert("Limpeza Completa", `Sucesso! Todos os dados da arena 'Principal' vinculada a ${userData.email} foram removidos.`, 'success', 'check');
+                } catch (err: any) {
+                    if (showAlert) showAlert("Erro na Limpeza", err.message, 'danger', 'alert');
+                } finally {
+                    setIsCleaning(false);
+                }
+            },
+            'danger',
+            'trash'
+        );
+    }
+  };
+
   if (loading && licenses.length === 0) return (
     <div className="h-full w-full flex flex-col items-center justify-center p-20 gap-4">
       <LoaderIcon className="w-12 h-12 animate-spin text-indigo-500" />
@@ -813,7 +873,28 @@ USING (user_id = auth.uid());
       {activeTab === 'manutencao' && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             {/* Super Admin Diagnostics */}
-            <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-[2.5rem] p-8 space-y-6">
+              <div className="bg-red-500/5 border border-red-500/20 rounded-[2.5rem] p-8 space-y-6">
+                <div className="flex items-center gap-4">
+                  <Trash2Icon className="w-6 h-6 text-red-500" />
+                  <h3 className="text-xl font-black text-white uppercase tracking-tighter">Limpeza de Dados (Teste)</h3>
+                </div>
+                <div className="space-y-4">
+                  <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest leading-relaxed">
+                    Apaga permanentemente a arena 'Principal' e todos os seus dados vinculados ao usuário 'teste4'. 
+                    Use com cautela extrema.
+                  </p>
+                  <button
+                    onClick={handleSuperCleanup}
+                    disabled={isCleaning}
+                    className="w-full py-5 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-black rounded-2xl transition-all active:scale-95 text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2"
+                  >
+                    {isCleaning ? <LoaderIcon className="w-4 h-4 animate-spin text-white" /> : <ShieldIcon className="w-4 h-4" />}
+                    {isCleaning ? "PROCESSANDO..." : "LIMPAR DADOS TESTE4 (DIRETO)"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-[2.5rem] p-8 space-y-6">
                 <div className="flex items-center gap-4">
                     <ShieldIcon className="w-6 h-6 text-indigo-400" />
                     <h2 className="text-xl font-black text-white uppercase tracking-tighter">Diagnóstico & Super Admin</h2>

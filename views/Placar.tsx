@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Player, Team, Match, Arena } from '../types';
+import { supabase } from '../lib/supabase';
 import { SoundScheme } from '../App';
 import { useAttackTimer, useMatchTimer, useSensoryFeedback } from '../hooks';
 import ScoreCard from '../components/ScoreCard';
@@ -39,6 +40,8 @@ interface PlacarProps {
   matchTime: number;
   showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
+  setTvModals: (modals: { victoryData: any, showVaiATres: boolean }) => void;
+  setTvAttackTime: (time: number | null) => void;
 }
 
 interface VictoryData {
@@ -53,7 +56,7 @@ const Placar: React.FC<PlacarProps> = ({
   allPlayers, onSaveGame, winScore, setWinScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, currentArena,
   teamA, setTeamA, teamB, setTeamB, servingTeam, setServingTeam, history, setHistory,
   isSidesSwitched, setIsSidesSwitched, gameStartTime, setGameStartTime, resetGame,
-  capoteEnabled, vaiATresEnabled, matchMode, matchTime, showAlert, showConfirm
+  capoteEnabled, vaiATresEnabled, matchMode, matchTime, showAlert, showConfirm, setTvModals, setTvAttackTime
 }) => {
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -69,6 +72,26 @@ const Placar: React.FC<PlacarProps> = ({
   const { playSound, vibrate } = useSensoryFeedback({ soundEnabled, vibrationEnabled, soundScheme });
   const attackTimer = useAttackTimer(attackTime);
   const matchTimer = useMatchTimer(matchTime);
+
+  // James: SINCRO DO CRONÔMETRO DE POSSE (24S) PARA A TV
+  useEffect(() => {
+    setTvAttackTime(attackTimer.isActive ? attackTimer.timeLeft : null);
+  }, [attackTimer.timeLeft, attackTimer.isActive, setTvAttackTime]);
+
+  // James, sincronizando os modais locais com o estado global da TV
+  useEffect(() => {
+    setTvModals({ victoryData, showVaiATres: showVaiATresModal });
+  }, [victoryData, showVaiATresModal, setTvModals]);
+
+  // James: Alerta de Atletas Proativo (Bloqueia o início dos tempos se faltar gente)
+  const checkAthletes = useCallback(() => {
+    const missing = !teamA.players.every(p => p) || !teamB.players.every(p => p);
+    if (missing && !atletasAlertShown) {
+      setShowAtletasAlert(true);
+      return false;
+    }
+    return true;
+  }, [teamA.players, teamB.players, atletasAlertShown]);
 
   const initialWinScore = useMemo(() => {
     const prefix = `elite_arena_${currentArena.id}_`;
@@ -143,6 +166,9 @@ const Placar: React.FC<PlacarProps> = ({
       vibrate([500, 200, 500]);
     }
   }, [attackTimer.timeLeft, attackTimer.isActive, matchTimer.timeLeft, matchTimer.isActive, matchMode, playSound, vibrate, isVaiATresActive, victoryConfirmed]);
+
+  // Transmissão Realtime centralizada no App.tsx para evitar duplicidade e delay
+  // (Lógica removida deste arquivo para unificação)
 
   const teamData = useCallback((key: 'A' | 'B') => key === 'A' ? teamA : teamB, [teamA, teamB]);
 
@@ -414,12 +440,22 @@ const Placar: React.FC<PlacarProps> = ({
       {victoryData && (
         <VictoryModal
           victoryData={victoryData}
-          onClose={() => setVictoryData(null)}
-          onSave={saveGame}
-          onNewGame={() => handleConfirmReset(true)}
+          onClose={() => {
+            setVictoryData(null);
+            setTvModals(prev => ({ ...prev, victoryData: null })); // Sincroniza fechamento na TV
+          }}
+          onSave={() => {
+            saveGame();
+            setTvModals(prev => ({ ...prev, victoryData: null })); // Sincroniza fechamento na TV
+          }}
+          onNewGame={() => {
+            handleConfirmReset(true);
+            setTvModals(prev => ({ ...prev, victoryData: null })); // Sincroniza fechamento na TV
+          }}
           onUndo={() => {
             handleUndo();
             setVictoryData(null);
+            setTvModals(prev => ({ ...prev, victoryData: null })); // Sincroniza fechamento na TV
           }}
           arenaColor={currentArena.color}
         />
@@ -427,10 +463,14 @@ const Placar: React.FC<PlacarProps> = ({
 
       {showVaiATresModal && (
         <VaiATresModal
-          onClose={() => setShowVaiATresModal(false)}
+          onClose={() => {
+            setShowVaiATresModal(false);
+            setTvModals(prev => ({ ...prev, showVaiATres: false })); // Sincroniza fechamento na TV
+          }}
           onUndo={() => {
             handleUndo();
             setShowVaiATresModal(false);
+            setTvModals(prev => ({ ...prev, showVaiATres: false })); // Sincroniza fechamento na TV
           }}
         />
       )}
@@ -457,7 +497,13 @@ const Placar: React.FC<PlacarProps> = ({
         <CenterConsole
           timeLeft={attackTimer.timeLeft}
           isTimerActive={attackTimer.isActive}
-          onToggleTimer={handleToggleTimer}
+          onToggleTimer={() => {
+            if (!attackTimer.isActive) {
+               if (!checkAthletes()) return; // James: Proteção mantida
+            }
+            if (attackTimer.isActive) attackTimer.pause();
+            else attackTimer.start();
+          }}
           onResetTimer={attackTimer.reset}
           onResetGame={() => setShowResetConfirm(true)}
           onSaveGame={saveGame}

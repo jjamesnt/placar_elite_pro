@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { SoundScheme } from '../App';
 import { Arena, ArenaColor, MatchMode } from '../types';
-import { Trash2Icon, PlusIcon, UsersIcon, EditIcon, UploadCloudIcon, ZapIcon } from '../components/icons';
+import { Trash2Icon, PlusIcon, UsersIcon, EditIcon, UploadCloudIcon, ZapIcon, MonitorIcon, ClipboardListIcon } from '../components/icons';
 import { supabase } from '../lib/supabase';
 
 interface ConfigProps {
@@ -28,8 +28,12 @@ interface ConfigProps {
   matchTime: number;
   setMatchTime: (t: number) => void;
   onGoToSubscription?: () => void;
+  userLicense?: any;
+  onRefreshLicense?: () => void;
   showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
+  tvLayoutMirrored: boolean;
+  setTvLayoutMirrored: (m: boolean) => void;
 }
 
 const ARENA_COLORS: ArenaColor[] = ['indigo', 'blue', 'emerald', 'amber', 'rose', 'violet'];
@@ -42,7 +46,8 @@ const Config: React.FC<ConfigProps> = ({
   capoteEnabled, setCapoteEnabled, vaiATresEnabled, setVaiATresEnabled,
   matchMode, setMatchMode, matchTime, setMatchTime,
   userLicense, onRefreshLicense, onGoToSubscription,
-  showAlert, showConfirm
+  showAlert, showConfirm,
+  tvLayoutMirrored, setTvLayoutMirrored
 }) => {
   const [newName, setNewName] = useState('');
   const [selColor, setSelColor] = useState<ArenaColor>('indigo');
@@ -51,6 +56,8 @@ const Config: React.FC<ConfigProps> = ({
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponStatus, setCouponStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+
+  const currentArena = useMemo(() => arenas.find(a => a.id === currentArenaId), [arenas, currentArenaId]);
 
   const handleAdd = () => { if (newName.trim()) { onAddArena(newName.trim(), selColor); setNewName(''); } };
   const handleUpdate = () => { if (editingArena && editingArena.name.trim()) { onUpdateArena(editingArena.id, editingArena.name.trim(), editingArena.color || 'indigo'); setEditingArena(null); } };
@@ -217,6 +224,54 @@ const Config: React.FC<ConfigProps> = ({
               </button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Link Simplificado para Monitoramento em TV */}
+      <section className="bg-indigo-600/10 rounded-3xl p-6 border border-indigo-500/20 space-y-4">
+        <div className="flex items-center gap-3">
+          <MonitorIcon className="w-4 h-4 text-indigo-400" />
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Monitor Externo (TV)</h3>
+        </div>
+        
+        <p className="text-[9px] font-bold text-white/40 uppercase leading-relaxed">
+          UTILIZE O LINK REDUZIDO ABAIXO NA SUA SMART TV. O NOME DA SUA QUADRA CARREGARÁ O PLACAR AUTOMATICAMENTE.
+        </p>
+
+        <div className="flex gap-2">
+          <div className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[10px] font-mono text-indigo-300 truncate select-all">
+            {`${window.location.origin}/?tv=${(currentArena?.name || 'minhaquadra').toLowerCase().replace(/\s+/g, '')}`}
+          </div>
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/?tv=${(currentArena?.name || 'minhaquadra').toLowerCase().replace(/\s+/g, '')}`;
+              navigator.clipboard.writeText(url);
+              if (showAlert) showAlert("Copiado!", "URL encurtada copiada para área de transferência.", 'info', 'check');
+            }}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all active:scale-90"
+            title="Copiar Link"
+          >
+            <ClipboardListIcon className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
+
+      {/* NOVO: Ajuste Prático de Perspectiva (Inversão de Layout TV) */}
+      <section className="bg-indigo-600/10 rounded-3xl p-6 border border-indigo-500/20 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <MonitorIcon className="w-4 h-4 text-indigo-400" />
+            <div className="flex flex-col">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Inverter Layout da TV</h3>
+              <p className="text-[8px] font-bold text-white/30 uppercase mt-0.5">Corrige a visão do juiz debaixo da TV.</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setTvLayoutMirrored(!tvLayoutMirrored)} 
+            className={`px-4 py-2 text-[8px] font-black uppercase rounded-lg transition-all ${tvLayoutMirrored ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 text-white/30'}`}
+          >
+            {tvLayoutMirrored ? 'ATIVADO' : 'OFF'}
+          </button>
         </div>
       </section>
 

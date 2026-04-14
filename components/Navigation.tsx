@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ClipboardListIcon, UsersIcon, TrophyIcon, CogIcon, ShieldIcon, MaximizeIcon, MinimizeIcon, HistoryIcon, LogOutIcon, UserCogIcon, CrownIcon } from './icons';
 import { Arena, ArenaColor } from '../types';
 
-export type View = 'placar' | 'atletas' | 'ranking' | 'historico' | 'config' | 'admin' | 'subscription' | 'clube';
+export type View = 'placar' | 'atletas' | 'ranking' | 'historico' | 'config' | 'admin' | 'subscription' | 'clube' | 'tv';
 
 const THEME_COLORS: Record<string, string> = {
   indigo: 'text-indigo-400',
@@ -49,9 +49,10 @@ interface NavigationProps {
   isAdmin?: boolean;
   isClub?: boolean;
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
+  channelStatus?: 'connecting' | 'online' | 'offline';
 }
 
-const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUpdate, currentArena, onLogout, isAdmin, isClub, showConfirm }) => {
+const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUpdate, currentArena, onLogout, isAdmin, isClub, showConfirm, channelStatus }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showIosTip, setShowIosTip] = useState(false);
   const arenaColorClass = THEME_COLORS[currentArena.color || 'indigo'];
@@ -117,8 +118,16 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="Logo" className="h-8 w-auto object-contain" />
           <div className="flex flex-col border-l border-white/10 pl-3">
-            <span className={`text-[10px] font-black uppercase truncate max-w-[150px] ${arenaColorClass}`}>{currentArena.name}</span>
-            <span className="text-[6px] text-gray-400 font-mono opacity-80 uppercase">Atualizado {lastUpdate}</span>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[10px] font-black uppercase truncate max-w-[120px] ${arenaColorClass}`}>{currentArena.name}</span>
+              <div className="flex items-center gap-1 bg-black/20 px-1.5 py-0.5 rounded-full border border-white/5">
+                <div className={`w-1.5 h-1.5 rounded-full ${channelStatus === 'online' ? 'bg-emerald-500 shadow-[0_0_5px_#10b981]' : (channelStatus === 'connecting' ? 'bg-amber-500 animate-pulse' : 'bg-red-500')}`}></div>
+                <span className="text-[6px] font-black uppercase tracking-tighter text-white/40">
+                  {channelStatus === 'online' ? 'RÁDIO ON' : (channelStatus === 'connecting' ? 'SINCRONIZANDO' : 'RÁDIO OFF')}
+                </span>
+              </div>
+            </div>
+            <span className="text-[6px] text-gray-400 font-mono opacity-80 uppercase">ÚLTIMA ATUALIZAÇÃO {lastUpdate}</span>
           </div>
         </div>
 
@@ -156,11 +165,19 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, lastUp
         <div className="flex items-center justify-center gap-4 px-8 border-x border-white/5 bg-white/5 py-2 rounded-xl mx-4">
           <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
           <div className="flex flex-col">
-            <span className={`text-sm md:text-base lg:text-xl font-black uppercase tracking-widest whitespace-nowrap ${arenaColorClass}`}>
-              {currentArena.name}
-            </span>
-            <span className="text-[9px] text-gray-400 font-mono opacity-80 uppercase tracking-widest leading-none">
-              Elite Pro Cloud • {lastUpdate}
+            <div className="flex items-center gap-2">
+              <span className={`text-sm md:text-base lg:text-xl font-black uppercase tracking-widest whitespace-nowrap ${arenaColorClass}`}>
+                {currentArena.name}
+              </span>
+              <div className="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-full border border-white/10 shadow-inner">
+                <div className={`w-2.5 h-2.5 rounded-full ${channelStatus === 'online' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : (channelStatus === 'connecting' ? 'bg-amber-500 animate-pulse' : 'bg-red-500')}`}></div>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${channelStatus === 'online' ? 'text-emerald-500' : (channelStatus === 'connecting' ? 'text-amber-500' : 'text-red-500')}`}>
+                  {channelStatus === 'online' ? 'RÁDIO ONLINE' : (channelStatus === 'connecting' ? 'SINCRONIZANDO...' : 'RÁDIO OFFLINE')}
+                </span>
+              </div>
+            </div>
+            <span className="text-[9px] text-gray-400 font-mono opacity-80 uppercase tracking-widest leading-none mt-1">
+              ELITE PRO CLOUD • {lastUpdate}
             </span>
           </div>
         </div>

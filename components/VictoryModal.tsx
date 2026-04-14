@@ -18,6 +18,7 @@ interface VictoryModalProps {
   onNewGame: () => void;
   onUndo: () => void;
   arenaColor?: ArenaColor;
+  isTV?: boolean;
 }
 
 const THEME_STYLES: Record<string, { bg: string; text: string; shadow: string; border: string }> = {
@@ -29,7 +30,7 @@ const THEME_STYLES: Record<string, { bg: string; text: string; shadow: string; b
   violet: { bg: 'bg-violet-600', text: 'text-violet-400', shadow: 'shadow-violet-500/40', border: 'border-violet-500/30' },
 };
 
-const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSave, onNewGame, onUndo, arenaColor = 'indigo' }) => {
+const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSave, onNewGame, onUndo, arenaColor = 'indigo', isTV = false }) => {
   const { winner, teamA, teamB, isCapote, setResults } = victoryData;
   const winningTeam = winner === 'A' ? teamA : teamB;
   const losingTeam = winner === 'A' ? teamB : teamA;
@@ -39,31 +40,31 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
   const loserNames = losingTeam.players.map(p => p?.name || 'Atleta').join(' & ');
 
   return (
-    <div className="victory-modal fixed inset-0 bg-black/95 backdrop-blur-xl z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={onClose}>
+    <div className={`victory-modal fixed inset-0 bg-black/95 backdrop-blur-xl z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300 ${isTV ? 'cursor-default' : ''}`} onClick={onClose}>
       <div
-        className={`bg-[#030712] border ${isCapote ? 'border-rose-500/30' : theme.border} rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 w-full max-w-sm sm:max-w-md shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden max-h-[95vh] overflow-y-auto`}
+        className={`bg-[#030712] border ${isCapote ? 'border-rose-500/30' : theme.border} rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-12 ${isTV ? 'w-[90vw] max-w-[1200px] py-16 sm:py-20' : 'w-full max-w-sm sm:max-w-md'} shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden max-h-[95vh] overflow-y-auto`}
         onClick={e => e.stopPropagation()}
       >
-        <div className={`absolute -top-1/4 -right-1/4 w-96 h-96 ${isCapote ? 'bg-rose-600/20' : theme.bg}/20 rounded-full blur-[120px] -z-10`}></div>
+        <div className={`absolute -top-1/4 -right-1/4 ${isTV ? 'w-[600px] h-[600px]' : 'w-96 h-96'} ${isCapote ? 'bg-rose-600/20' : theme.bg}/20 rounded-full blur-[120px] -z-10`}></div>
 
         <div className="flex flex-col items-center text-center">
-          <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 border ${isCapote ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : `${theme.bg}/10 ${theme.border} ${theme.text}`}`}>
-            <TrophyIcon className="w-6 h-6 sm:w-7 sm:h-7" />
+          <div className={`${isTV ? 'w-32 h-32 mb-8' : 'w-12 h-12 sm:w-14 sm:h-14 mb-3 sm:mb-4'} rounded-[2.5rem] flex items-center justify-center border ${isCapote ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : `${theme.bg}/10 ${theme.border} ${theme.text}`}`}>
+            <TrophyIcon className={`${isTV ? 'w-16 h-16' : 'w-6 h-6 sm:w-7 sm:h-7'}`} />
           </div>
-          <h1 className={`text-2xl sm:text-3xl font-black uppercase tracking-tighter ${isCapote ? 'text-rose-500' : 'text-white'}`}>
+          <h1 className={`${isTV ? 'text-8xl' : 'text-2xl sm:text-3xl'} font-black uppercase tracking-tighter ${isCapote ? 'text-rose-500' : 'text-white'}`}>
             {isCapote ? 'CAPOTE!' : 'VITÓRIA!'}
           </h1>
-          <p className={`text-xs font-bold ${theme.text} mt-1 sm:mt-2`}>{winnerNames}</p>
+          <p className={`${isTV ? 'text-3xl font-black italic mt-6' : 'text-xs font-bold mt-1 sm:mt-2'} ${theme.text}`}>{winnerNames}</p>
 
-          <div className="my-4 sm:my-6 w-full flex items-center justify-center gap-4">
+          <div className={`${isTV ? 'my-16 gap-24' : 'my-4 sm:my-6 gap-4'} w-full flex items-center justify-center`}>
             <div className="flex-1 text-right">
-              <p className="text-[10px] sm:text-xs font-bold text-gray-400 truncate">{winnerNames}</p>
-              <p className="text-3xl sm:text-4xl font-mono font-black text-white">{winningTeam.score}</p>
+              <p className={`${isTV ? 'text-2xl mb-4' : 'text-[10px] sm:text-xs'} font-bold text-gray-400 truncate`}>{winnerNames}</p>
+              <p className={`${isTV ? 'text-9xl' : 'text-3xl sm:text-4xl'} font-mono font-black text-white`}>{winningTeam.score}</p>
             </div>
-            <p className="text-base sm:text-lg font-black text-gray-700">VS</p>
+            <p className={`${isTV ? 'text-5xl' : 'text-base sm:text-lg'} font-black text-gray-700`}>VS</p>
             <div className="flex-1 text-left">
-              <p className="text-[10px] sm:text-xs font-bold text-gray-400 truncate">{loserNames}</p>
-              <p className="text-3xl sm:text-4xl font-mono font-black text-gray-600">{losingTeam.score}</p>
+              <p className={`${isTV ? 'text-2xl mb-4' : 'text-[10px] sm:text-xs'} font-bold text-gray-400 truncate`}>{loserNames}</p>
+              <p className={`${isTV ? 'text-9xl' : 'text-3xl sm:text-4xl'} font-mono font-black text-gray-600`}>{losingTeam.score}</p>
             </div>
           </div>
 
@@ -86,24 +87,28 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
             </div>
           )}
 
-          <div className="w-full grid grid-cols-2 gap-2 sm:gap-3">
-            <button onClick={onNewGame} className="w-full py-3 sm:py-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-colors hover:text-white">
-              Nova Partida
-            </button>
-            <button
-              onClick={onSave}
-              className={`w-full py-3 sm:py-4 ${theme.bg} hover:opacity-90 text-white rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] shadow-xl ${theme.shadow}`}
-            >
-              Salvar e Zerar
-            </button>
-          </div>
+          {!isTV && (
+            <>
+              <div className="w-full grid grid-cols-2 gap-2 sm:gap-3">
+                <button onClick={onNewGame} className="w-full py-3 sm:py-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-colors hover:text-white">
+                  Nova Partida
+                </button>
+                <button
+                  onClick={onSave}
+                  className={`w-full py-3 sm:py-4 ${theme.bg} hover:opacity-90 text-white rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] shadow-xl ${theme.shadow}`}
+                >
+                  Salvar e Zerar
+                </button>
+              </div>
 
-          <button
-            onClick={onUndo}
-            className="mt-3 w-full py-2 sm:py-3 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition-colors border border-red-500/20"
-          >
-            Voltar (Desfazer Vitória)
-          </button>
+              <button
+                onClick={onUndo}
+                className="mt-3 w-full py-2 sm:py-3 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition-colors border border-red-500/20"
+              >
+                Voltar (Desfazer Vitória)
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -11,13 +11,17 @@ interface HistoricoProps {
   players: Player[];
   showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
+  onDeleteMatch?: (matchId: string) => Promise<void>;
 }
 
 const THEME_TEXT_CLASSES: Record<string, string> = {
   indigo: 'text-indigo-400', blue: 'text-blue-400', emerald: 'text-emerald-400', amber: 'text-amber-400', rose: 'text-rose-400', violet: 'text-violet-400'
 };
 
-const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena, onClearMatches, onUpdateMatch, players, showAlert, showConfirm }) => {
+const Historico: React.FC<HistoricoProps> = ({ 
+  matches, setMatches, currentArena, onClearMatches, onUpdateMatch, 
+  players, showAlert, showConfirm, onDeleteMatch 
+}) => {
   const [viewDate, setViewDate] = useState<Date | null>(new Date());
   const [showClearModal, setShowClearModal] = useState(false);
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
@@ -40,8 +44,12 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
     });
   }, [matches, viewDate]);
 
-  const handleDelete = (matchId: string) => {
-    setMatches(prev => prev.filter(m => m.id !== matchId));
+  const handleDelete = async (matchId: string) => {
+    if (onDeleteMatch) {
+      await onDeleteMatch(matchId);
+    } else {
+      setMatches(prev => prev.filter(m => m.id !== matchId));
+    }
   };
 
   const handleEdit = (match: Match) => {
@@ -192,7 +200,7 @@ const Historico: React.FC<HistoricoProps> = ({ matches, setMatches, currentArena
     <div className="w-full p-4 flex flex-col gap-6 animate-in fade-in duration-500 overflow-x-hidden">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 print:hidden">
         <h1 className="text-xl sm:text-2xl font-black text-gray-100 uppercase tracking-tighter text-center sm:text-left">
-          AUDITORIA DA ARENA <span className="text-indigo-400">{currentArena.name.toUpperCase()}</span>
+          Auditoria de partidas na arena <span className="text-indigo-400">{currentArena.name.toUpperCase()}</span>
                </h1>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
