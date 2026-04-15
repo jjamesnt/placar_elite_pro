@@ -314,7 +314,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                   {stats.slice(0, 5).map((s: any, i: number) => (
-                      <div key={s.name} className={`flex flex-col gap-2 p-4 rounded-2xl border transition-all ${i === 0 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-white/5 border-white/5'}`}>
+                      <div key={`rank-${i}-${s.name}`} className={`flex flex-col gap-2 p-4 rounded-2xl border transition-all ${i === 0 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-white/5 border-white/5'}`}>
                           <div className="flex items-center justify-between">
                             <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs ${i === 0 ? 'bg-yellow-500 text-black' : 'bg-white/10 text-white'}`}>
                                 {i + 1}
@@ -361,7 +361,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                     <div className="flex items-center justify-between gap-4">
                        <div className="flex-1 flex flex-col">
                           <p className={`text-sm font-black uppercase truncate tracking-tighter ${m.winner === 'A' ? 'text-white' : 'text-white/40'}`}>
-                            {Array.isArray(m.teamA?.players) ? m.teamA.players[0] : '---'}
+                            {Array.isArray(m.teamA?.players) ? m.teamA.players.filter(Boolean).join(' & ') : '---'}
                           </p>
                           <div className={`mt-1 h-1 w-full rounded-full ${m.winner === 'A' ? 'bg-blue-600' : 'bg-white/5'}`}></div>
                        </div>
@@ -370,7 +370,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                        <div className={`text-2xl font-black w-12 text-center py-1 rounded-xl shadow-inner ${m.winner === 'B' ? 'bg-red-600 text-white' : 'bg-white/5 text-white/20'}`}>{m.teamB?.score || 0}</div>
                        <div className="flex-1 flex flex-col text-right">
                           <p className={`text-sm font-black uppercase truncate tracking-tighter ${m.winner === 'B' ? 'text-white' : 'text-white/40'}`}>
-                            {Array.isArray(m.teamB?.players) ? m.teamB.players[0] : '---'}
+                            {Array.isArray(m.teamB?.players) ? m.teamB.players.filter(Boolean).join(' & ') : '---'}
                           </p>
                           <div className={`mt-1 h-1 w-full rounded-full ${m.winner === 'B' ? 'bg-red-600' : 'bg-white/5'}`}></div>
                        </div>

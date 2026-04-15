@@ -144,7 +144,9 @@ const App: React.FC = () => {
           });});
       });
 
-      const ranking = Array.from(playerStats.values()).sort((a, b) => b.wins - a.wins || (b.wins/b.games) - (a.wins/a.games)).slice(0, 5);
+      const ranking = Array.from(playerStats.values())
+        .sort((a, b) => b.wins - a.wins || (b.wins/b.games) - (a.wins/a.games) || a.name.localeCompare(b.name))
+        .slice(0, 5);
       // James: Filtra apenas partidas do dia atual para o histórico da TV
       const today = new Date().toDateString();
       const todayMatches = arenaMatches.filter(match => new Date(match.timestamp).toDateString() === today);
