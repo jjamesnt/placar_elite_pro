@@ -57,53 +57,46 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     }
   }, []);
 
-  // 2. REESCRITA SUPREMA: Receptor Blindado
+  // 2. RECEPTOR PRINCIPAL — Cria o canal uma vez e mantém vivo
   useEffect(() => {
     const targetId = internalArenaId || arenaId;
     if (!targetId || targetId === 'auto') return;
     
     const normalizedId = targetId.toLowerCase().replace(/-/g, '');
     const channelName = `sync_arena_${normalizedId}`;
-    const channel = supabase.channel(channelName);
+    console.log("TV: Sintonizando canal:", channelName);
+
+    const channel = supabase.channel(channelName, {
+      config: { broadcast: { self: false } }
+    });
 
     channel.on('broadcast', { event: 'TV_SYNC' }, ({ payload }) => {
-      const incomingId = payload.senderId;
-      const now = Date.now();
-
-      // James: Lógica do Escudo V5 - Se não houver trava OU for o mesmo tablet OU o tablet antigo sumiu há 15s
-      if (!lockedSenderId.current || lockedSenderId.current === incomingId || (now - lastSenderTime.current > 15000)) {
-        if (lockedSenderId.current !== incomingId) {
-          console.log("TV: Novo Mestre Conectado (Escudo V5):", incomingId);
-          lockedSenderId.current = incomingId;
-        }
-        lastSenderTime.current = now;
-        setLastSignalTime(now);
-        setTvData(payload);
-        setActiveMatch(payload.activeMatch);
-        setCustomArenaName(payload.arenaName);
-        setConnected(true);
-        setSignalLost(false); // Recuperou sinal
-      } else {
-        // Ignora sinal intruso para não oscilar
-        console.warn("TV: Sinal ignorado (Prevenindo Oscilação):", incomingId);
-      }
+      // James: Sem Escudo de senderId — em produção o ID pode variar. O canal já é seguro por name.
+      setLastSignalTime(Date.now());
+      setTvData(payload);
+      setActiveMatch(payload.activeMatch);
+      setCustomArenaName(payload.arenaName);
+      setConnected(true);
+      setSignalLost(false);
     });
 
-    // James: Ouvindo o evento dedicado de Modais para abertura instantânea
     channel.on('broadcast', { event: 'TV_MODAL' }, ({ payload }) => {
-       if (activeMatch) {
-         setActiveMatch({ ...activeMatch, modals: payload });
-       }
+      setActiveMatch((prev: any) => prev ? { ...prev, modals: payload } : prev);
     });
 
-    // James: Ouvindo o canal leve de Ataque (24s)
     channel.on('broadcast', { event: 'TV_ATTACK' }, ({ payload }) => {
       setTvAttackTime(payload.attackTime);
-      setLastSignalTime(Date.now()); // Manter rádio online com subsinais também
+      setLastSignalTime(Date.now());
     });
 
     channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') setSignalStatus('listening');
+      console.log("TV: Status do canal:", status);
+      if (status === 'SUBSCRIBED') {
+        setSignalStatus('listening');
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        // James: Em caso de erro real de rede, tenta reconectar após 3s
+        setTimeout(() => setReconnectCounter(prev => prev + 1), 3000);
+      }
     });
 
     return () => { supabase.removeChannel(channel); };
@@ -114,7 +107,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     let lastWakeUp = 0;
     const handleWakeUp = () => {
       const now = Date.now();
-      if (now - lastWakeUp < 5000) return; // Debounce: ignora se acordou há menos de 5s
+      if (now - lastWakeUp < 5000) return;
       lastWakeUp = now;
       console.log("TV: Tela acordou! Forçando reconexão...");
       setSignalLost(true);
@@ -129,26 +122,18 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
-  // Lógica de Autorrecuperação V8: "Escudo V8"
+  // James: Monitor de Silêncio — só marca como desconectado após 120s (tolerante com produção)
   useEffect(() => {
     const checkInterval = setInterval(() => {
       const idleTime = Date.now() - lastSignalTime;
-      
-      // James: Se houver 20s de silêncio, força nova tentativa de escuta
-      if (idleTime > 20000) {
-        console.warn("TV: Sinal fraco (Iniciando Auto-Recuperação V8...)");
-        setSignalLost(true);
-        setReconnectCounter(prev => prev + 1); 
-      }
-
-      // James: 90s sem sinal — mostra tela de sintonizando
-      if (idleTime > 90000) { 
+      if (idleTime > 120000) {
+        console.warn("TV: 120s sem sinal — marcando como desconectado");
         setConnected(false);
         setSignalStatus('off');
       }
-    }, 5000);
+    }, 10000);
     return () => clearInterval(checkInterval);
-  }, [lastSignalTime]); // James: Removido 'connected' das deps para evitar reinício desnecessário do intervalo
+  }, [lastSignalTime]);
 
   // Cronômetro do Placar
   useEffect(() => {
