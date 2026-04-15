@@ -461,13 +461,21 @@ const App: React.FC = () => {
     } catch (err) { console.error("Erro ao deletar arena:", err); }
   };
 
+  const handleCloseWelcome = useCallback(async () => {
+    setActiveModal('none');
+    localStorage.setItem('elite_welcome_done', 'true');
+    if (userLicense?.id) {
+        await supabase.from('user_licenses').update({ first_access_done: true }).eq('id', userLicense.id);
+    }
+  }, [userLicense]);
+
   if (loading) return <div className="h-screen w-screen flex items-center justify-center bg-[#030712]"><div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
   if (!session && currentView !== 'tv') return <><Background color="indigo" /><Login onLogin={() => { }} /></>;
 
   return (
     <>
       <OrientationLock />
-      {activeModal === 'welcome' && <WelcomeModal onConfirm={() => {}} />}
+      {activeModal === 'welcome' && <WelcomeModal onConfirm={handleCloseWelcome} />}
       <Background color={(currentArena.color || 'indigo') as ArenaColor} />
       <div className="h-screen w-screen flex flex-col text-white font-sans overflow-hidden bg-transparent">
         {currentView !== 'tv' && (
