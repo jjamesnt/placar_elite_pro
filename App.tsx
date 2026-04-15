@@ -393,7 +393,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteMatch = async (matchId: string) => {
-    if (!session?.user?.id) return; // Apenas usuários logados
+    if (!session?.user?.id) return;
     try {
       setMatches(prev => prev.filter(m => m.id !== matchId));
       const { error } = await supabase.from('matches').delete().eq('id', matchId);
@@ -401,6 +401,18 @@ const App: React.FC = () => {
     } catch (err) {
       console.error("Erro ao deletar partida:", err);
       if (showAlert) showAlert("Erro ao Deletar", "Não foi possível remover do servidor. Verifique sua conexão.", 'danger', 'alert');
+    }
+  };
+
+  const handleUpdateMatch = async (matchId: string, updatedData: Omit<Match, 'id' | 'timestamp'>) => {
+    if (!session?.user?.id) return;
+    try {
+      const { error } = await supabase.from('matches').update({ data_json: updatedData }).eq('id', matchId);
+      if (error) throw error;
+      setMatches(prev => prev.map(m => m.id === matchId ? { ...m, ...updatedData } : m));
+    } catch (err) {
+      console.error("Erro ao atualizar partida:", err);
+      if (showAlert) showAlert("Erro ao Salvar", "Não foi possível salvar as alterações. Verifique sua conexão.", 'danger', 'alert');
     }
   };
 
@@ -460,7 +472,7 @@ const App: React.FC = () => {
         )}
         <main className={`flex-1 ${currentView !== 'tv' ? 'overflow-y-auto' : ''}`}>
           {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={handleResetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} matchMode={matchMode} matchTime={matchTime} showAlert={showAlert} showConfirm={showConfirm} setTvModals={setTvModals} setTvAttackTime={setTvAttackTime} />}
-          {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} onClearMatches={() => {}} onUpdateMatch={() => {}} players={players} showAlert={showAlert} showConfirm={showConfirm} onDeleteMatch={handleDeleteMatch} />}
+          {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} onClearMatches={() => {}} onUpdateMatch={handleUpdateMatch} players={players} showAlert={showAlert} showConfirm={showConfirm} onDeleteMatch={handleDeleteMatch} />}
           {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} athletesLimit={userLicense?.athletes_limit} showAlert={showAlert} showConfirm={showConfirm} />}
           {currentView === 'tv' && <TVView arenaId={currentArenaId} />}
           {currentView === 'ranking' && <Ranking players={players} matches={matches} arenaName={currentArena.name} arenaColor={currentArena.color} filter={rankingFilter} setFilter={setRankingFilter} viewDate={rankingViewDate} setViewDate={setRankingViewDate} onClearMatches={() => {}} showAlert={showAlert} />}
