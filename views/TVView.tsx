@@ -107,28 +107,49 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     });
 
     return () => { supabase.removeChannel(channel); };
-  }, [internalArenaId, arenaId, reconnectCounter]); // Re-connect se o contador de arena ou erro mudar
+  }, [internalArenaId, arenaId, reconnectCounter]);
+
+  // James: DETECTOR DE DESPERTAR — quando a TV acorda, força reconexão imediata
+  useEffect(() => {
+    const handleWakeUp = () => {
+      console.log("TV: Tela acordou! Forçando reconexão...");
+      setSignalLost(true);
+      setReconnectCounter(prev => prev + 1);
+    };
+
+    // Detecta quando a aba volta ao foco (tab switch, screensaver, sleep)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') handleWakeUp();
+    });
+    // Fallback: janela recebe foco
+    window.addEventListener('focus', handleWakeUp);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleWakeUp);
+      window.removeEventListener('focus', handleWakeUp);
+    };
+  }, []);
 
   // Lógica de Autorrecuperação V8: "Escudo V8"
   useEffect(() => {
     const checkInterval = setInterval(() => {
       const idleTime = Date.now() - lastSignalTime;
       
-      // James: Se houver 20s de silêncio (mais tolerante), a TV força uma tentativa de escuta nova
+      // James: Se houver 20s de silêncio, força nova tentativa de escuta
       if (idleTime > 20000) {
         console.warn("TV: Sinal fraco (Iniciando Auto-Recuperação V8...)");
         setSignalLost(true);
         setReconnectCounter(prev => prev + 1); 
       }
 
-      // James: Tolerância aumentada para 90s antes de desistir total
+      // James: 90s sem sinal — mostra tela de sintonizando
       if (idleTime > 90000) { 
         setConnected(false);
         setSignalStatus('off');
       }
     }, 5000);
     return () => clearInterval(checkInterval);
-  }, [lastSignalTime, connected]);
+  }, [lastSignalTime]); // James: Removido 'connected' das deps para evitar reinício desnecessário do intervalo
 
   // Cronômetro do Placar
   useEffect(() => {
