@@ -305,7 +305,11 @@ const App: React.FC = () => {
     if (!session && currentView !== 'tv') return;
 
     const fetchArenas = async () => {
-      const { data } = await supabase.from('arenas').select('*').order('created_at', { ascending: true });
+      let query = supabase.from('arenas').select('*').order('created_at', { ascending: true });
+      if (session?.user?.id) {
+        query = query.eq('user_id', session.user.id);
+      }
+      const { data } = await query;
       if (data && data.length > 0) {
         setArenas(data);
         const lastArena = localStorage.getItem('elite_last_arena');
