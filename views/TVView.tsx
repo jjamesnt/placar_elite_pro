@@ -109,25 +109,24 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     return () => { supabase.removeChannel(channel); };
   }, [internalArenaId, arenaId, reconnectCounter]);
 
-  // James: DETECTOR DE DESPERTAR — quando a TV acorda, força reconexão imediata
+  // James: DETECTOR DE DESPERTAR — quando a TV acorda, força reconexão (com debounce para evitar loops)
   useEffect(() => {
+    let lastWakeUp = 0;
     const handleWakeUp = () => {
+      const now = Date.now();
+      if (now - lastWakeUp < 5000) return; // Debounce: ignora se acordou há menos de 5s
+      lastWakeUp = now;
       console.log("TV: Tela acordou! Forçando reconexão...");
       setSignalLost(true);
       setReconnectCounter(prev => prev + 1);
     };
 
-    // Detecta quando a aba volta ao foco (tab switch, screensaver, sleep)
-    document.addEventListener('visibilitychange', () => {
+    const onVisibility = () => {
       if (document.visibilityState === 'visible') handleWakeUp();
-    });
-    // Fallback: janela recebe foco
-    window.addEventListener('focus', handleWakeUp);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleWakeUp);
-      window.removeEventListener('focus', handleWakeUp);
     };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
   // Lógica de Autorrecuperação V8: "Escudo V8"
