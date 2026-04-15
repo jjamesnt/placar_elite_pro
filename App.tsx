@@ -247,7 +247,7 @@ const App: React.FC = () => {
           payload: snapshotRef.current()
         });
       }
-    }, 3000);
+    }, 1500); // James: Reduzido de 3s para 1.5s - TV sintoniza mais rápido
     return () => clearInterval(interval);
   }, []); // James: Zero dependências - o batimento nunca morre nem reseta!
 
@@ -371,17 +371,20 @@ const App: React.FC = () => {
   const handleSaveMatch = async (matchData: Omit<Match, 'id' | 'timestamp'>) => {
     if (!session || currentArenaId === 'default') return;
     
-    // James: SINCRO INSTANTÂNEO. Adicionamos a partida localmente e enviamos logo
+    // James: SINCRO INSTANTÂNEO. Adicionamos a partida localmente primeiro
     const newMatch = { ...matchData, id: 'temp-' + Date.now(), arena_id: currentArenaId, created_at: new Date().toISOString() };
     setMatches(prev => [newMatch, ...prev]);
     
-    // Forçar rádio a enviar o dado novo imediatamente
-    if (tvSyncChannelRef.current) {
-       tvSyncChannelRef.current.send({
-         type: 'broadcast', event: 'TV_SYNC',
-         payload: calculateSnapshot()
-       });
-    }
+    // James: setTimeout(0) garante que o React processou o setMatches antes de enviar o snapshot
+    // Assim a TV recebe a auditoria JÁ com a nova partida incluída
+    setTimeout(() => {
+      if (tvSyncChannelRef.current) {
+        tvSyncChannelRef.current.send({
+          type: 'broadcast', event: 'TV_SYNC',
+          payload: calculateSnapshot()
+        });
+      }
+    }, 0);
 
     const { data } = await supabase.from('matches').insert([{ arena_id: currentArenaId, user_id: session.user.id, data_json: matchData }]).select().single();
     if (data) refreshData();
