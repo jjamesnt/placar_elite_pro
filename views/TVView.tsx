@@ -305,15 +305,22 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
             </div>
           </div>
 
-          {/* Ranking Moved to Bottom Center */}
+          {/* Ranking */}
           <div className="bg-gradient-to-br from-indigo-900/20 to-transparent border border-white/5 rounded-[3rem] p-8 flex flex-col shadow-2xl relative overflow-hidden flex-1 min-h-0">
               <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"></div>
-              <div className="flex items-center gap-4 mb-6">
-                <TrophyIcon className="w-8 h-8 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]" />
-                <h2 className="text-xl font-black uppercase tracking-tighter">Ranking Elite Pro</h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <TrophyIcon className="w-8 h-8 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]" />
+                  <h2 className="text-xl font-black uppercase tracking-tighter">Ranking Elite Pro</h2>
+                </div>
+                {tvData?.rankingDate && (
+                  <span className="text-xs font-black text-white/30 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">
+                    📅 {tvData.rankingDate}
+                  </span>
+                )}
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                  {stats.slice(0, 5).map((s: any, i: number) => (
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                  {stats.slice(0, 10).map((s: any, i: number) => (
                       <div key={`rank-${i}-${s.name}`} className={`flex flex-col gap-2 p-4 rounded-2xl border transition-all ${i === 0 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-white/5 border-white/5'}`}>
                           <div className="flex items-center justify-between">
                             <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs ${i === 0 ? 'bg-yellow-500 text-black' : 'bg-white/10 text-white'}`}>

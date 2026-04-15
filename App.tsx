@@ -150,7 +150,7 @@ const App: React.FC = () => {
 
       const ranking = Array.from(playerStats.values())
         .sort((a, b) => b.wins - a.wins || (b.wins/b.games) - (a.wins/a.games) || a.name.localeCompare(b.name))
-        .slice(0, 5);
+        .slice(0, 10); // James: Mostra até 10 jogadores, igual ao tablet
 
       const history = todayMatches.slice(0, 20).map(match => ({
           id: match.id,
@@ -164,12 +164,13 @@ const App: React.FC = () => {
         arenaId: cA?.toLowerCase(),
         arenaSlug: normalize(curArena?.name || ''),
         arenaName: curArena?.name || 'ARENA',
+        rankingDate: new Date().toLocaleDateString('pt-BR'), // James: Data exibida na TV
         activeMatch: { 
           teamA: tA, teamB: tB, servingTeam: sT, gameStartTime: gS, status: 'playing',
           modals: tvModals,
           attackTime: tvAttackTime,
           isSidesSwitched: isSidesSwitched,
-          layoutMirrored: tvLayoutMirrored // James: Enviando a preferência de layout para a TV
+          layoutMirrored: tvLayoutMirrored
         },
         ranking,
         history
