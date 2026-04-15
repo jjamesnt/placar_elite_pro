@@ -131,8 +131,12 @@ const App: React.FC = () => {
       const nameMap = new Map();
       p.forEach(pl => nameMap.set(pl.id, pl.name));
 
+      // James: Filtra apenas partidas do dia atual — igual ao filtro 'Hoje' do tablet
+      const today = new Date().toDateString();
+      const todayMatches = arenaMatches.filter(match => new Date(match.timestamp).toDateString() === today);
+
       const playerStats = new Map<string, { wins: number, games: number, name: string }>();
-      arenaMatches.forEach(match => {
+      todayMatches.forEach(match => {
           const winner = match.winner === 'A' ? match.teamA : match.teamB;
           [match.teamA, match.teamB].forEach(t => { t.players.forEach(pl => {
               if (pl && !playerStats.has(pl.id)) playerStats.set(pl.id, { wins: 0, games: 0, name: nameMap.get(pl.id) || pl.name });
@@ -147,9 +151,7 @@ const App: React.FC = () => {
       const ranking = Array.from(playerStats.values())
         .sort((a, b) => b.wins - a.wins || (b.wins/b.games) - (a.wins/a.games) || a.name.localeCompare(b.name))
         .slice(0, 5);
-      // James: Filtra apenas partidas do dia atual para o histórico da TV
-      const today = new Date().toDateString();
-      const todayMatches = arenaMatches.filter(match => new Date(match.timestamp).toDateString() === today);
+
       const history = todayMatches.slice(0, 20).map(match => ({
           id: match.id,
           teamA: { score: match.teamA.score, players: match.teamA.players.map((plyr: any) => nameMap.get(plyr?.id) || plyr?.name || '---') },
