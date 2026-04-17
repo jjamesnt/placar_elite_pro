@@ -34,13 +34,13 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
   const { winner, teamA, teamB, isCapote, setResults } = victoryData;
   const winningTeam = winner === 'A' ? teamA : teamB;
   const losingTeam = winner === 'A' ? teamB : teamA;
-  const theme = THEME_STYLES[arenaColor];
+  const theme = THEME_STYLES[arenaColor] || THEME_STYLES.indigo;
 
   const winnerNames = winningTeam.players.map(p => p?.name || 'Atleta').join(' & ');
   const loserNames = losingTeam.players.map(p => p?.name || 'Atleta').join(' & ');
 
   return (
-    <div className={`victory-modal fixed inset-0 bg-black/95 backdrop-blur-xl z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300 ${isTV ? 'cursor-default' : ''}`} onClick={onClose}>
+    <div className={`victory-modal fixed inset-0 bg-black/95 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300 ${isTV ? 'cursor-default' : ''}`} onClick={onClose}>
       <div
         className={`bg-[#030712] border ${isCapote ? 'border-rose-500/30' : theme.border} rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-12 ${isTV ? 'w-[90vw] max-w-[1200px] py-16 sm:py-20' : 'w-full max-w-sm sm:max-w-md'} shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden max-h-[95vh] overflow-y-auto`}
         onClick={e => e.stopPropagation()}
@@ -56,7 +56,7 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
           </h1>
           <p className={`${isTV ? 'text-3xl font-black italic mt-6' : 'text-xs font-bold mt-1 sm:mt-2'} ${theme.text}`}>{winnerNames}</p>
 
-          <div className={`${isTV ? 'my-16 gap-24' : 'my-4 sm:my-6 gap-4'} w-full flex items-center justify-center`}>
+          <div className={`${isTV ? 'my-16 space-x-24' : 'my-4 sm:my-6 space-x-4'} w-full flex items-center justify-center`}>
             <div className="flex-1 text-right">
               <p className={`${isTV ? 'text-2xl mb-4' : 'text-[10px] sm:text-xs'} font-bold text-gray-400 truncate`}>{winnerNames}</p>
               <p className={`${isTV ? 'text-9xl' : 'text-3xl sm:text-4xl'} font-mono font-black text-white`}>{winningTeam.score}</p>
@@ -72,11 +72,11 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
           {setResults && setResults.length > 0 && (
             <div className="w-full mb-6 bg-white/5 rounded-2xl p-3 border border-white/5">
               <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] mb-2">Resumo por Sets</p>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col space-y-1.5">
                 {setResults.map((res, i) => (
                   <div key={i} className="flex justify-between items-center px-2">
                     <span className="text-[10px] font-bold text-gray-500">SET {i + 1}</span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center space-x-2">
                       <span className={`text-xs font-mono font-black ${res.A > res.B ? theme.text : 'text-gray-600'}`}>{res.A}</span>
                       <span className="text-gray-700 font-black">×</span>
                       <span className={`text-xs font-mono font-black ${res.B > res.A ? 'text-orange-400' : 'text-gray-600'}`}>{res.B}</span>
@@ -89,13 +89,13 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
 
           {!isTV && (
             <>
-              <div className="w-full grid grid-cols-2 gap-2 sm:gap-3">
-                <button onClick={onNewGame} className="w-full py-3 sm:py-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-colors hover:text-white">
+              <div className="w-full flex space-x-2 sm:space-x-3">
+                <button onClick={onNewGame} className="flex-1 py-3 sm:py-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-colors hover:text-white">
                   Nova Partida
                 </button>
                 <button
                   onClick={onSave}
-                  className={`w-full py-3 sm:py-4 ${theme.bg} hover:opacity-90 text-white rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] shadow-xl ${theme.shadow}`}
+                  className={`flex-1 py-3 sm:py-4 ${theme.bg} hover:opacity-90 text-white rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] shadow-xl ${theme.shadow}`}
                 >
                   Salvar e Zerar
                 </button>

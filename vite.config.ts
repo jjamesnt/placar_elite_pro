@@ -13,9 +13,13 @@ export default defineConfig(({ mode }) => {
       plugins: [
         react(),
         legacy({
-          // James: Suporte a TV Boxes e navegadores antigos (Chrome 60+, Android 5+)
-          targets: ['chrome >= 60', 'android >= 5'],
-          additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
+          // James: Suporte ultra-amplo para TV Boxes (Chrome 50+, Android 5+)
+          targets: ['chrome >= 50', 'android >= 5', 'safari >= 10'],
+          additionalLegacyPolyfills: [
+            'regenerator-runtime/runtime',
+            'intersection-observer', // Polyfill para scroll e visibilidade
+            'resize-observer-polyfill' // Polyfill para layouts responsivos
+          ],
         }),
       ],
       define: {

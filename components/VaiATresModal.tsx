@@ -10,7 +10,7 @@ interface VaiATresModalProps {
 
 const VaiATresModal: React.FC<VaiATresModalProps> = ({ onClose, onUndo, isTV = false }) => {
   return (
-    <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[120] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/95 z-[120] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={onClose}>
       <div
         className={`bg-[#030712] border border-amber-500/30 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-12 ${isTV ? 'w-[85vw] max-w-[1100px] py-16' : 'w-full max-w-xs sm:max-w-sm'} shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden max-h-[95vh] overflow-y-auto`}
         onClick={e => e.stopPropagation()}
@@ -32,7 +32,7 @@ const VaiATresModal: React.FC<VaiATresModalProps> = ({ onClose, onUndo, isTV = f
           </p>
 
           <div className={`${isTV ? 'my-12' : 'my-4 sm:my-6'} w-full flex items-center justify-center`}>
-            <div className={`flex items-center ${isTV ? 'gap-12 p-10' : 'gap-4 p-4'} bg-white/5 rounded-[2.5rem] border border-white/10`}>
+            <div className={`flex items-center ${isTV ? 'space-x-12 p-10' : 'space-x-4 p-4'} bg-white/5 rounded-[2.5rem] border border-white/10`}>
               <span className={`${isTV ? 'text-9xl' : 'text-4xl'} font-mono font-black text-white/20`}>0</span>
               <span className={`${isTV ? 'text-4xl' : 'text-xl'} font-black text-amber-500 italic`}>VS</span>
               <span className={`${isTV ? 'text-9xl' : 'text-4xl'} font-mono font-black text-white/20`}>0</span>
