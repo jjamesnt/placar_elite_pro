@@ -11,23 +11,15 @@ interface TVViewProps {
 const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   const [tvData, setTvData] = useState<any>(null);
   const [activeMatch, setActiveMatch] = useState<any>(null);
-  const [internalArenaId, setInternalArenaId] = useState<string>(arenaId);
   const [customArenaName, setCustomArenaName] = useState<string>('');
   const [tvAttackTime, setTvAttackTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [lastSignalTime, setLastSignalTime] = useState<number>(Date.now());
-  const [reconnectCounter, setReconnectCounter] = useState(0);
-  const [signalStatus, setSignalStatus] = useState<'off' | 'listening'>('off');
   const [connected, setConnected] = useState(false);
   const [arenaColor, setArenaColor] = useState<string>('indigo');
   
   const lockedSenderId = useRef<string | null>(null);
   const lastSenderTime = useRef<number>(0);
-  // James: Refs para matar a 'piscadeira' (Deep Equality)
-  const lastPayloadRef = useRef<string>("");
-  const lastMatchRef = useRef<string>("");
 
-  // Mapeamento de cores ultra-compatível (cores sólidas para TVs)
   const arenaTheme = useMemo(() => {
     const themes: Record<string, any> = {
       indigo: { primary: '#818cf8', bg: '#1e1b4b', border: 'rgba(129, 140, 248, 0.4)', pulse: '#6366f1', gradient: 'rgba(99, 102, 241, 0.1)' },
@@ -40,15 +32,16 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     return themes[arenaColor] || themes.indigo;
   }, [arenaColor]);
 
-  // 1. RECEPTOR PRINCIPAL (UUID)
   useEffect(() => {
-    const targetId = internalArenaId || arenaId;
-    if (!targetId || targetId === 'auto') return;
+    if (!arenaId) return;
     
-    const channelName = `sync_arena_${targetId.toLowerCase()}`;
-    const channel = supabase.channel(channelName);
+    // James: SINTONIA DUAL-BAND (Lê ID e Nome para compatibilidade total)
+    const channels = [
+       supabase.channel(`sync_arena_${arenaId.toLowerCase()}`),
+       supabase.channel(`master_control`) // Ouvir comando mestre de migração
+    ];
 
-    channel.on('broadcast', { event: 'TV_SYNC' }, ({ payload }) => {
+    const handleSync = (payload: any) => {
       const now = Date.now();
       const incomingSenderId = payload.senderId || 'unknown';
 
@@ -58,52 +51,36 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
       if (lockedSenderId.current !== incomingSenderId) return;
       lastSenderTime.current = now;
-      setLastSignalTime(now);
-
-      // James: TRAVA ANTI-PISCADEIRA — Se o dado for igual ao anterior, nem toca no React
-      const payloadString = JSON.stringify(payload);
-      if (payloadString === lastPayloadRef.current) return;
-      lastPayloadRef.current = payloadString;
 
       setTvData(payload);
       setCustomArenaName(payload.arenaName || '');
       setArenaColor(payload.arenaColor || 'indigo');
       setConnected(true);
+      if (payload.activeMatch) setActiveMatch(payload.activeMatch);
+    };
 
-      if (payload.activeMatch) {
-         const matchString = JSON.stringify(payload.activeMatch);
-         if (matchString !== lastMatchRef.current) {
-            lastMatchRef.current = matchString;
-            setActiveMatch(payload.activeMatch);
-         }
-      }
-    });
-
-    // James: Suporte direto a modais para abertura instantânea (Vitória/Vai a 3)
-    channel.on('broadcast', { event: 'TV_MODAL' }, ({ payload }) => {
-      if (lockedSenderId.current && payload.senderId !== lockedSenderId.current) return;
-      
-      setActiveMatch((prev: any) => {
-        if (!prev) return prev;
-        return { ...prev, modals: { victoryData: payload.victoryData, showVaiATres: payload.showVaiATres } };
+    channels.forEach(ch => {
+      ch.on('broadcast', { event: 'TV_SYNC' }, ({ payload }) => handleSync(payload));
+      ch.on('broadcast', { event: 'TV_ATTACK' }, ({ payload }) => {
+        if (lockedSenderId.current && payload.senderId !== lockedSenderId.current) return;
+        setTvAttackTime(payload.attackTime);
       });
+      ch.on('broadcast', { event: 'TV_MODAL' }, ({ payload }) => {
+        if (lockedSenderId.current && payload.senderId !== lockedSenderId.current) return;
+        setActiveMatch((prev: any) => prev ? { ...prev, modals: payload } : null);
+      });
+      // James: Se o tablet mandar mudar de arena, a TV obedece (Follow-Me)
+      ch.on('broadcast', { event: 'FOLLOW_ME' }, ({ payload }) => {
+        if (payload.arenaId && payload.arenaId !== arenaId) {
+           window.location.search = `?tv=${payload.arenaId}`;
+        }
+      });
+      ch.subscribe();
     });
 
-    channel.on('broadcast', { event: 'TV_ATTACK' }, ({ payload }) => {
-      if (lockedSenderId.current && payload.senderId !== lockedSenderId.current) return;
-      setTvAttackTime(payload.attackTime);
-      setLastSignalTime(Date.now());
-    });
+    return () => { channels.forEach(ch => supabase.removeChannel(ch)); };
+  }, [arenaId]);
 
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') setSignalStatus('listening');
-      else if (status === 'CHANNEL_ERROR') setTimeout(() => setReconnectCounter(c => c + 1), 5000);
-    });
-
-    return () => { supabase.removeChannel(channel); };
-  }, [internalArenaId, arenaId, reconnectCounter]);
-
-  // Cronômetro
   useEffect(() => {
     let interval: any;
     if (activeMatch?.status === 'playing' && activeMatch?.gameStartTime) {
@@ -126,8 +103,8 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     return (
       <div className="min-h-screen w-full bg-[#020617] flex flex-col items-center justify-center font-sans text-white">
         <div className="w-20 h-20 border-4 border-white/10 border-b-indigo-500 rounded-full animate-spin mb-8"></div>
-        <h1 className="text-4xl font-black tracking-widest uppercase">Sintonizando...</h1>
-        <p className="text-white/30 mt-4 font-mono">{internalArenaId || arenaId}</p>
+        <h1 className="text-4xl font-black tracking-widest uppercase animate-pulse">Sintonizando...</h1>
+        <p className="text-white/20 mt-4 font-mono text-xs uppercase letter-spacing-[0.3em]">Aguardando Sinal do Tablet</p>
       </div>
     );
   }
@@ -148,7 +125,6 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         <VaiATresModal onClose={()=>{}} onUndo={()=>{}} isTV={true} />
       )}
       
-      {/* Top Header */}
       <div className="relative z-10 flex justify-between items-center border-b border-white/10 pb-4">
         <div className="flex items-center space-x-4">
            <div className="w-4 h-4 rounded-full animate-pulse shadow-lg" style={{ backgroundColor: arenaTheme.pulse }}></div>
@@ -163,7 +139,6 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
       <div className="relative z-10 flex-1 lg:grid lg:grid-cols-12 gap-8 min-h-0">
         <div className="col-span-8 flex flex-col space-y-6">
-          {/* Main Board */}
           <div className="bg-[#0f172a] border-4 rounded-[3.5rem] p-10 flex flex-col justify-center shadow-2xl min-h-[55vh]" style={{ borderColor: arenaTheme.border }}>
             <div className="flex items-center justify-around space-x-8">
               {(() => {
@@ -221,7 +196,6 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
             </div>
           </div>
 
-          {/* Ranking */}
           <div className="bg-[#0f172a] border-2 rounded-[3rem] p-6" style={{ borderColor: arenaTheme.border }}>
               <h2 className="text-xl font-black uppercase mb-4 opacity-50">Ranking Hoje</h2>
               <div className="flex flex-wrap">
@@ -235,7 +209,6 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
           </div>
         </div>
 
-        {/* Auditoria Sidebar */}
         <div className="col-span-4 h-full">
           <div className="bg-[#070b14] border-2 h-full rounded-[3.5rem] p-8 flex flex-col" style={{ borderColor: arenaTheme.border }}>
              <h2 className="text-xl font-black uppercase text-white/20 mb-6">Auditoria</h2>
