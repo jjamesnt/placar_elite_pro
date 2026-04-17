@@ -23,6 +23,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   
   const lockedSenderId = useRef<string | null>(null);
   const lastSenderTime = useRef<number>(0);
+  // James: Refs para matar a 'piscadeira' (Deep Equality)
+  const lastPayloadRef = useRef<string>("");
+  const lastMatchRef = useRef<string>("");
 
   // Mapeamento de cores ultra-compatível (cores sólidas para TVs)
   const arenaTheme = useMemo(() => {
@@ -54,17 +57,36 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
       }
 
       if (lockedSenderId.current !== incomingSenderId) return;
-
       lastSenderTime.current = now;
       setLastSignalTime(now);
+
+      // James: TRAVA ANTI-PISCADEIRA — Se o dado for igual ao anterior, nem toca no React
+      const payloadString = JSON.stringify(payload);
+      if (payloadString === lastPayloadRef.current) return;
+      lastPayloadRef.current = payloadString;
+
       setTvData(payload);
       setCustomArenaName(payload.arenaName || '');
       setArenaColor(payload.arenaColor || 'indigo');
       setConnected(true);
 
       if (payload.activeMatch) {
-         setActiveMatch(payload.activeMatch);
+         const matchString = JSON.stringify(payload.activeMatch);
+         if (matchString !== lastMatchRef.current) {
+            lastMatchRef.current = matchString;
+            setActiveMatch(payload.activeMatch);
+         }
       }
+    });
+
+    // James: Suporte direto a modais para abertura instantânea (Vitória/Vai a 3)
+    channel.on('broadcast', { event: 'TV_MODAL' }, ({ payload }) => {
+      if (lockedSenderId.current && payload.senderId !== lockedSenderId.current) return;
+      
+      setActiveMatch((prev: any) => {
+        if (!prev) return prev;
+        return { ...prev, modals: { victoryData: payload.victoryData, showVaiATres: payload.showVaiATres } };
+      });
     });
 
     channel.on('broadcast', { event: 'TV_ATTACK' }, ({ payload }) => {
