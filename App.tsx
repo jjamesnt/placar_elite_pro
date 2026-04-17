@@ -111,7 +111,8 @@ const App: React.FC = () => {
   const tvSyncChannelRef = useRef<any>(null);
   const [tvModals, setTvModals] = useState<{ victoryData: any, showVaiATres: boolean }>({ victoryData: null, showVaiATres: false });
   const [tvAttackTime, setTvAttackTime] = useState<number | null>(null);
-  const [tvLayoutMirrored, setTvLayoutMirrored] = useState<boolean>(false); // James: Novo estado para inversão prática de layout
+  const [tvLayoutMirrored, setTvLayoutMirrored] = useState<boolean>(false);
+  const masterChannelRef = useRef<any>(null); // James: Canal de emergência para resgatar TVs perdidas
 
   // James: Função agora lê diretamente dos estados para evitar o 'pulo de frame' que causava a oscilação
   const calculateSnapshot = useCallback(() => {
@@ -254,7 +255,17 @@ const App: React.FC = () => {
           payload: snapshotRef.current()
         });
       }
-    }, 1500); // James: Reduzido de 3s para 1.5s - TV sintoniza mais rápido
+      // James: Grito de emergência — Ajuda TVs perdidas a encontrarem a arena certa
+      if (!masterChannelRef.current) {
+         masterChannelRef.current = supabase.channel('master_control');
+         masterChannelRef.current.subscribe();
+      }
+      const snap = snapshotRef.current();
+      masterChannelRef.current.send({
+        type: 'broadcast', event: 'FOLLOW_ME',
+        payload: { arenaId: snap.arenaId, senderId: snap.senderId }
+      });
+    }, 1500);
     return () => clearInterval(interval);
   }, []); // James: Zero dependências - o batimento nunca morre nem reseta!
 
