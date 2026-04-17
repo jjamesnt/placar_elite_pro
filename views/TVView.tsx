@@ -19,6 +19,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   
   const lockedSenderId = useRef<string | null>(null);
   const lastSenderTime = useRef<number>(0);
+  const fingerprintRef = useRef<string>(""); // James: Identidade única do último pacote sólido recebido
 
   const arenaTheme = useMemo(() => {
     const themes: Record<string, any> = {
@@ -52,9 +53,20 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
       if (lockedSenderId.current !== incomingSenderId) return;
       lastSenderTime.current = now;
 
+      // James: TRAVA DE ESTABILIDADE (Fingerprint)
+      // Comparamos apenas os dados que impactam o visual para ser ultra-veloz
+      const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}`;
+      
+      const colorChanged = payload.arenaColor && payload.arenaColor !== arenaColor;
+      const dataChanged = newFinger !== fingerprintRef.current;
+
+      if (!colorChanged && !dataChanged && connected) return;
+      
+      fingerprintRef.current = newFinger;
+      if (colorChanged) setArenaColor(payload.arenaColor);
+      
       setTvData(payload);
       setCustomArenaName(payload.arenaName || '');
-      setArenaColor(payload.arenaColor || 'indigo');
       setConnected(true);
       if (payload.activeMatch) setActiveMatch(payload.activeMatch);
     };

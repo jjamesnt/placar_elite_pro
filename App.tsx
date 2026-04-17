@@ -202,7 +202,7 @@ const App: React.FC = () => {
     channel.subscribe((status) => {
       const isOnline = status === 'SUBSCRIBED';
       setChannelStatus(isOnline ? 'online' : 'connecting');
-      if (isOnline) {
+      if (isOnline && currentArenaId !== 'default') {
         channel.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
       }
     });
@@ -220,7 +220,7 @@ const App: React.FC = () => {
         payload: calculateSnapshot()
       });
     }
-  }, [teamA.score, teamB.score, servingTeam, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored]); // James: Disparo imediato na troca de layout
+  }, [teamA.score, teamB.score, servingTeam, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored, currentArenaId]);
 
   // 2.2 Canal de Ataque - James: Enviando APENAS os segundos de posse de forma ultra-leve
   useEffect(() => {
@@ -256,15 +256,17 @@ const App: React.FC = () => {
         });
       }
       // James: Grito de emergência — Ajuda TVs perdidas a encontrarem a arena certa
-      if (!masterChannelRef.current) {
-         masterChannelRef.current = supabase.channel('master_control');
-         masterChannelRef.current.subscribe();
+      if (currentArenaId !== 'default') {
+         if (!masterChannelRef.current) {
+            masterChannelRef.current = supabase.channel('master_control');
+            masterChannelRef.current.subscribe();
+         }
+         const snap = snapshotRef.current();
+         masterChannelRef.current.send({
+           type: 'broadcast', event: 'FOLLOW_ME',
+           payload: { arenaId: snap.arenaId, senderId: snap.senderId }
+         });
       }
-      const snap = snapshotRef.current();
-      masterChannelRef.current.send({
-        type: 'broadcast', event: 'FOLLOW_ME',
-        payload: { arenaId: snap.arenaId, senderId: snap.senderId }
-      });
     }, 1500);
     return () => clearInterval(interval);
   }, []); // James: Zero dependências - o batimento nunca morre nem reseta!
