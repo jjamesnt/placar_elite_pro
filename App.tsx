@@ -255,18 +255,8 @@ const App: React.FC = () => {
           payload: snapshotRef.current()
         });
       }
-      // James: Grito de emergência — Ajuda TVs perdidas a encontrarem a arena certa
-      if (currentArenaId !== 'default') {
-         if (!masterChannelRef.current) {
-            masterChannelRef.current = supabase.channel('master_control');
-            masterChannelRef.current.subscribe();
-         }
-         const snap = snapshotRef.current();
-         masterChannelRef.current.send({
-           type: 'broadcast', event: 'FOLLOW_ME',
-           payload: { arenaId: snap.arenaId, senderId: snap.senderId }
-         });
-      }
+      // James: Removido grito de emergência global (master_control) para evitar Loop de Sintonização (Reload Infinito)
+      // pois afetava TODAS as TVs conectadas simultaneamente em todo o mundo.
     }, 1500);
     return () => clearInterval(interval);
   }, []); // James: Zero dependências - o batimento nunca morre nem reseta!

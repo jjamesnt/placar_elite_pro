@@ -19,6 +19,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   
   const lockedSenderId = useRef<string | null>(null);
   const lastSenderTime = useRef<number>(0);
+  
+  const arenaColorRef = useRef<string>('indigo');
+  const connectedRef = useRef<boolean>(false);
   const fingerprintRef = useRef<string>(""); // James: Identidade única do último pacote sólido recebido
 
   const arenaTheme = useMemo(() => {
@@ -36,10 +39,11 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   useEffect(() => {
     if (!arenaId) return;
     
-    // James: SINTONIA DUAL-BAND (Lê ID e Nome para compatibilidade total)
+    // James: SINTONIA DUAL-BAND (Lê ID e Nome para compatibilidade total, sem master global)
+    const normalizedId = arenaId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
     const channels = [
        supabase.channel(`sync_arena_${arenaId.toLowerCase()}`),
-       supabase.channel(`master_control`) // Ouvir comando mestre de migração
+       supabase.channel(`sync_arena_${normalizedId}`)
     ];
 
     const handleSync = (payload: any) => {
@@ -57,17 +61,24 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
       // Comparamos apenas os dados que impactam o visual para ser ultra-veloz
       const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}`;
       
-      const colorChanged = payload.arenaColor && payload.arenaColor !== arenaColor;
+      const colorChanged = payload.arenaColor && payload.arenaColor !== arenaColorRef.current;
       const dataChanged = newFinger !== fingerprintRef.current;
 
-      if (!colorChanged && !dataChanged && connected) return;
+      if (!colorChanged && !dataChanged && connectedRef.current) return;
       
       fingerprintRef.current = newFinger;
-      if (colorChanged) setArenaColor(payload.arenaColor);
+      if (colorChanged) {
+        setArenaColor(payload.arenaColor);
+        arenaColorRef.current = payload.arenaColor;
+      }
       
+      if (!connectedRef.current) {
+         setConnected(true);
+         connectedRef.current = true;
+      }
+
       setTvData(payload);
       setCustomArenaName(payload.arenaName || '');
-      setConnected(true);
       if (payload.activeMatch) setActiveMatch(payload.activeMatch);
     };
 
