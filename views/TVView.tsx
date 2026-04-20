@@ -41,10 +41,11 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     
     // James: SINTONIA DUAL-BAND (Lê ID e Nome para compatibilidade total, sem master global)
     const normalizedId = arenaId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
-    const channels = [
-       supabase.channel(`sync_arena_${arenaId.toLowerCase()}`),
-       supabase.channel(`sync_arena_${normalizedId}`)
-    ];
+    const channelNames = Array.from(new Set([
+       `sync_arena_${arenaId.toLowerCase()}`,
+       `sync_arena_${normalizedId}`
+    ]));
+    const channels = channelNames.map(name => supabase.channel(name));
 
     const handleSync = (payload: any) => {
       const now = Date.now();

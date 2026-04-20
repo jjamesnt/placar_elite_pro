@@ -189,26 +189,42 @@ const App: React.FC = () => {
     if (initializedArenaId.current === currentArenaId && tvSyncChannelRef.current) return;
     initializedArenaId.current = currentArenaId;
 
-    // James: Padronizando para usar o ID único do banco para evitar erros de sintaxe no nome do canal
+    // James: Padronizando emissão Dual-Band
     const channelId = currentArena?.id || normalize(currentArena?.name || 'minhaquadra');
-    const channelName = `sync_arena_${channelId}`;
+    const channelSlug = normalize(currentArena?.name || 'minhaquadra');
     
-    if (tvSyncChannelRef.current) supabase.removeChannel(tvSyncChannelRef.current);
+    if (tvSyncChannelRef.current?.unsubscribe) {
+       tvSyncChannelRef.current.unsubscribe();
+    } else if (tvSyncChannelRef.current) {
+       supabase.removeChannel(tvSyncChannelRef.current);
+    }
     
-    console.log("Tablet: Ligando Rádio Blindado V6 na frequência:", channelName);
-    const channel = supabase.channel(channelName);
-    tvSyncChannelRef.current = channel;
+    const names = Array.from(new Set([`sync_arena_${channelId}`, `sync_arena_${channelSlug}`]));
     
-    channel.subscribe((status) => {
-      const isOnline = status === 'SUBSCRIBED';
-      setChannelStatus(isOnline ? 'online' : 'connecting');
-      if (isOnline && currentArenaId !== 'default') {
-        channel.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
+    console.log("Tablet: Ligando Transmissão Dual-Band nas frequências:", names.join(', '));
+    const channels = names.map(name => supabase.channel(name));
+    
+    tvSyncChannelRef.current = {
+      send: (payload: any) => {
+        channels.forEach(ch => ch.send(payload));
+      },
+      unsubscribe: () => {
+        channels.forEach(ch => supabase.removeChannel(ch));
       }
+    };
+    
+    channels.forEach(ch => {
+      ch.subscribe((status) => {
+        const isOnline = status === 'SUBSCRIBED';
+        setChannelStatus(isOnline ? 'online' : 'connecting');
+        if (isOnline && currentArenaId !== 'default' && ch === channels[0]) {
+          tvSyncChannelRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
+        }
+      });
     });
 
     return () => { 
-       // James: Não removemos o canal no Cleanup para manter a rádio viva durante trocas rápidas de view
+       // James: Não removemos o canal no Cleanup para manter a rádio viva
     };
   }, [currentArenaId]);
 
