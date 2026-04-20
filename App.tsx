@@ -111,7 +111,8 @@ const App: React.FC = () => {
   const tvSyncChannelRef = useRef<any>(null);
   const [tvModals, setTvModals] = useState<{ victoryData: any, showVaiATres: boolean }>({ victoryData: null, showVaiATres: false });
   const [tvAttackTime, setTvAttackTime] = useState<number | null>(null);
-  const [tvLayoutMirrored, setTvLayoutMirrored] = useState<boolean>(false); // James: Novo estado para inversão prática de layout
+  const [tvLayoutMirrored, setTvLayoutMirrored] = useState<boolean>(false);
+  const masterChannelRef = useRef<any>(null); // James: Canal de emergência para resgatar TVs perdidas
 
   // James: Função agora lê diretamente dos estados para evitar o 'pulo de frame' que causava a oscilação
   const calculateSnapshot = useCallback(() => {
@@ -164,6 +165,7 @@ const App: React.FC = () => {
         arenaId: cA?.toLowerCase(),
         arenaSlug: normalize(curArena?.name || ''),
         arenaName: curArena?.name || 'ARENA',
+        arenaColor: curArena?.color || 'indigo',
         rankingDate: new Date().toLocaleDateString('pt-BR'), // James: Data exibida na TV
         activeMatch: { 
           teamA: tA, teamB: tB, servingTeam: sT, gameStartTime: gS, status: 'playing',
@@ -187,8 +189,9 @@ const App: React.FC = () => {
     if (initializedArenaId.current === currentArenaId && tvSyncChannelRef.current) return;
     initializedArenaId.current = currentArenaId;
 
-    const normalizedId = currentArenaId.toLowerCase().replace(/-/g, '');
-    const channelName = `sync_arena_${normalizedId}`;
+    // James: Padronizando para usar o ID único do banco para evitar erros de sintaxe no nome do canal
+    const channelId = currentArena?.id || normalize(currentArena?.name || 'minhaquadra');
+    const channelName = `sync_arena_${channelId}`;
     
     if (tvSyncChannelRef.current) supabase.removeChannel(tvSyncChannelRef.current);
     
@@ -199,7 +202,7 @@ const App: React.FC = () => {
     channel.subscribe((status) => {
       const isOnline = status === 'SUBSCRIBED';
       setChannelStatus(isOnline ? 'online' : 'connecting');
-      if (isOnline) {
+      if (isOnline && currentArenaId !== 'default') {
         channel.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
       }
     });
@@ -217,14 +220,14 @@ const App: React.FC = () => {
         payload: calculateSnapshot()
       });
     }
-  }, [teamA.score, teamB.score, servingTeam, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored]); // James: Disparo imediato na troca de layout
+  }, [teamA.score, teamB.score, servingTeam, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored, currentArenaId]);
 
   // 2.2 Canal de Ataque - James: Enviando APENAS os segundos de posse de forma ultra-leve
   useEffect(() => {
     if (tvSyncChannelRef.current && tvAttackTime !== null) {
        tvSyncChannelRef.current.send({
          type: 'broadcast', event: 'TV_ATTACK',
-         payload: { attackTime: tvAttackTime }
+         payload: { attackTime: tvAttackTime, senderId }
        });
     }
   }, [tvAttackTime]);
@@ -234,7 +237,7 @@ const App: React.FC = () => {
     if (tvSyncChannelRef.current && (tvModals.victoryData || tvModals.showVaiATres)) {
        tvSyncChannelRef.current.send({
          type: 'broadcast', event: 'TV_MODAL',
-         payload: tvModals
+         payload: { ...tvModals, senderId }
        });
     }
   }, [tvModals]);
@@ -252,7 +255,9 @@ const App: React.FC = () => {
           payload: snapshotRef.current()
         });
       }
-    }, 1500); // James: Reduzido de 3s para 1.5s - TV sintoniza mais rápido
+      // James: Removido grito de emergência global (master_control) para evitar Loop de Sintonização (Reload Infinito)
+      // pois afetava TODAS as TVs conectadas simultaneamente em todo o mundo.
+    }, 1500);
     return () => clearInterval(interval);
   }, []); // James: Zero dependências - o batimento nunca morre nem reseta!
 
@@ -305,7 +310,11 @@ const App: React.FC = () => {
     if (!session && currentView !== 'tv') return;
 
     const fetchArenas = async () => {
-      const { data } = await supabase.from('arenas').select('*').order('created_at', { ascending: true });
+      let query = supabase.from('arenas').select('*').order('created_at', { ascending: true });
+      if (session?.user?.id) {
+        query = query.eq('user_id', session.user.id);
+      }
+      const { data } = await query;
       if (data && data.length > 0) {
         setArenas(data);
         const lastArena = localStorage.getItem('elite_last_arena');
@@ -436,12 +445,42 @@ const App: React.FC = () => {
   }, [currentArenaId, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, capoteEnabled, vaiATresEnabled, matchMode, matchTime, tvLayoutMirrored, refreshData]);
 
   const handleAddArena = async (name: string, color: ArenaColor) => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id) {
+       if (showAlert) showAlert("Erro", "Sessão não encontrada. Tente sair e entrar novamente.", 'danger');
+       return;
+    }
+
+    // James: Verificação proativa de limites do plano para evitar erro genérico de RLS
+    const limit = userLicense?.arenas_limit || 1;
+    if (arenas.length >= limit && !isAdmin) {
+      if (showAlert) showAlert(
+        "Limite Atingido", 
+        `Seu plano atual permite apenas ${limit} arena(s). Remova uma existente ou faça upgrade para adicionar mais.`, 
+        'warning', 
+        'lock'
+      );
+      return;
+    }
+    
     try {
       const { data, error } = await supabase.from('arenas').insert([{ name, color, user_id: session.user.id }]).select().single();
-      if (error) throw error;
-      if (data) setArenas(prev => [...prev, data]);
-    } catch (err) { console.error("Erro ao adicionar arena:", err); }
+      
+      if (error) {
+        // Se for erro de RLS, dar uma dica sobre permissões
+        if (error.code === '42501') {
+           throw new Error("Permissão negada pelo banco (RLS). Por favor, execute o 'Reparo SQL' no painel Admin.");
+        }
+        throw error;
+      }
+
+      if (data) {
+        setArenas(prev => [...prev, data]);
+        if (showAlert) showAlert("Sucesso!", `Grupo "${name}" criado com sucesso.`, 'success', 'check');
+      }
+    } catch (err: any) { 
+      console.error("Erro ao adicionar arena:", err); 
+      if (showAlert) showAlert("Não foi possível criar", err.message || "Tente novamente ou contate o suporte.", 'danger', 'alert');
+    }
   };
 
   const handleUpdateArena = async (id: string, name: string, color: ArenaColor) => {
@@ -449,7 +488,11 @@ const App: React.FC = () => {
       const { error } = await supabase.from('arenas').update({ name, color }).eq('id', id);
       if (error) throw error;
       setArenas(prev => prev.map(a => a.id === id ? { ...a, name, color } : a));
-    } catch (err) { console.error("Erro ao atualizar arena:", err); }
+      if (showAlert) showAlert("Atualizado", "As alterações foram salvas.", 'success', 'check');
+    } catch (err: any) { 
+      console.error("Erro ao atualizar arena:", err);
+      if (showAlert) showAlert("Erro ao Atualizar", err.message || "Não foi possível salvar as alterações.", 'danger', 'alert');
+    }
   };
 
   const handleDeleteArena = async (id: string) => {
@@ -458,8 +501,20 @@ const App: React.FC = () => {
       if (error) throw error;
       setArenas(prev => prev.filter(a => a.id !== id));
       if (currentArenaId === id) setCurrentArenaId(arenas.find(a => a.id !== id)?.id || 'default');
-    } catch (err) { console.error("Erro ao deletar arena:", err); }
+      if (showAlert) showAlert("Excluído", "O grupo foi removido permanentemente.", 'info', 'check');
+    } catch (err: any) { 
+      console.error("Erro ao deletar arena:", err);
+      if (showAlert) showAlert("Erro ao Deletar", err.message || "Não foi possível remover a arena.", 'danger', 'trash');
+    }
   };
+
+  const handleCloseWelcome = useCallback(async () => {
+    setActiveModal('none');
+    localStorage.setItem('elite_welcome_done', 'true');
+    if (userLicense?.id) {
+        await supabase.from('user_licenses').update({ first_access_done: true }).eq('id', userLicense.id);
+    }
+  }, [userLicense]);
 
   if (loading) return <div className="h-screen w-screen flex items-center justify-center bg-[#030712]"><div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
   if (!session && currentView !== 'tv') return <><Background color="indigo" /><Login onLogin={() => { }} /></>;
@@ -467,7 +522,7 @@ const App: React.FC = () => {
   return (
     <>
       <OrientationLock />
-      {activeModal === 'welcome' && <WelcomeModal onConfirm={() => {}} />}
+      {activeModal === 'welcome' && <WelcomeModal onConfirm={handleCloseWelcome} />}
       <Background color={(currentArena.color || 'indigo') as ArenaColor} />
       <div className="h-screen w-screen flex flex-col text-white font-sans overflow-hidden bg-transparent">
         {currentView !== 'tv' && (
