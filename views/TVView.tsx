@@ -201,7 +201,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
   // Cronômetro do Placar
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (activeMatch?.status === 'playing' && activeMatch?.gameStartTime) {
       const update = () => {
         const start = new Date(activeMatch.gameStartTime).getTime();

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { Player, Match, Team, Arena } from '../types';
+import { ArenaAPI } from '../lib/api';
 
 const normalize = (str: string) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
 
