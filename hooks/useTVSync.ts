@@ -118,32 +118,43 @@ export const useTVSync = ({
     
     if (tvSyncChannelRef.current?.unsubscribe) {
        tvSyncChannelRef.current.unsubscribe();
-    } else if (tvSyncChannelRef.current) {
-       supabase.removeChannel(tvSyncChannelRef.current);
     }
     
-    // James: TRANSFORMAÇÃO PARA MONO-BAND (Evita colisão de pacotes Supabase)
-    const channelName = `sync_arena_${curArena.id.toLowerCase().replace(/-/g, '')}`;
-    console.log("Tablet: Ligando Transmissão Mono-Band na frequência:", channelName);
+    // James: TRANSFORMAÇÃO PARA POSTGRES SYNC V9 (Blindagem Atômica e Fingerprint DB)
+    console.log("Tablet: Rádio ligada em modo Nativo-DB na arena:", currentArenaId);
+    setChannelStatus('online');
     
-    const channel = supabase.channel(channelName);
-    
+    let lastPushedFingerprint = "";
+
+    const pushToDatabase = async (payload: any) => {
+        // Gera um shield rápido (fingerprint) antes de engajar o DB
+        const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}|${payload.lastInteractionTime}`;
+        if (newFinger === lastPushedFingerprint) return;
+        lastPushedFingerprint = newFinger;
+
+        try {
+           await ArenaAPI.updateLiveState(currentArenaId, payload);
+        } catch (e) {
+           console.error("DB Sync Push Error:", e);
+           lastPushedFingerprint = ""; // Destranca re-tentativa na falha
+        }
+    };
+
     tvSyncChannelRef.current = {
-      send: (payload: any) => {
-        channel.send(payload);
+      send: (data: any) => {
+         if (data.payload) {
+             pushToDatabase(data.payload);
+         }
       },
       unsubscribe: () => {
-        supabase.removeChannel(channel);
+        setChannelStatus('offline');
       }
     };
     
-    channel.subscribe((status) => {
-      const isOnline = status === 'SUBSCRIBED';
-      setChannelStatus(isOnline ? 'online' : 'connecting');
-      if (isOnline && currentArenaId !== 'default') {
-        tvSyncChannelRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
-      }
-    });
+    // Puxada inicial
+    if (currentArenaId !== 'default') {
+      tvSyncChannelRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
+    }
 
     return () => { 
        // James: Não removemos o canal no Cleanup para manter a rádio viva

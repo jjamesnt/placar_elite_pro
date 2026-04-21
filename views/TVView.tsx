@@ -65,97 +65,105 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     }
   }, []);
 
-  // 2. RECEPTOR PRINCIPAL — Cria canal(is) uma vez e mantém vivo
-  useEffect(() => {
-    const targetId = internalArenaId || arenaId;
-    if (!targetId || targetId === 'auto') return;
-    
-    // James: SINTONIA MONO-BAND (Garante unicidade de sinal no Supabase Realtime)
-    const rawId = targetId.toLowerCase().replace(/-/g, '');
-    const channelName = `sync_arena_${rawId}`;
-    
-    console.log("TV: Sintonizando Mono-Band no canal:", channelName);
-    const channels = [supabase.channel(channelName, {
-      config: { broadcast: { self: false } }
-    })];
+    // 2. RECEPTOR PRINCIPAL — Escuta o Postgres (Fonte Única da Verdade)
+    useEffect(() => {
+      const targetId = internalArenaId || arenaId;
+      if (!targetId || targetId === 'auto') return;
 
-    const handleSync = (payload: any) => {
-      // James: BALA DE PRATA - RELÓGIO MONOTÔNICO TEMPORAL
-      // Se a aba fantasma mandar mensagem, o lastInteractionTime dela estará no passado.
-      // Jamais aceitaremos estados mais velhos que os que já processamos!
-      const incomingTime = payload.lastInteractionTime || 0;
-      if (incomingTime < lastInteractionRef.current) return;
-      lastInteractionRef.current = incomingTime;
+      console.log(`TV: Sintonizando Banco de Dados para a arena: ${targetId}`);
 
-      const now = Date.now();
-      const incomingSenderId = payload.senderId || 'unknown';
+      const handleSync = (payload: any) => {
+        // James: BALA DE PRATA - RELÓGIO MONOTÔNICO TEMPORAL
+        const incomingTime = payload.lastInteractionTime || 0;
+        if (incomingTime < lastInteractionRef.current) return;
+        lastInteractionRef.current = incomingTime;
 
-      if (!lockedSenderId.current || (now - lastSenderTime.current > 5000)) {
-        lockedSenderId.current = incomingSenderId;
-      }
+        // Ao ler direto do banco não tem "bate e volta" instantâneo, mas mantemos o Shield
+        const now = Date.now();
+        const incomingSenderId = payload.senderId || 'unknown';
 
-      if (lockedSenderId.current !== incomingSenderId) {
-         // Se o relógio andou pra frente numa aba diferente, conceder a liderança à ela!
-         // (Isso aniquila as "roubadas de leader" que ocorrem no Timeout do iOS PWA)
-         if (incomingTime > lastInteractionRef.current) {
-             lockedSenderId.current = incomingSenderId;
-         } else {
-             return;
-         }
-      }
-      lastSenderTime.current = now;
-
-      // James: TRAVA DE ESTABILIDADE (Fingerprint)
-      const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}`;
-      
-      const colorChanged = payload.arenaColor && payload.arenaColor !== arenaColorRef.current;
-      const dataChanged = newFinger !== fingerprintRef.current;
-
-      if (!colorChanged && !dataChanged && connectedRef.current) return;
-      
-      fingerprintRef.current = newFinger;
-      if (colorChanged) {
-        setArenaColor(payload.arenaColor);
-        arenaColorRef.current = payload.arenaColor;
-      }
-      
-      if (!connectedRef.current) {
-         setConnected(true);
-         connectedRef.current = true;
-      }
-
-      setLastSignalTime(Date.now());
-      setTvData(payload);
-      setActiveMatch(payload.activeMatch);
-      setCustomArenaName(payload.arenaName || '');
-      setSignalLost(false);
-    };
-
-    channels.forEach(ch => {
-      ch.on('broadcast', { event: 'TV_SYNC' }, ({ payload }) => handleSync(payload));
-
-      ch.on('broadcast', { event: 'TV_MODAL' }, ({ payload }) => {
-        if (lockedSenderId.current && payload.senderId !== lockedSenderId.current) return;
-        setActiveMatch((prev: any) => prev ? { ...prev, modals: payload } : prev);
-      });
-
-      ch.on('broadcast', { event: 'TV_ATTACK' }, ({ payload }) => {
-        if (lockedSenderId.current && payload.senderId !== lockedSenderId.current) return;
-        setTvAttackTime(payload.attackTime);
-        setLastSignalTime(Date.now());
-      });
-
-      ch.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setSignalStatus('listening');
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setTimeout(() => setReconnectCounter(prev => prev + 1), 3000);
+        if (!lockedSenderId.current || (now - lastSenderTime.current > 5000)) {
+          lockedSenderId.current = incomingSenderId;
         }
-      });
-    });
 
-    return () => { channels.forEach(ch => supabase.removeChannel(ch)); };
-  }, [internalArenaId, arenaId, reconnectCounter]);
+        if (lockedSenderId.current !== incomingSenderId) {
+           if (incomingTime > lastInteractionRef.current) {
+               lockedSenderId.current = incomingSenderId;
+           } else {
+               return;
+           }
+        }
+        lastSenderTime.current = now;
+
+        // Fingerprint para evitar flicker de reagendamento DOM
+        const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}`;
+        
+        const colorChanged = payload.arenaColor && payload.arenaColor !== arenaColorRef.current;
+        const dataChanged = newFinger !== fingerprintRef.current;
+
+        if (!colorChanged && !dataChanged && connectedRef.current) return;
+        
+        fingerprintRef.current = newFinger;
+        if (colorChanged) {
+          setArenaColor(payload.arenaColor);
+          arenaColorRef.current = payload.arenaColor;
+        }
+        
+        if (!connectedRef.current) {
+           setConnected(true);
+           connectedRef.current = true;
+        }
+
+        setLastSignalTime(Date.now());
+        setTvData(payload);
+        setActiveMatch(payload.activeMatch);
+        if (payload.activeMatch?.attackTime !== undefined) {
+           setTvAttackTime(payload.activeMatch.attackTime);
+        }
+        setCustomArenaName(payload.arenaName || '');
+        setSignalLost(false);
+      };
+
+      // Puxar o estado inicial IMEDIATAMENTE do banco via REST
+      const fetchInitial = async () => {
+        let q = supabase.from('arenas').select('id, name, live_sync_state');
+        const { data } = await q;
+        if (data) {
+           const targetNormalized = targetId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
+           const match = data.find(a => a.id === targetId || (a.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim() === targetNormalized);
+           if (match && match.live_sync_state) {
+              handleSync(match.live_sync_state);
+           }
+        }
+      };
+      fetchInitial();
+
+      const channel = supabase.channel(`tv_db_sync_${targetId.substring(0, 10)}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'arenas' },
+          (payload) => {
+            const updatedArena = payload.new as any;
+            const targetNormalized = targetId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
+            const arenaNormalized = (updatedArena.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
+            
+            if (updatedArena.id === targetId || arenaNormalized === targetNormalized) {
+               if (updatedArena.live_sync_state) {
+                  handleSync(updatedArena.live_sync_state);
+               }
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            setSignalStatus('listening');
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setTimeout(() => setReconnectCounter(prev => prev + 1), 3000);
+          }
+        });
+
+      return () => { supabase.removeChannel(channel); };
+    }, [internalArenaId, arenaId, reconnectCounter]);
 
   // James: DETECTOR DE DESPERTAR — quando a TV acorda, força reconexão (com debounce para evitar loops)
   useEffect(() => {
