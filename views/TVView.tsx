@@ -1,8 +1,35 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, memo } from 'react';
 import { supabase } from '../lib/supabase';
 import { TrophyIcon, ClockIcon } from '../components/icons';
 import VictoryModal from '../components/VictoryModal';
 import VaiATresModal from '../components/VaiATresModal';
+import { ArenaColor } from '../types';
+
+// James: Componente de Fundo Dinâmico (Sincronizado com o Placar)
+const Background: React.FC<{ color: any }> = memo(({ color }) => {
+  const bgMap: Record<string, string> = {
+    indigo: '#1e1b4b', blue: '#172554', emerald: '#064e3b', amber: '#451a03', rose: '#4c0519', violet: '#2e1065'
+  };
+  const glowMap: Record<string, string> = {
+    indigo: 'rgba(99, 102, 241, 0.45)', blue: 'rgba(59, 130, 246, 0.45)', emerald: 'rgba(16, 185, 129, 0.4)',
+    amber: 'rgba(245, 158, 11, 0.4)', rose: 'rgba(244, 63, 94, 0.45)', violet: 'rgba(139, 92, 246, 0.45)'
+  };
+  return (
+    <div className="fixed inset-0 -z-10 transition-colors duration-1000 ease-in-out" style={{ backgroundColor: bgMap[color] || bgMap.indigo }}>
+      <div className="absolute inset-0 bg-gradient-to-tr from-black/70 via-transparent to-black/30"></div>
+      <div className="absolute inset-0 transition-all duration-1000" style={{ background: `radial-gradient(circle at 50% 50%, ${glowMap[color] || glowMap.indigo} 0%, transparent 85%)` }}></div>
+    </div>
+  );
+});
+
+const TEMAS: Record<string, any> = {
+  indigo: { text: 'text-indigo-400', border: 'border-indigo-500', from: 'from-indigo-900/20', via: 'via-indigo-500/50', bg: 'bg-indigo-500/10' },
+  blue: { text: 'text-blue-400', border: 'border-blue-500', from: 'from-blue-900/20', via: 'via-blue-500/50', bg: 'bg-blue-500/10' },
+  emerald: { text: 'text-emerald-400', border: 'border-emerald-500', from: 'from-emerald-900/20', via: 'via-emerald-500/50', bg: 'bg-emerald-500/10' },
+  amber: { text: 'text-amber-400', border: 'border-amber-500', from: 'from-amber-900/20', via: 'via-amber-500/50', bg: 'bg-amber-500/10' },
+  rose: { text: 'text-rose-400', border: 'border-rose-500', from: 'from-rose-900/20', via: 'via-rose-500/50', bg: 'bg-rose-500/10' },
+  violet: { text: 'text-violet-400', border: 'border-violet-500', from: 'from-violet-900/20', via: 'via-violet-500/50', bg: 'bg-violet-500/10' },
+};
 
 interface TVViewProps {
   arenaId: string;
@@ -230,7 +257,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 70%)' }}></div>
         <div className="relative z-10 flex flex-col items-center gap-10">
            <div className="relative">
-              <div className="w-24 h-24 border-b-2 border-indigo-500 rounded-full animate-spin"></div>
+              <div className={`w-24 h-24 border-b-2 ${TEMAS[arenaColor as ArenaColor]?.border || 'border-indigo-500'} rounded-full animate-spin`}></div>
               <div className="absolute inset-0 flex items-center justify-center">
                  <div className={`w-3 h-3 rounded-full ${signalStatus === 'listening' ? 'bg-emerald-400 shadow-[0_0_15px_#10b981]' : 'bg-red-500 shadow-[0_0_15px_#ef4444] animate-pulse'}`}></div>
               </div>
@@ -253,8 +280,12 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     );
   }
 
+  const currentTheme = TEMAS[arenaColor as ArenaColor] || TEMAS.indigo;
+
   return (
-    <div className="min-h-screen w-full bg-[#020617] text-white p-8 font-sans overflow-hidden flex flex-col gap-8">
+    <div className="min-h-screen w-full bg-[#020617] text-white p-8 font-sans overflow-hidden flex flex-col gap-8 relative">
+      <Background color={arenaColor} />
+      
       {/* Indicadores de Status Invisíveis / Diagnóstico */}
       <div className="absolute top-6 right-6 flex items-center gap-3 z-[100]">
         {signalLost && (
@@ -289,7 +320,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         <div className="flex items-center gap-4">
            <div className="w-4 h-4 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_15px_#10b981]"></div>
            <h1 className="text-4xl font-black uppercase tracking-tighter">
-             LIVE <span className="text-indigo-400">{customArenaName || 'ARENA'}</span>
+             LIVE <span className={currentTheme.text}>{customArenaName || 'ARENA'}</span>
            </h1>
         </div>
 
@@ -349,7 +380,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
                        <div className={`px-12 py-8 rounded-[2.5rem] border-4 flex flex-col items-center justify-center transition-all duration-300 shadow-2xl ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110' : 'bg-black/90 border-white/10'}`}>
                           <span className="text-[14px] font-black uppercase tracking-[0.4em] text-white/40 mb-2">Posse</span>
-                          <span className={`text-9xl font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'text-red-500' : 'text-indigo-400'}`}>
+                          <span className={`text-9xl font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'text-red-500' : currentTheme.text}`}>
                             {tvAttackTime ?? 24}
                           </span>
                        </div>
@@ -376,8 +407,8 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
           </div>
 
           {/* Ranking */}
-          <div className="bg-gradient-to-br from-indigo-900/20 to-transparent border border-white/5 rounded-[3rem] p-8 flex flex-col shadow-2xl relative overflow-hidden flex-1 min-h-0">
-              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"></div>
+          <div className={`bg-gradient-to-br ${currentTheme.from} to-transparent border border-white/5 rounded-[3rem] p-8 flex flex-col shadow-2xl relative overflow-hidden flex-1 min-h-0`}>
+              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via ${currentTheme.via} to-transparent`}></div>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <TrophyIcon className="w-8 h-8 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]" />
@@ -430,7 +461,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
               
               <div className={`${historyMatches.length > 4 ? 'auto-scroll-list' : ''} flex flex-col gap-3 py-2 px-1`}>
                 {historyMatches.map((m: any) => (
-                  <div key={m.id} className="bg-gray-800/40 border border-white/10 rounded-[2rem] p-6 flex flex-col gap-2 transition-all hover:bg-indigo-500/10 shadow-lg">
+                  <div key={m.id} className={`bg-gray-800/40 border border-white/10 rounded-[2rem] p-6 flex flex-col gap-2 transition-all hover:${currentTheme.bg} shadow-lg`}>
                     <div className="flex items-center justify-between w-full">
                         <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Partida Finalizada</span>
                         <div className="h-px flex-1 mx-4 bg-white/5"></div>
