@@ -131,8 +131,11 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         if (data) {
            const targetNormalized = targetId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
            const match = data.find(a => a.id === targetId || (a.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim() === targetNormalized);
-           if (match && match.live_sync_state) {
-              handleSync(match.live_sync_state);
+           if (match) {
+              setSignalLost(false); // James: Encontrou a arena, sinal está OK
+              if (match.live_sync_state) {
+                 handleSync(match.live_sync_state);
+              }
            }
         }
       };
@@ -253,10 +256,10 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   return (
     <div className="min-h-screen w-full bg-[#020617] text-white p-8 font-sans overflow-hidden flex flex-col gap-8">
       {/* Indicadores de Status Invisíveis / Diagnóstico */}
-      <div className="absolute top-6 left-6 flex items-center gap-3 z-[100]">
+      <div className="absolute top-6 right-6 flex items-center gap-3 z-[100]">
         {signalLost && (
-          <div className="bg-amber-500/20 text-amber-500 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] animate-pulse border border-amber-500/20 backdrop-blur-md">
-            Sinal Instável - Recuperando...
+          <div className="bg-amber-500/10 text-amber-500/80 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] animate-pulse border border-amber-500/20 backdrop-blur-md">
+            Sinal Recuperando...
           </div>
         )}
       </div>
