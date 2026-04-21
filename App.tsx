@@ -45,8 +45,11 @@ const App: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     return (params.get('view') === 'tv' || params.get('tv')) ? 'tv' : 'placar';
   });
-  // James: ID único desta aba para evitar que outras abas interfiram na TV
-  const senderId = useMemo(() => Math.random().toString(36).substring(7), []);
+  // James: ID MATEMATICAMENTE ÚNICO DO DISPOSITIVO (Impede Ghost Tabs e SSR caching collision)
+  const senderId = useMemo(() => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  }, []);
   const [lastUpdate, setLastUpdate] = useState<string>('--/-- --:--');
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
