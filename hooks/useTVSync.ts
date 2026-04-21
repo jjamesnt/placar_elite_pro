@@ -182,7 +182,9 @@ export const useTVSync = ({
 
   // Batimento de Segurança (Heartbeat) V7
   const snapshotRef = useRef(calculateSnapshot);
-  useEffect(() => { snapshotRef.current = calculateSnapshot; }, [calculateSnapshot]);
+  // James: ATUALIZAÇÃO SÍNCRONA. Evita o envio de "pontos antigos" caso o usuário
+  // pontue exatamente na fração de segundo antes do heartbeat rodar (Problema da "Piscadeira" resolvido).
+  snapshotRef.current = calculateSnapshot;
 
   useEffect(() => {
     console.log("Tablet: Iniciando batimento de segurança imortal (3s)...");
@@ -193,7 +195,7 @@ export const useTVSync = ({
           payload: snapshotRef.current()
         });
       }
-    }, 1500);
+    }, 3000); // Relaxado para 3 segundos em produção
     return () => clearInterval(interval);
   }, []);
 
