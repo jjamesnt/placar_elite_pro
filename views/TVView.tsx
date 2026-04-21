@@ -64,37 +64,27 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     }
   }, []);
 
-  // 2. RECEPTOR PRINCIPAL — Cria canal(is) uma vez e mantém vivo
+  // 2. RECEPTOR PRINCIPAL — Escuta o Postgres (Fonte Única da Verdade)
   useEffect(() => {
     const targetId = internalArenaId || arenaId;
     if (!targetId || targetId === 'auto') return;
-    
-    // James: SINTONIA DUAL-BAND (Lê ID e Nome para compatibilidade total de infra em produção)
-    const normalizedId = targetId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
-    const rawId = targetId.toLowerCase().replace(/-/g, '');
-    
-    const channelNames = Array.from(new Set([
-       `sync_arena_${rawId}`,
-       `sync_arena_${normalizedId}`
-    ]));
-    
-    console.log("TV: Sintonizando Dual-Band nos canais:", channelNames.join(', '));
-    const channels = channelNames.map(name => supabase.channel(name, {
-      config: { broadcast: { self: false } }
-    }));
+
+    console.log(`TV: Sintonizando Banco de Dados para a arena: ${targetId}`);
 
     const handleSync = (payload: any) => {
+      // Como estamos lendo direto do banco, o fantasma não tem poder aqui,
+      // pois ele não salva no banco (a menos que a aba fantasma tenha clicado em algo).
+      // Mesmo assim, mantemos o controle de Shield:
       const now = Date.now();
       const incomingSenderId = payload.senderId || 'unknown';
 
       if (!lockedSenderId.current || (now - lastSenderTime.current > 5000)) {
         lockedSenderId.current = incomingSenderId;
       }
-
       if (lockedSenderId.current !== incomingSenderId) return;
       lastSenderTime.current = now;
 
-      // James: TRAVA DE ESTABILIDADE (Fingerprint)
+      // Fingerprint para evitar flicker de reagendamento
       const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}`;
       
       const colorChanged = payload.arenaColor && payload.arenaColor !== arenaColorRef.current;
@@ -116,34 +106,55 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
       setLastSignalTime(Date.now());
       setTvData(payload);
       setActiveMatch(payload.activeMatch);
+      // James: Attack Timer agora vem dentro do payload global (banco de dados)
+      if (payload.activeMatch?.attackTime !== undefined) {
+         setTvAttackTime(payload.activeMatch.attackTime);
+      }
       setCustomArenaName(payload.arenaName || '');
       setSignalLost(false);
     };
 
-    channels.forEach(ch => {
-      ch.on('broadcast', { event: 'TV_SYNC' }, ({ payload }) => handleSync(payload));
+    // James: Puxar o estado inicial IMEDIATAMENTE (Chega de esperar 3s de Heartbeat)
+    const fetchInitial = async () => {
+      let q = supabase.from('arenas').select('id, name, live_sync_state');
+      // Tentamos o ID exato primeiro
+      const { data } = await q;
+      if (data) {
+         const targetNormalized = targetId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
+         const match = data.find(a => a.id === targetId || (a.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim() === targetNormalized);
+         if (match && match.live_sync_state) {
+            handleSync(match.live_sync_state);
+         }
+      }
+    };
+    fetchInitial();
 
-      ch.on('broadcast', { event: 'TV_MODAL' }, ({ payload }) => {
-        if (lockedSenderId.current && payload.senderId !== lockedSenderId.current) return;
-        setActiveMatch((prev: any) => prev ? { ...prev, modals: payload } : prev);
-      });
-
-      ch.on('broadcast', { event: 'TV_ATTACK' }, ({ payload }) => {
-        if (lockedSenderId.current && payload.senderId !== lockedSenderId.current) return;
-        setTvAttackTime(payload.attackTime);
-        setLastSignalTime(Date.now());
-      });
-
-      ch.subscribe((status) => {
+    const channel = supabase.channel(`tv_db_sync_${targetId.substring(0, 10)}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'arenas' },
+        (payload) => {
+          const updatedArena = payload.new as any;
+          // Validar se o UPDATE que aconteceu foi na NOSSA arena
+          const targetNormalized = targetId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
+          const arenaNormalized = (updatedArena.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
+          
+          if (updatedArena.id === targetId || arenaNormalized === targetNormalized) {
+             if (updatedArena.live_sync_state) {
+                handleSync(updatedArena.live_sync_state);
+             }
+          }
+        }
+      )
+      .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setSignalStatus('listening');
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           setTimeout(() => setReconnectCounter(prev => prev + 1), 3000);
         }
       });
-    });
 
-    return () => { channels.forEach(ch => supabase.removeChannel(ch)); };
+    return () => { supabase.removeChannel(channel); };
   }, [internalArenaId, arenaId, reconnectCounter]);
 
   // James: DETECTOR DE DESPERTAR — quando a TV acorda, força reconexão (com debounce para evitar loops)
