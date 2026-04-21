@@ -32,6 +32,7 @@ export interface Match {
   duration: number; // Duração em minutos
   capoteApplied?: boolean;
   vaiATresTriggered?: boolean;
+  arena_id?: string;
 }
 
 export interface UserProfile {
@@ -58,7 +59,8 @@ export interface UserLicense {
   created_at: string;
 }
 
-export type MatchMode = 'normal' | 'set' | 'tempo';
+export type MatchMode = 'normal' | 'set' | 'tempo' | 'casual' | 'oficial';
+export type SoundScheme = 'moderno' | 'classico' | 'intenso';
 
 export interface Coupon {
   id: string;

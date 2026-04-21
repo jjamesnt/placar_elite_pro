@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { SoundScheme } from './App';
+import { SoundScheme } from './types';
 
 export const useAttackTimer = (initialTime: number = 24) => {
   const [timeLeft, setTimeLeft] = useState(initialTime);

@@ -1,16 +1,12 @@
 
 import React, { useState, useMemo } from 'react';
-import { SoundScheme } from '../App';
+import { SoundScheme } from '../types';
 import { Arena, ArenaColor, MatchMode } from '../types';
 import { Trash2Icon, PlusIcon, UsersIcon, EditIcon, UploadCloudIcon, ZapIcon, MonitorIcon, ClipboardListIcon } from '../components/icons';
 import { supabase } from '../lib/supabase';
+import { useMatchEngine } from '../hooks/useMatchEngine';
 
 interface ConfigProps {
-  winScore: number; setWinScore: (s: number) => void;
-  attackTime: number; setAttackTime: (t: number) => void;
-  soundEnabled: boolean; setSoundEnabled: (e: boolean) => void;
-  vibrationEnabled: boolean; setVibrationEnabled: (e: boolean) => void;
-  soundScheme: SoundScheme; setSoundScheme: (s: SoundScheme) => void;
   arenas: Arena[];
   currentArenaId: string;
   setCurrentArenaId: (id: string) => void;
@@ -19,14 +15,6 @@ interface ConfigProps {
   onDeleteArena: (id: string) => void;
   onLogout: () => void;
   onSaveSettings: () => void;
-  capoteEnabled: boolean;
-  setCapoteEnabled: (e: boolean) => void;
-  vaiATresEnabled: boolean;
-  setVaiATresEnabled: (e: boolean) => void;
-  matchMode: MatchMode;
-  setMatchMode: (m: MatchMode) => void;
-  matchTime: number;
-  setMatchTime: (t: number) => void;
   onGoToSubscription?: () => void;
   userLicense?: any;
   onRefreshLicense?: () => void;
@@ -40,15 +28,18 @@ const ARENA_COLORS: ArenaColor[] = ['indigo', 'blue', 'emerald', 'amber', 'rose'
 const COLOR_MAP: Record<ArenaColor, string> = { indigo: 'bg-indigo-500', blue: 'bg-blue-500', emerald: 'bg-emerald-500', amber: 'bg-amber-500', rose: 'bg-rose-500', violet: 'bg-violet-500' };
 
 const Config: React.FC<ConfigProps> = ({
-  winScore, setWinScore, attackTime, setAttackTime, soundEnabled, setSoundEnabled,
-  vibrationEnabled, setVibrationEnabled, soundScheme, setSoundScheme,
   arenas, currentArenaId, setCurrentArenaId, onAddArena, onUpdateArena, onDeleteArena, onLogout, onSaveSettings,
-  capoteEnabled, setCapoteEnabled, vaiATresEnabled, setVaiATresEnabled,
-  matchMode, setMatchMode, matchTime, setMatchTime,
   userLicense, onRefreshLicense, onGoToSubscription,
   showAlert, showConfirm,
   tvLayoutMirrored, setTvLayoutMirrored
 }) => {
+  const {
+    winScore, setWinScore, attackTime, setAttackTime, soundEnabled, setSoundEnabled,
+    vibrationEnabled, setVibrationEnabled, soundScheme, setSoundScheme,
+    capoteEnabled, setCapoteEnabled, vaiATresEnabled, setVaiATresEnabled,
+    matchMode, setMatchMode, matchTime, setMatchTime
+  } = useMatchEngine();
+
   const [newName, setNewName] = useState('');
   const [selColor, setSelColor] = useState<ArenaColor>('indigo');
   const [editingArena, setEditingArena] = useState<Arena | null>(null);
