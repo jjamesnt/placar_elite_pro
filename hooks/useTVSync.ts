@@ -171,26 +171,6 @@ export const useTVSync = ({
     }
   }, [teamA.score, teamB.score, servingTeam, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored, currentArenaId, lastInteractionTime]);
 
-  // Canal de Ataque
-  useEffect(() => {
-    if (tvSyncChannelRef.current && tvAttackTime !== null) {
-       tvSyncChannelRef.current.send({
-         type: 'broadcast', event: 'TV_ATTACK',
-         payload: { attackTime: tvAttackTime, senderId }
-       });
-    }
-  }, [tvAttackTime, senderId]);
-
-  // TV Modals
-  useEffect(() => {
-    if (tvSyncChannelRef.current && (tvModals.victoryData || tvModals.showVaiATres)) {
-       tvSyncChannelRef.current.send({
-         type: 'broadcast', event: 'TV_MODAL',
-         payload: { ...tvModals, senderId }
-       });
-    }
-  }, [tvModals, senderId]);
-
   // Batimento de Segurança (Heartbeat) V7
   const snapshotRef = useRef(calculateSnapshot);
   // James: ATUALIZAÇÃO SÍNCRONA. Evita o envio de "pontos antigos" caso o usuário
