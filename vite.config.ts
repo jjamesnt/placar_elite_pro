@@ -15,11 +15,7 @@ export default defineConfig(({ mode }) => {
         legacy({
           // James: Suporte ultra-amplo para TV Boxes (Chrome 50+, Android 5+)
           targets: ['chrome >= 50', 'android >= 5', 'safari >= 10'],
-          additionalLegacyPolyfills: [
-            'regenerator-runtime/runtime',
-            'intersection-observer', // Polyfill para scroll e visibilidade
-            'resize-observer-polyfill' // Polyfill para layouts responsivos
-          ],
+          additionalLegacyPolyfills: [],
         }),
       ],
       define: {
