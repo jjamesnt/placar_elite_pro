@@ -59,9 +59,17 @@ export const useTVSync = ({
       const nameMap = new Map();
       p.forEach(pl => nameMap.set(pl.id, pl.name));
 
-      // James: Filtra apenas partidas do dia atual — igual ao filtro 'Hoje' do tablet
+      // James: Filtra apenas partidas do dia atual — suporte robusto a campos e fusos
       const today = new Date().toDateString();
-      const todayMatches = arenaMatches.filter(match => new Date(match.timestamp).toDateString() === today);
+      const todayMatches = arenaMatches.filter(match => {
+        const mDate = match.timestamp || (match as any).created_at;
+        if (!mDate) return false;
+        try {
+          return new Date(mDate).toDateString() === today;
+        } catch (e) {
+          return false;
+        }
+      });
 
       const playerStats = new Map<string, { wins: number, games: number, name: string }>();
       todayMatches.forEach(match => {

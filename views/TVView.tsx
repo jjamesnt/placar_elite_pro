@@ -8,27 +8,33 @@ import { ArenaColor } from '../types';
 // James: Componente de Fundo Dinâmico (Sincronizado com o Placar)
 const Background: React.FC<{ color: any }> = memo(({ color }) => {
   const bgMap: Record<string, string> = {
-    indigo: '#1e1b4b', blue: '#172554', emerald: '#064e3b', amber: '#451a03', rose: '#4c0519', violet: '#2e1065'
+    indigo: '#0f172a', blue: '#0f172a', emerald: '#064e3b', amber: '#451a03', rose: '#4c0519', violet: '#2e1065'
   };
   const glowMap: Record<string, string> = {
-    indigo: 'rgba(99, 102, 241, 0.45)', blue: 'rgba(59, 130, 246, 0.45)', emerald: 'rgba(16, 185, 129, 0.4)',
-    amber: 'rgba(245, 158, 11, 0.4)', rose: 'rgba(244, 63, 94, 0.45)', violet: 'rgba(139, 92, 246, 0.45)'
+    indigo: 'rgba(99, 102, 241, 0.45)', blue: 'rgba(59, 130, 246, 0.45)', emerald: 'rgba(16, 185, 129, 0.65)',
+    amber: 'rgba(245, 158, 11, 0.6)', rose: 'rgba(244, 63, 94, 0.65)', violet: 'rgba(139, 92, 246, 0.65)'
   };
+  
+  // James: Se for Verde (emerald), o fundo já começa com um tom verde escuro, não azul.
+  const baseBg = bgMap[color] || bgMap.indigo;
+  const glowColor = glowMap[color] || glowMap.indigo;
+
   return (
-    <div className="fixed inset-0 -z-10 transition-colors duration-1000 ease-in-out" style={{ backgroundColor: bgMap[color] || bgMap.indigo }}>
-      <div className="absolute inset-0 bg-gradient-to-tr from-black/70 via-transparent to-black/30"></div>
-      <div className="absolute inset-0 transition-all duration-1000" style={{ background: `radial-gradient(circle at 50% 50%, ${glowMap[color] || glowMap.indigo} 0%, transparent 85%)` }}></div>
+    <div className="fixed inset-0 -z-10 transition-colors duration-1000 ease-in-out" style={{ backgroundColor: baseBg }}>
+      <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-transparent to-black/40"></div>
+      <div className="absolute inset-0 transition-all duration-1000" style={{ background: `radial-gradient(circle at 50% 50%, ${glowColor} 0%, transparent 80%)` }}></div>
+      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
     </div>
   );
 });
 
 const TEMAS: Record<string, any> = {
-  indigo: { text: 'text-indigo-400', border: 'border-indigo-500', from: 'from-indigo-900/20', via: 'via-indigo-500/50', bg: 'bg-indigo-500/10' },
-  blue: { text: 'text-blue-400', border: 'border-blue-500', from: 'from-blue-900/20', via: 'via-blue-500/50', bg: 'bg-blue-500/10' },
-  emerald: { text: 'text-emerald-400', border: 'border-emerald-500', from: 'from-emerald-900/20', via: 'via-emerald-500/50', bg: 'bg-emerald-500/10' },
-  amber: { text: 'text-amber-400', border: 'border-amber-500', from: 'from-amber-900/20', via: 'via-amber-500/50', bg: 'bg-amber-500/10' },
-  rose: { text: 'text-rose-400', border: 'border-rose-500', from: 'from-rose-900/20', via: 'via-rose-500/50', bg: 'bg-rose-500/10' },
-  violet: { text: 'text-violet-400', border: 'border-violet-500', from: 'from-violet-900/20', via: 'via-violet-500/50', bg: 'bg-violet-500/10' },
+  indigo: { text: 'text-indigo-400', border: 'border-indigo-500', from: 'from-indigo-900/40', via: 'via-indigo-500/50', bg: 'bg-indigo-500/10', glow: 'shadow-[0_0_20px_rgba(99,102,241,0.3)]' },
+  blue: { text: 'text-blue-400', border: 'border-blue-500', from: 'from-blue-900/40', via: 'via-blue-500/50', bg: 'bg-blue-500/10', glow: 'shadow-[0_0_20px_rgba(59,130,246,0.3)]' },
+  emerald: { text: 'text-emerald-400', border: 'border-emerald-500', from: 'from-emerald-900/40', via: 'via-emerald-500/50', bg: 'bg-emerald-500/10', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.3)]' },
+  amber: { text: 'text-amber-400', border: 'border-amber-500', from: 'from-amber-900/40', via: 'via-amber-500/50', bg: 'bg-amber-500/10', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]' },
+  rose: { text: 'text-rose-400', border: 'border-rose-500', from: 'from-rose-900/40', via: 'via-rose-500/50', bg: 'bg-rose-500/10', glow: 'shadow-[0_0_20px_rgba(244,63,94,0.3)]' },
+  violet: { text: 'text-violet-400', border: 'border-violet-500', from: 'from-violet-900/40', via: 'via-violet-500/50', bg: 'bg-violet-500/10', glow: 'shadow-[0_0_20px_rgba(139,92,246,0.3)]' },
 };
 
 interface TVViewProps {
@@ -317,12 +323,12 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
       
       {/* Header com Design Limpo */}
       <div className="flex justify-between items-start border-b border-white/5 pb-4">
-        <div className="flex items-center gap-4">
-           <div className="w-4 h-4 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_15px_#10b981]"></div>
-           <h1 className="text-4xl font-black uppercase tracking-tighter">
-             LIVE <span className={currentTheme.text}>{customArenaName || 'ARENA'}</span>
-           </h1>
-        </div>
+         <div className="flex items-center gap-4">
+            <div className="w-4 h-4 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_15px_#10b981]"></div>
+            <h1 className="text-4xl font-black uppercase tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+              LIVE <span className={`${currentTheme.text} drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]`}>{customArenaName || 'ARENA'}</span>
+            </h1>
+         </div>
 
         <div className="text-right">
           <div className="text-5xl font-black tracking-tighter tabular-nums text-white/90 leading-tight">
@@ -378,12 +384,13 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
                        <div className="text-white/10 text-2xl font-black italic tracking-widest mb-2">VS</div>
 
-                       <div className={`px-12 py-8 rounded-[2.5rem] border-4 flex flex-col items-center justify-center transition-all duration-300 shadow-2xl ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110' : 'bg-black/90 border-white/10'}`}>
+                       <div className={`px-12 py-8 rounded-[2.5rem] border-4 flex flex-col items-center justify-center transition-all duration-300 ${currentTheme.glow} ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black/90 border-white/10'}`}>
                           <span className="text-[14px] font-black uppercase tracking-[0.4em] text-white/40 mb-2">Posse</span>
                           <span className={`text-9xl font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'text-red-500' : currentTheme.text}`}>
                             {tvAttackTime ?? 24}
                           </span>
                        </div>
+                    </div>           </div>
                     </div>
 
                     {/* Time da DIREITA */}
