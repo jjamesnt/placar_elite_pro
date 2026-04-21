@@ -137,7 +137,11 @@ export const useTVSync = ({
 
     const pushToDatabase = async (payload: any) => {
         // Gera um shield rápido (fingerprint) antes de engajar o DB
-        const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}|${payload.lastInteractionTime}`;
+        // James: Incluímos o tamanho do histórico para que deleções/adições forcem um push
+        const historyHash = payload.history?.length || 0;
+        const lastMatchId = payload.history?.[0]?.id || '';
+        const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}|${payload.lastInteractionTime}|H${historyHash}|L${lastMatchId}`;
+        
         if (newFinger === lastPushedFingerprint) return;
         lastPushedFingerprint = newFinger;
 

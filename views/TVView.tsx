@@ -129,7 +129,8 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         lastSenderTime.current = now;
 
         // Fingerprint para evitar flicker de reagendamento DOM
-        const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}`;
+        const historyHash = payload.history?.length || 0;
+        const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}|H${historyHash}`;
         
         const colorChanged = payload.arenaColor && payload.arenaColor !== arenaColorRef.current;
         const dataChanged = newFinger !== fingerprintRef.current;
@@ -174,7 +175,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
       };
       fetchInitial();
 
-      const channel = supabase.channel(`tv_db_sync_${targetId.substring(0, 10)}`)
+       // James: Normaliza o nome do canal para remover espaços e caracteres que Smart TVs odeiam
+       const channelSafeId = targetId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '');
+       const channel = supabase.channel(`tv_db_sync_${channelSafeId.substring(0, 20)}`)
         .on(
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'arenas' },
