@@ -386,12 +386,11 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
                        <div className={`px-12 py-8 rounded-[2.5rem] border-4 flex flex-col items-center justify-center transition-all duration-300 ${currentTheme.glow} ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black/90 border-white/10'}`}>
                           <span className="text-[14px] font-black uppercase tracking-[0.4em] text-white/40 mb-2">Posse</span>
-                          <span className={`text-9xl font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'text-red-500' : currentTheme.text}`}>
-                            {tvAttackTime ?? 24}
-                          </span>
-                       </div>
-                    </div>           </div>
-                    </div>
+                        <span className={`text-9xl font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'text-red-500' : currentTheme.text}`}>
+                          {tvAttackTime ?? 24}
+                        </span>
+                     </div>
+                  </div>
 
                     {/* Time da DIREITA */}
                     <div className="flex-1 text-center flex flex-col items-center">
