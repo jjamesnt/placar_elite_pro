@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Player, Team, Match, Arena } from '../types';
 import { supabase } from '../lib/supabase';
-import { SoundScheme } from '../App';
+import { SoundScheme } from '../types';
 import { useAttackTimer, useMatchTimer, useSensoryFeedback } from '../hooks';
 import ScoreCard from '../components/ScoreCard';
 import CenterConsole from '../components/CenterConsole';
@@ -10,34 +10,12 @@ import VictoryModal from '../components/VictoryModal';
 import VaiATresModal from '../components/VaiATresModal';
 import { RefreshCwIcon, ZapIcon } from '../components/icons';
 import { MatchMode } from '../types';
+import { useMatchEngine } from '../hooks/useMatchEngine';
 
 interface PlacarProps {
   allPlayers: Player[];
   onSaveGame: (match: Omit<Match, 'id' | 'timestamp'>) => void;
-  winScore: number;
-  setWinScore: React.Dispatch<React.SetStateAction<number>>;
-  attackTime: number;
-  soundEnabled: boolean;
-  vibrationEnabled: boolean;
-  soundScheme: SoundScheme;
   currentArena: Arena;
-  teamA: Team;
-  setTeamA: React.Dispatch<React.SetStateAction<Team>>;
-  teamB: Team;
-  setTeamB: React.Dispatch<React.SetStateAction<Team>>;
-  servingTeam: 'A' | 'B';
-  setServingTeam: React.Dispatch<React.SetStateAction<'A' | 'B'>>;
-  history: { teamA: Team; teamB: Team; servingTeam: 'A' | 'B' }[];
-  setHistory: React.Dispatch<React.SetStateAction<{ teamA: Team; teamB: Team; servingTeam: 'A' | 'B' }[]>>;
-  isSidesSwitched: boolean;
-  setIsSidesSwitched: React.Dispatch<React.SetStateAction<boolean>>;
-  gameStartTime: Date | null;
-  setGameStartTime: React.Dispatch<React.SetStateAction<Date | null>>;
-  resetGame: (fullReset?: boolean) => void;
-  capoteEnabled: boolean;
-  vaiATresEnabled: boolean;
-  matchMode: MatchMode;
-  matchTime: number;
   showAlert?: (title: string, message: string, type?: any, icon?: any) => void;
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
   setTvModals: (modals: { victoryData: any, showVaiATres: boolean }) => void;
@@ -53,11 +31,15 @@ interface VictoryData {
 }
 
 const Placar: React.FC<PlacarProps> = ({
-  allPlayers, onSaveGame, winScore, setWinScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, currentArena,
-  teamA, setTeamA, teamB, setTeamB, servingTeam, setServingTeam, history, setHistory,
-  isSidesSwitched, setIsSidesSwitched, gameStartTime, setGameStartTime, resetGame,
-  capoteEnabled, vaiATresEnabled, matchMode, matchTime, showAlert, showConfirm, setTvModals, setTvAttackTime
+  allPlayers, onSaveGame, currentArena,
+  showAlert, showConfirm, setTvModals, setTvAttackTime
 }) => {
+  const {
+    winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme,
+    teamA, setTeamA, teamB, setTeamB, servingTeam, setServingTeam, history, setHistory,
+    isSidesSwitched, setIsSidesSwitched, gameStartTime, setGameStartTime, handleResetGame: resetGame,
+    capoteEnabled, vaiATresEnabled, matchMode, matchTime
+  } = useMatchEngine();
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [victoryData, setVictoryData] = useState<VictoryData | null>(null);

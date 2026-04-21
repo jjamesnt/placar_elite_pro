@@ -12,13 +12,16 @@ import Admin from './views/Admin';
 import TVView from './views/TVView';
 import ClubManagement from './views/ClubManagement';
 import Login from './views/Login';
+import { MatchAPI, ArenaAPI, PlayerAPI } from './lib/api';
 import { supabase } from './lib/supabase';
+import { Player, Team, Match, Arena, ArenaColor, UserProfile, UserLicense } from './types';
 import { warmUpAudioContext } from './hooks';
+import { useTVSync } from './hooks/useTVSync';
+import { useMatchEngine, setupArenaConfig } from './hooks/useMatchEngine';
 
 // James, normalize fora do componente para ser estável e não resetar o rádio
 const normalize = (str: string) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
 
-export type SoundScheme = 'moderno' | 'classico' | 'intenso';
 
 const Background: React.FC<{ color: ArenaColor }> = memo(({ color }) => {
   const bgMap: Record<ArenaColor, string> = {
@@ -66,32 +69,17 @@ const App: React.FC = () => {
   const [deletedPlayers, setDeletedPlayers] = useState<Player[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
 
-  const [winScore, setWinScore] = useState(15);
-  const [attackTime, setAttackTime] = useState(24);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [vibrationEnabled, setVibrationEnabled] = useState(true);
-  const [soundScheme, setSoundScheme] = useState<SoundScheme>('moderno');
-  const [capoteEnabled, setCapoteEnabled] = useState(true);
-  const [vaiATresEnabled, setVaiATresEnabled] = useState(true);
-  const [matchMode, setMatchMode] = useState<'normal' | 'set' | 'tempo'>('normal');
-  const [matchTime, setMatchTime] = useState(12);
-
   const [rankingFilter, setRankingFilter] = useState<'Hoje' | 'Semanal' | 'Mensal' | 'Anual' | 'Total'>('Hoje');
   const [rankingViewDate, setRankingViewDate] = useState(new Date());
 
-  const [teamA, setTeamA] = useState<Team>({ players: [undefined, undefined], score: 0, sets: 0 });
-  const [teamB, setTeamB] = useState<Team>({ players: [undefined, undefined], score: 0, sets: 0 });
-  const [servingTeam, setServingTeam] = useState<'A' | 'B'>('A');
-  const [history, setHistory] = useState<{ teamA: Team; teamB: Team; servingTeam: 'A' | 'B' }[]>([]);
-  const [isSidesSwitched, setIsSidesSwitched] = useState(false);
-  const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
+  const engine = useMatchEngine();
 
   const refreshData = useCallback(async () => {
     if (!session || !userLicense?.is_active || currentArenaId === 'default') return;
     try {
       // Busca jogadores APENAS da arena atual para evitar duplicados
-      const { data: pData } = await supabase.from('players').select('*').eq('arena_id', currentArenaId);
-      const { data: mData } = await supabase.from('matches').select('*').eq('arena_id', currentArenaId).order('created_at', { ascending: false }).limit(50);
+      const { data: pData } = await PlayerAPI.fetchPlayers(currentArenaId);
+      const { data: mData } = await MatchAPI.fetchMatches(currentArenaId, 50);
 
       if (pData) {
         setPlayers(pData.filter((p: any) => !p.deleted_at).sort((a, b) => a.name.localeCompare(b.name)));
@@ -104,180 +92,14 @@ const App: React.FC = () => {
     } catch (err) { console.error("Refresh Error:", err); }
   }, [session, userLicense, currentArenaId]);
 
-  // LÓGICA DE SINCRONISMO SUPREMA (TABLET -> TV)
-  const dataRef = useRef({ arenas, players, matches, teamA, teamB, servingTeam, gameStartTime, currentArenaId });
-  useEffect(() => { dataRef.current = { arenas, players, matches, teamA, teamB, servingTeam, gameStartTime, currentArenaId }; }, [arenas, players, matches, teamA, teamB, servingTeam, gameStartTime, currentArenaId]);
-
-  const tvSyncChannelRef = useRef<any>(null);
   const [tvModals, setTvModals] = useState<{ victoryData: any, showVaiATres: boolean }>({ victoryData: null, showVaiATres: false });
   const [tvAttackTime, setTvAttackTime] = useState<number | null>(null);
   const [tvLayoutMirrored, setTvLayoutMirrored] = useState<boolean>(false);
-  const masterChannelRef = useRef<any>(null); // James: Canal de emergência para resgatar TVs perdidas
 
-  // James: Função agora lê diretamente dos estados para evitar o 'pulo de frame' que causava a oscilação
-  const calculateSnapshot = useCallback(() => {
-      const ars = arenas;
-      const p = players;
-      const m = matches;
-      const tA = teamA;
-      const tB = teamB;
-      const sT = servingTeam;
-      const gS = gameStartTime;
-      const cA = currentArenaId;
-      
-      const curArena = ars.find(a => a.id === cA);
-      const arenaMatches = m.filter(match => match.arena_id?.toLowerCase() === cA?.toLowerCase());
-      
-      // Criar mapa de nomes para busca ultra-rápida (O(1))
-      const nameMap = new Map();
-      p.forEach(pl => nameMap.set(pl.id, pl.name));
-
-      // James: Filtra apenas partidas do dia atual — igual ao filtro 'Hoje' do tablet
-      const today = new Date().toDateString();
-      const todayMatches = arenaMatches.filter(match => new Date(match.timestamp).toDateString() === today);
-
-      const playerStats = new Map<string, { wins: number, games: number, name: string }>();
-      todayMatches.forEach(match => {
-          const winner = match.winner === 'A' ? match.teamA : match.teamB;
-          [match.teamA, match.teamB].forEach(t => { t.players.forEach(pl => {
-              if (pl && !playerStats.has(pl.id)) playerStats.set(pl.id, { wins: 0, games: 0, name: nameMap.get(pl.id) || pl.name });
-              const ps = pl ? playerStats.get(pl.id) : null;
-              if (ps) {
-                ps.games++;
-                if (winner.players.some(wp => wp && wp.id === pl.id)) ps.wins++;
-              }
-          });});
-      });
-
-      const ranking = Array.from(playerStats.values())
-        .sort((a, b) => b.wins - a.wins || (b.wins/b.games) - (a.wins/a.games) || a.name.localeCompare(b.name))
-        .slice(0, 10); // James: Mostra até 10 jogadores, igual ao tablet
-
-      const history = todayMatches.slice(0, 20).map(match => ({
-          id: match.id,
-          teamA: { score: match.teamA.score, players: match.teamA.players.map((plyr: any) => nameMap.get(plyr?.id) || plyr?.name || '---') },
-          teamB: { score: match.teamB.score, players: match.teamB.players.map((plyr: any) => nameMap.get(plyr?.id) || plyr?.name || '---') },
-          winner: match.winner
-      }));
-
-      return {
-        senderId, 
-        arenaId: cA?.toLowerCase(),
-        arenaSlug: normalize(curArena?.name || ''),
-        arenaName: curArena?.name || 'ARENA',
-        arenaColor: curArena?.color || 'indigo',
-        rankingDate: new Date().toLocaleDateString('pt-BR'), // James: Data exibida na TV
-        activeMatch: { 
-          teamA: tA, teamB: tB, servingTeam: sT, gameStartTime: gS, status: 'playing',
-          modals: tvModals,
-          attackTime: tvAttackTime,
-          isSidesSwitched: isSidesSwitched,
-          layoutMirrored: tvLayoutMirrored
-        },
-        ranking,
-        history
-      };
-  }, [tvModals, matches, arenas, players, teamA, teamB, servingTeam, gameStartTime, currentArenaId, senderId, isSidesSwitched, tvLayoutMirrored]); // James: Adicionado tvLayoutMirrored às dependências
-
-  const [channelStatus, setChannelStatus] = useState<'connecting' | 'online' | 'offline'>('offline');
-
-  const initializedArenaId = useRef<string | null>(null);
-  useEffect(() => {
-    if (currentArenaId === 'default') return;
-    
-    // James: ESCUDO V6 - Só reseta a rádio se a arena mudar DE VERDADE
-    if (initializedArenaId.current === currentArenaId && tvSyncChannelRef.current) return;
-    initializedArenaId.current = currentArenaId;
-
-    // James: Padronizando emissão Dual-Band
-    const channelId = currentArena?.id || normalize(currentArena?.name || 'minhaquadra');
-    const channelSlug = normalize(currentArena?.name || 'minhaquadra');
-    
-    if (tvSyncChannelRef.current?.unsubscribe) {
-       tvSyncChannelRef.current.unsubscribe();
-    } else if (tvSyncChannelRef.current) {
-       supabase.removeChannel(tvSyncChannelRef.current);
-    }
-    
-    const names = Array.from(new Set([`sync_arena_${channelId}`, `sync_arena_${channelSlug}`]));
-    
-    console.log("Tablet: Ligando Transmissão Dual-Band nas frequências:", names.join(', '));
-    const channels = names.map(name => supabase.channel(name));
-    
-    tvSyncChannelRef.current = {
-      send: (payload: any) => {
-        channels.forEach(ch => ch.send(payload));
-      },
-      unsubscribe: () => {
-        channels.forEach(ch => supabase.removeChannel(ch));
-      }
-    };
-    
-    channels.forEach(ch => {
-      ch.subscribe((status) => {
-        const isOnline = status === 'SUBSCRIBED';
-        setChannelStatus(isOnline ? 'online' : 'connecting');
-        if (isOnline && currentArenaId !== 'default' && ch === channels[0]) {
-          tvSyncChannelRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
-        }
-      });
-    });
-
-    return () => { 
-       // James: Não removemos o canal no Cleanup para manter a rádio viva
-    };
-  }, [currentArenaId]);
-
-  // 2. Transmissão Imediata (Triggered)
-  useEffect(() => {
-    if (tvSyncChannelRef.current) {
-      tvSyncChannelRef.current.send({
-        type: 'broadcast', event: 'TV_SYNC',
-        payload: calculateSnapshot()
-      });
-    }
-  }, [teamA.score, teamB.score, servingTeam, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored, currentArenaId]);
-
-  // 2.2 Canal de Ataque - James: Enviando APENAS os segundos de posse de forma ultra-leve
-  useEffect(() => {
-    if (tvSyncChannelRef.current && tvAttackTime !== null) {
-       tvSyncChannelRef.current.send({
-         type: 'broadcast', event: 'TV_ATTACK',
-         payload: { attackTime: tvAttackTime, senderId }
-       });
-    }
-  }, [tvAttackTime]);
-
-  // James: Se os modais mudarem, envia NA HORA um pacote especial "TV_MODAL" para garantir que a TV abra a tela
-  useEffect(() => {
-    if (tvSyncChannelRef.current && (tvModals.victoryData || tvModals.showVaiATres)) {
-       tvSyncChannelRef.current.send({
-         type: 'broadcast', event: 'TV_MODAL',
-         payload: { ...tvModals, senderId }
-       });
-    }
-  }, [tvModals]);
-
-  // 3. Batimento de Segurança (Heartbeat) V7 - ESTABILIZADO (Ref)
-  const snapshotRef = useRef(calculateSnapshot);
-  useEffect(() => { snapshotRef.current = calculateSnapshot; }, [calculateSnapshot]);
-
-  useEffect(() => {
-    console.log("Tablet: Iniciando batimento de segurança imortal (3s)...");
-    const interval = setInterval(() => {
-      if (tvSyncChannelRef.current) {
-        tvSyncChannelRef.current.send({
-          type: 'broadcast', event: 'TV_SYNC',
-          payload: snapshotRef.current()
-        });
-      }
-      // James: Removido grito de emergência global (master_control) para evitar Loop de Sintonização (Reload Infinito)
-      // pois afetava TODAS as TVs conectadas simultaneamente em todo o mundo.
-    }, 1500);
-    return () => clearInterval(interval);
-  }, []); // James: Zero dependências - o batimento nunca morre nem reseta!
-
-  // Link Auto desativado conforme solicitado
+  const { channelStatus, forceSync } = useTVSync({
+    senderId, arenas, currentArenaId, players, matches, teamA: engine.teamA, teamB: engine.teamB,
+    servingTeam: engine.servingTeam, gameStartTime: engine.gameStartTime, tvModals, tvAttackTime, isSidesSwitched: engine.isSidesSwitched, tvLayoutMirrored
+  });
 
 
   const handleLogout = useCallback(async () => {
@@ -357,43 +179,10 @@ const App: React.FC = () => {
     fetchArenas();
   }, [session, userLicense]);
 
-  const handleResetGame = useCallback((fullReset: boolean = false) => {
-    const clearSetResults = () => {
-      setTeamA(prev => ({ 
-        ...prev, 
-        score: 0, 
-        sets: fullReset ? 0 : prev.sets,
-        players: fullReset ? [null, null] : prev.players // James: Limpa nomes se for Reset de Partida
-      }));
-      setTeamB(prev => ({ 
-        ...prev, 
-        score: 0, 
-        sets: fullReset ? 0 : prev.sets,
-        players: fullReset ? [null, null] : prev.players // James: Limpa nomes se for Reset de Partida
-      }));
-      setHistory([]);
-      setGameStartTime(null);
-      setTvModals({ victoryData: null, showVaiATres: false });
-    };
-
-    if (fullReset) {
-      if (showConfirm) {
-        showConfirm("Zerar Partida", "Deseja realmente zerar todos os pontos e sets?", () => {
-          clearSetResults();
-        });
-      } else {
-        clearSetResults();
-      }
-    } else {
-      clearSetResults();
-    }
-  }, [showConfirm]);
-
   useEffect(() => {
     if (currentArenaId !== 'default' && userLicense?.is_active) {
       refreshData();
-      const prefix = `elite_arena_${currentArenaId}_`;
-      setWinScore(Number(localStorage.getItem(`${prefix}winScore`)) || 15);
+      setupArenaConfig(currentArenaId);
       localStorage.setItem('elite_last_arena', currentArenaId);
     }
   }, [currentArenaId, session, refreshData, userLicense]);
@@ -407,16 +196,9 @@ const App: React.FC = () => {
     
     // James: setTimeout(0) garante que o React processou o setMatches antes de enviar o snapshot
     // Assim a TV recebe a auditoria JÁ com a nova partida incluída
-    setTimeout(() => {
-      if (tvSyncChannelRef.current) {
-        tvSyncChannelRef.current.send({
-          type: 'broadcast', event: 'TV_SYNC',
-          payload: calculateSnapshot()
-        });
-      }
-    }, 0);
+    setTimeout(() => forceSync(), 0);
 
-    const { data } = await supabase.from('matches').insert([{ arena_id: currentArenaId, user_id: session.user.id, data_json: matchData }]).select().single();
+    const { data } = await MatchAPI.saveMatch(currentArenaId, session.user.id, matchData);
     if (data) refreshData();
   };
 
@@ -424,7 +206,7 @@ const App: React.FC = () => {
     if (!session?.user?.id) return;
     try {
       setMatches(prev => prev.filter(m => m.id !== matchId));
-      const { error } = await supabase.from('matches').delete().eq('id', matchId);
+      const { error } = await MatchAPI.deleteMatch(matchId);
       if (error) throw error;
     } catch (err) {
       console.error("Erro ao deletar partida:", err);
@@ -435,7 +217,7 @@ const App: React.FC = () => {
   const handleUpdateMatch = async (matchId: string, updatedData: Omit<Match, 'id' | 'timestamp'>) => {
     if (!session?.user?.id) return;
     try {
-      const { error } = await supabase.from('matches').update({ data_json: updatedData }).eq('id', matchId);
+      const { error } = await MatchAPI.updateMatch(matchId, updatedData);
       if (error) throw error;
       setMatches(prev => prev.map(m => m.id === matchId ? { ...m, ...updatedData } : m));
     } catch (err) {
@@ -447,18 +229,18 @@ const App: React.FC = () => {
   const handleSaveSettings = useCallback(() => {
     if (currentArenaId === 'default') return;
     const prefix = `elite_arena_${currentArenaId}_`;
-    localStorage.setItem(`${prefix}winScore`, winScore.toString());
-    localStorage.setItem(`${prefix}attackTime`, attackTime.toString());
-    localStorage.setItem(`${prefix}soundEnabled`, soundEnabled.toString());
-    localStorage.setItem(`${prefix}vibrationEnabled`, vibrationEnabled.toString());
-    localStorage.setItem(`${prefix}soundScheme`, soundScheme);
-    localStorage.setItem(`${prefix}capoteEnabled`, capoteEnabled.toString());
-    localStorage.setItem(`${prefix}vaiATresEnabled`, vaiATresEnabled.toString());
-    localStorage.setItem(`${prefix}matchMode`, matchMode);
-    localStorage.setItem(`${prefix}matchTime`, matchTime.toString());
+    localStorage.setItem(`${prefix}winScore`, engine.winScore.toString());
+    localStorage.setItem(`${prefix}attackTime`, engine.attackTime.toString());
+    localStorage.setItem(`${prefix}soundEnabled`, engine.soundEnabled.toString());
+    localStorage.setItem(`${prefix}vibrationEnabled`, engine.vibrationEnabled.toString());
+    localStorage.setItem(`${prefix}soundScheme`, engine.soundScheme);
+    localStorage.setItem(`${prefix}capoteEnabled`, engine.capoteEnabled.toString());
+    localStorage.setItem(`${prefix}vaiATresEnabled`, engine.vaiATresEnabled.toString());
+    localStorage.setItem(`${prefix}matchMode`, engine.matchMode);
+    localStorage.setItem(`${prefix}matchTime`, engine.matchTime.toString());
     localStorage.setItem(`${prefix}tvLayoutMirrored`, tvLayoutMirrored.toString());
     refreshData();
-  }, [currentArenaId, winScore, attackTime, soundEnabled, vibrationEnabled, soundScheme, capoteEnabled, vaiATresEnabled, matchMode, matchTime, tvLayoutMirrored, refreshData]);
+  }, [currentArenaId, engine, tvLayoutMirrored, refreshData]);
 
   const handleAddArena = async (name: string, color: ArenaColor) => {
     if (!session?.user?.id) {
@@ -479,7 +261,7 @@ const App: React.FC = () => {
     }
     
     try {
-      const { data, error } = await supabase.from('arenas').insert([{ name, color, user_id: session.user.id }]).select().single();
+      const { data, error } = await ArenaAPI.addArena(name, color, session.user.id);
       
       if (error) {
         // Se for erro de RLS, dar uma dica sobre permissões
@@ -501,7 +283,7 @@ const App: React.FC = () => {
 
   const handleUpdateArena = async (id: string, name: string, color: ArenaColor) => {
     try {
-      const { error } = await supabase.from('arenas').update({ name, color }).eq('id', id);
+      const { error } = await ArenaAPI.updateArena(id, name, color);
       if (error) throw error;
       setArenas(prev => prev.map(a => a.id === id ? { ...a, name, color } : a));
       if (showAlert) showAlert("Atualizado", "As alterações foram salvas.", 'success', 'check');
@@ -513,7 +295,7 @@ const App: React.FC = () => {
 
   const handleDeleteArena = async (id: string) => {
     try {
-      const { error } = await supabase.from('arenas').delete().eq('id', id);
+      const { error } = await ArenaAPI.deleteArena(id);
       if (error) throw error;
       setArenas(prev => prev.filter(a => a.id !== id));
       if (currentArenaId === id) setCurrentArenaId(arenas.find(a => a.id !== id)?.id || 'default');
@@ -545,12 +327,12 @@ const App: React.FC = () => {
             <Navigation currentView={currentView} onNavigate={setCurrentView} lastUpdate={lastUpdate} currentArena={currentArena} onLogout={handleLogout} isAdmin={isAdmin} isClub={userLicense?.is_club} showConfirm={showConfirm} channelStatus={channelStatus} />
         )}
         <main className={`flex-1 ${currentView !== 'tv' ? 'overflow-y-auto' : ''}`}>
-          {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} soundEnabled={soundEnabled} vibrationEnabled={vibrationEnabled} soundScheme={soundScheme} currentArena={currentArena} teamA={teamA} setTeamA={setTeamA} teamB={teamB} setTeamB={setTeamB} servingTeam={servingTeam} setServingTeam={setServingTeam} history={history} setHistory={setHistory} isSidesSwitched={isSidesSwitched} setIsSidesSwitched={setIsSidesSwitched} gameStartTime={gameStartTime} setGameStartTime={setGameStartTime} resetGame={handleResetGame} capoteEnabled={capoteEnabled} vaiATresEnabled={vaiATresEnabled} matchMode={matchMode} matchTime={matchTime} showAlert={showAlert} showConfirm={showConfirm} setTvModals={setTvModals} setTvAttackTime={setTvAttackTime} />}
+          {currentView === 'placar' && <Placar allPlayers={players} onSaveGame={handleSaveMatch} currentArena={currentArena} showAlert={showAlert} showConfirm={showConfirm} setTvModals={setTvModals} setTvAttackTime={setTvAttackTime} />}
           {currentView === 'historico' && <Historico matches={matches} setMatches={setMatches} currentArena={currentArena} onClearMatches={() => {}} onUpdateMatch={handleUpdateMatch} players={players} showAlert={showAlert} showConfirm={showConfirm} onDeleteMatch={handleDeleteMatch} />}
           {currentView === 'atletas' && <Atletas players={players} setPlayers={setPlayers} deletedPlayers={deletedPlayers} setDeletedPlayers={setDeletedPlayers} arenaId={currentArenaId} userId={session?.user?.id} athletesLimit={userLicense?.athletes_limit} showAlert={showAlert} showConfirm={showConfirm} />}
           {currentView === 'tv' && <TVView arenaId={currentArenaId} />}
           {currentView === 'ranking' && <Ranking players={players} matches={matches} arenaName={currentArena.name} arenaColor={currentArena.color} filter={rankingFilter} setFilter={setRankingFilter} viewDate={rankingViewDate} setViewDate={setRankingViewDate} onClearMatches={() => {}} showAlert={showAlert} />}
-          {currentView === 'config' && <Config winScore={winScore} setWinScore={setWinScore} attackTime={attackTime} setAttackTime={setAttackTime} soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} vibrationEnabled={vibrationEnabled} setVibrationEnabled={setVibrationEnabled} soundScheme={soundScheme} setSoundScheme={setSoundScheme} capoteEnabled={capoteEnabled} setCapoteEnabled={setCapoteEnabled} vaiATresEnabled={vaiATresEnabled} setVaiATresEnabled={setVaiATresEnabled} matchMode={matchMode} setMatchMode={setMatchMode} matchTime={matchTime} setMatchTime={setMatchTime} arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} userLicense={userLicense} onRefreshLicense={() => checkLicense(session?.user?.id, session?.user?.email)} isAdmin={isAdmin} currentArena={currentArena} showAlert={showAlert} showConfirm={showConfirm} tvLayoutMirrored={tvLayoutMirrored} setTvLayoutMirrored={setTvLayoutMirrored} />}
+          {currentView === 'config' && <Config arenas={arenas} currentArenaId={currentArenaId} setCurrentArenaId={setCurrentArenaId} onAddArena={handleAddArena} onUpdateArena={handleUpdateArena} onDeleteArena={handleDeleteArena} onLogout={handleLogout} onSaveSettings={handleSaveSettings} onGoToSubscription={() => setCurrentView('assinatura')} userLicense={userLicense} onRefreshLicense={refreshData} showAlert={showAlert} showConfirm={showConfirm} tvLayoutMirrored={tvLayoutMirrored} setTvLayoutMirrored={setTvLayoutMirrored} />}
           {currentView === 'admin' && isAdmin && <Admin showAlert={showAlert} showConfirm={showConfirm} />}
           {currentView === 'clube' && userLicense && <ClubManagement ownerLicense={userLicense} onRefresh={() => checkLicense(session.user.id, session.user.email)} showAlert={showAlert} showConfirm={showConfirm} />}
         </main>
