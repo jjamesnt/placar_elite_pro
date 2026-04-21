@@ -44,10 +44,6 @@ export const ArenaAPI = {
     return await supabase.from('arenas').update({ name, color }).eq('id', id);
   },
   
-  updateLiveState: async (id: string, payload: any) => {
-    return await supabase.from('arenas').update({ live_sync_state: payload }).eq('id', id);
-  },
-  
   deleteArena: async (id: string) => {
     return await supabase.from('arenas').delete().eq('id', id);
   }
