@@ -110,10 +110,8 @@ export const useTVSync = ({
     if (initializedArenaId.current === currentArenaId && tvSyncChannelRef.current) return;
     initializedArenaId.current = currentArenaId;
 
-    // James: Padronizando emissão Dual-Band
     const curArena = arenas.find(a => a.id === currentArenaId);
-    const channelId = curArena?.id || normalize(curArena?.name || 'minhaquadra');
-    const channelSlug = normalize(curArena?.name || 'minhaquadra');
+    if (!curArena) return;
     
     if (tvSyncChannelRef.current?.unsubscribe) {
        tvSyncChannelRef.current.unsubscribe();
@@ -121,28 +119,27 @@ export const useTVSync = ({
        supabase.removeChannel(tvSyncChannelRef.current);
     }
     
-    const names = Array.from(new Set([`sync_arena_${channelId}`, `sync_arena_${channelSlug}`]));
+    // James: TRANSFORMAÇÃO PARA MONO-BAND (Evita colisão de pacotes Supabase)
+    const channelName = `sync_arena_${curArena.id.toLowerCase().replace(/-/g, '')}`;
+    console.log("Tablet: Ligando Transmissão Mono-Band na frequência:", channelName);
     
-    console.log("Tablet: Ligando Transmissão Dual-Band nas frequências:", names.join(', '));
-    const channels = names.map(name => supabase.channel(name));
+    const channel = supabase.channel(channelName);
     
     tvSyncChannelRef.current = {
       send: (payload: any) => {
-        channels.forEach(ch => ch.send(payload));
+        channel.send(payload);
       },
       unsubscribe: () => {
-        channels.forEach(ch => supabase.removeChannel(ch));
+        supabase.removeChannel(channel);
       }
     };
     
-    channels.forEach(ch => {
-      ch.subscribe((status) => {
-        const isOnline = status === 'SUBSCRIBED';
-        setChannelStatus(isOnline ? 'online' : 'connecting');
-        if (isOnline && currentArenaId !== 'default' && ch === channels[0]) {
-          tvSyncChannelRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
-        }
-      });
+    channel.subscribe((status) => {
+      const isOnline = status === 'SUBSCRIBED';
+      setChannelStatus(isOnline ? 'online' : 'connecting');
+      if (isOnline && currentArenaId !== 'default') {
+        tvSyncChannelRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
+      }
     });
 
     return () => { 

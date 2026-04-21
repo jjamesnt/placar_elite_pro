@@ -69,19 +69,14 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     const targetId = internalArenaId || arenaId;
     if (!targetId || targetId === 'auto') return;
     
-    // James: SINTONIA DUAL-BAND (Lê ID e Nome para compatibilidade total de infra em produção)
-    const normalizedId = targetId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
+    // James: SINTONIA MONO-BAND (Garante unicidade de sinal no Supabase Realtime)
     const rawId = targetId.toLowerCase().replace(/-/g, '');
+    const channelName = `sync_arena_${rawId}`;
     
-    const channelNames = Array.from(new Set([
-       `sync_arena_${rawId}`,
-       `sync_arena_${normalizedId}`
-    ]));
-    
-    console.log("TV: Sintonizando Dual-Band nos canais:", channelNames.join(', '));
-    const channels = channelNames.map(name => supabase.channel(name, {
+    console.log("TV: Sintonizando Mono-Band no canal:", channelName);
+    const channels = [supabase.channel(channelName, {
       config: { broadcast: { self: false } }
-    }));
+    })];
 
     const handleSync = (payload: any) => {
       const now = Date.now();
