@@ -18,6 +18,7 @@ interface MatchState {
   history: { teamA: Team; teamB: Team; servingTeam: 'A' | 'B' }[];
   isSidesSwitched: boolean;
   gameStartTime: Date | null;
+  lastInteractionTime: number;
 }
 
 const initialState: MatchState = {
@@ -36,6 +37,7 @@ const initialState: MatchState = {
   history: [],
   isSidesSwitched: false,
   gameStartTime: null,
+  lastInteractionTime: Date.now(),
 };
 
 export const matchStore = createStore<MatchState>(initialState);
@@ -44,7 +46,8 @@ export const matchStore = createStore<MatchState>(initialState);
 const createSetter = <K extends keyof MatchState>(key: K) => {
   return (valueOrUpdater: MatchState[K] | ((prev: MatchState[K]) => MatchState[K])) => {
     matchStore.setState((state) => ({
-      [key]: typeof valueOrUpdater === 'function' ? (valueOrUpdater as any)(state[key]) : valueOrUpdater
+      [key]: typeof valueOrUpdater === 'function' ? (valueOrUpdater as any)(state[key]) : valueOrUpdater,
+      lastInteractionTime: Date.now() // James: Carimba a mutação no tempo pra aniquilar fantasmas
     } as any));
   };
 };
@@ -86,7 +89,8 @@ export const useMatchEngine = () => {
           players: fullReset ? [undefined, undefined] : prev.teamB.players
         },
         history: [],
-        gameStartTime: null
+        gameStartTime: null,
+        lastInteractionTime: Date.now()
       };
       if (clearTvModals) clearTvModals();
       return newState;

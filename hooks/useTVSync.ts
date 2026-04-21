@@ -18,6 +18,7 @@ interface TVSyncProps {
   tvAttackTime: number | null;
   isSidesSwitched: boolean;
   tvLayoutMirrored: boolean;
+  lastInteractionTime: number;
 }
 
 export const useTVSync = ({
@@ -33,7 +34,8 @@ export const useTVSync = ({
   tvModals,
   tvAttackTime,
   isSidesSwitched,
-  tvLayoutMirrored
+  tvLayoutMirrored,
+  lastInteractionTime
 }: TVSyncProps) => {
   const [channelStatus, setChannelStatus] = useState<'connecting' | 'online' | 'offline'>('offline');
   const tvSyncChannelRef = useRef<any>(null);
@@ -99,9 +101,10 @@ export const useTVSync = ({
           layoutMirrored: tvLayoutMirrored
         },
         ranking,
-        history
+        history,
+        lastInteractionTime
       };
-  }, [tvModals, matches, arenas, players, teamA, teamB, servingTeam, gameStartTime, currentArenaId, senderId, isSidesSwitched, tvLayoutMirrored]);
+  }, [tvModals, matches, arenas, players, teamA, teamB, servingTeam, gameStartTime, currentArenaId, senderId, isSidesSwitched, tvLayoutMirrored, lastInteractionTime]);
 
   useEffect(() => {
     if (currentArenaId === 'default') return;
@@ -155,7 +158,7 @@ export const useTVSync = ({
         payload: calculateSnapshot()
       });
     }
-  }, [teamA.score, teamB.score, servingTeam, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored, currentArenaId]);
+  }, [teamA.score, teamB.score, servingTeam, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored, currentArenaId, lastInteractionTime]);
 
   // Canal de Ataque
   useEffect(() => {

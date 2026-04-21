@@ -31,6 +31,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   const fingerprintRef = useRef<string>("");
   const connectedRef = useRef<boolean>(false);
   const arenaColorRef = useRef<string>('indigo');
+  const lastInteractionRef = useRef<number>(0);
 
   // 1. SINCRONISMO GLOBAL (AUTO-MIGRATE)
   useEffect(() => {
@@ -79,6 +80,13 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     })];
 
     const handleSync = (payload: any) => {
+      // James: BALA DE PRATA - RELÓGIO MONOTÔNICO TEMPORAL
+      // Se a aba fantasma mandar mensagem, o lastInteractionTime dela estará no passado.
+      // Jamais aceitaremos estados mais velhos que os que já processamos!
+      const incomingTime = payload.lastInteractionTime || 0;
+      if (incomingTime < lastInteractionRef.current) return;
+      lastInteractionRef.current = incomingTime;
+
       const now = Date.now();
       const incomingSenderId = payload.senderId || 'unknown';
 
@@ -86,7 +94,15 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         lockedSenderId.current = incomingSenderId;
       }
 
-      if (lockedSenderId.current !== incomingSenderId) return;
+      if (lockedSenderId.current !== incomingSenderId) {
+         // Se o relógio andou pra frente numa aba diferente, conceder a liderança à ela!
+         // (Isso aniquila as "roubadas de leader" que ocorrem no Timeout do iOS PWA)
+         if (incomingTime > lastInteractionRef.current) {
+             lockedSenderId.current = incomingSenderId;
+         } else {
+             return;
+         }
+      }
       lastSenderTime.current = now;
 
       // James: TRAVA DE ESTABILIDADE (Fingerprint)

@@ -101,7 +101,8 @@ const App: React.FC = () => {
 
   const { channelStatus, forceSync } = useTVSync({
     senderId, arenas, currentArenaId, players, matches, teamA: engine.teamA, teamB: engine.teamB,
-    servingTeam: engine.servingTeam, gameStartTime: engine.gameStartTime, tvModals, tvAttackTime, isSidesSwitched: engine.isSidesSwitched, tvLayoutMirrored
+    servingTeam: engine.servingTeam, gameStartTime: engine.gameStartTime, tvModals, tvAttackTime, isSidesSwitched: engine.isSidesSwitched, tvLayoutMirrored,
+    lastInteractionTime: engine.lastInteractionTime
   });
 
 
