@@ -219,13 +219,22 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
       // Puxar o estado inicial IMEDIATAMENTE do banco via REST
       const fetchInitial = async () => {
-        let q = supabase.from('arenas').select('id, name, live_sync_state');
-        const { data } = await q;
+        const { data } = await supabase.from('arenas').select('id, name, color, live_sync_state');
         if (data) {
            const targetNormalized = targetId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
            const match = data.find(a => a.id === targetId || (a.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim() === targetNormalized);
            if (match) {
-              setSignalLost(false); // James: Encontrou a arena, sinal está OK
+              setSignalLost(false);
+              // James: Se achou a arena, já está conectado — mesmo sem live_sync_state ainda
+              if (!connectedRef.current) {
+                setConnected(true);
+                connectedRef.current = true;
+                setCustomArenaName(match.name || '');
+                if (match.color) {
+                  setArenaColor(match.color);
+                  arenaColorRef.current = match.color;
+                }
+              }
               if (match.live_sync_state) {
                  handleSync(match.live_sync_state);
               }
