@@ -44,7 +44,13 @@ interface TVViewProps {
 const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   const [tvData, setTvData] = useState<any>(null);
   const [activeMatch, setActiveMatch] = useState<any>(null);
-  const [internalArenaId, setInternalArenaId] = useState<string>(() => arenaId || localStorage.getItem('tv_paired_arena') || ''); // James: ID que pode ser trocado or comando mestre
+  const [internalArenaId, setInternalArenaId] = useState<string>(() => {
+    try {
+        return arenaId || localStorage.getItem('tv_paired_arena') || '';
+    } catch(e) {
+        return arenaId || '';
+    }
+  }); // James: ID que pode ser trocado or comando mestre
   const [customArenaName, setCustomArenaName] = useState<string>('');
   const [tvAttackTime, setTvAttackTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -71,8 +77,17 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   // 1. SINCRONISMO GLOBAL (AUTO-MIGRATE)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const masterId = params.get('m') || params.get('master') || localStorage.getItem('tv_paired_master');
-    const isAuto = params.get('tv') === 'auto' || (localStorage.getItem('tv_paired_master') !== null && !params.get('tv'));
+    let mId = null;
+    let autoMode = false;
+    try {
+        mId = params.get('m') || params.get('master') || localStorage.getItem('tv_paired_master');
+        autoMode = params.get('tv') === 'auto' || (localStorage.getItem('tv_paired_master') !== null && !params.get('tv'));
+    } catch (e) {
+        mId = params.get('m') || params.get('master');
+        autoMode = params.get('tv') === 'auto';
+    }
+    const masterId = mId;
+    const isAuto = autoMode;
     const isDirectTv = params.get('tv') && params.get('tv') !== 'auto';
     
     // James: Se não tiver ID de arena nem comando master, entra em modo de pareamento
@@ -86,10 +101,14 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         
         channel.on('broadcast', { event: 'PAIRING_SUCCESS' }, ({ payload }) => {
             console.log("TV: Pareamento bem sucedido! Master ID ->", payload.masterId);
-            localStorage.setItem('tv_paired_master', payload.masterId);
-            if (payload.arenaId) {
-                setInternalArenaId(payload.arenaId);
-                localStorage.setItem('tv_paired_arena', payload.arenaId);
+            try {
+                localStorage.setItem('tv_paired_master', payload.masterId);
+                if (payload.arenaId) {
+                    setInternalArenaId(payload.arenaId);
+                    localStorage.setItem('tv_paired_arena', payload.arenaId);
+                }
+            } catch (e) {
+                console.error("TV: Erro ao salvar pareamento no localStorage", e);
             }
             setIsPairingMode(false);
             window.location.reload(); // Recarrega para entrar no modo Auto limpo

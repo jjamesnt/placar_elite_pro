@@ -42,14 +42,27 @@ const Background: React.FC<{ color: ArenaColor }> = memo(({ color }) => {
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [currentView, setCurrentView] = useState<View>(() => {
-    const params = new URLSearchParams(window.location.search);
-    const isTvPath = window.location.pathname.startsWith('/tv');
-    return (params.get('view') === 'tv' || params.get('tv') || isTvPath) ? 'tv' : 'placar';
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const isTvPath = window.location.pathname.startsWith('/tv');
+      return (params.get('view') === 'tv' || params.get('tv') || isTvPath) ? 'tv' : 'placar';
+    } catch (e) {
+      return 'placar';
+    }
   });
   // James: ID MATEMATICAMENTE ÚNICO DO DISPOSITIVO (Impede Ghost Tabs e SSR caching collision)
   const senderId = useMemo(() => {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+    try {
+      let sid = localStorage.getItem('elite_sender_id');
+      if (!sid) {
+        sid = 'sender-' + Math.random().toString(36).substring(2, 15) + '-' + Date.now();
+        localStorage.setItem('elite_sender_id', sid);
+      }
+      return sid;
+    } catch (e) {
+      // Fallback para TVs sem localStorage
+      return 'sender-temp-' + Math.random().toString(36).substring(2, 15);
+    }
   }, []);
   const [lastUpdate, setLastUpdate] = useState<string>('--/-- --:--');
   const [loading, setLoading] = useState(true);
