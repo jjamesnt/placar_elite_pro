@@ -2,7 +2,6 @@
 import React, { useState, useEffect, memo } from 'react';
 import { Player, Team, ArenaColor, MatchMode } from '../types';
 import { PlusIcon, MinusIcon, ZapIcon, UsersIcon } from './icons';
-import PlayerSelectModal from './PlayerSelectModal';
 
 interface ScoreCardProps {
   teamName: string;
@@ -155,35 +154,48 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
           </button>
         </div>
 
-        <div className="flex flex-col gap-1.5 lg:gap-2 tablet-jumbo-gap">
+        <div className="flex flex-col gap-1.5 lg:gap-2 tablet-jumbo-gap relative">
           {[0, 1].map(index => (
             <div key={index} className="relative w-full">
               <button
                 disabled={isGameWon}
-                onClick={() => setSelectingPlayerIndex(index)}
-                className="w-full px-2 py-2 lg:py-3.5 lg:px-4 bg-black/60 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-[11px] font-black border border-white/5 hover:border-white/20 active:scale-95 transition-all uppercase tracking-tighter truncate text-center flex items-center justify-center gap-2"
+                onClick={() => setSelectingPlayerIndex(selectingPlayerIndex === index ? null : index)}
+                className="w-full px-2 py-2 lg:py-3.5 lg:px-4 bg-black/80 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-[12px] font-black border border-white/10 hover:border-white/30 active:scale-95 transition-all uppercase tracking-tighter truncate text-center flex items-center justify-center gap-2"
               >
-                <UsersIcon className="w-2 h-2 lg:w-3 lg:h-3 opacity-40" />
                 {teamData.players[index]?.name || `Selecionar Atleta ${index + 1}`}
               </button>
+
+              {/* Lista Simples de Atletas (Dropdown Legível) */}
+              {selectingPlayerIndex === index && (
+                <div className="absolute bottom-full left-0 w-full mb-2 bg-black border-2 border-white/20 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)] z-[100] max-h-[300px] overflow-y-auto animate-in slide-in-from-bottom-2 duration-200">
+                  <div className="p-2 border-b border-white/10 flex justify-between items-center bg-white/5 sticky top-0 z-10">
+                    <span className="text-[10px] font-black uppercase text-white/40 tracking-widest px-2">Atletas Disponíveis</span>
+                    <button onClick={() => setSelectingPlayerIndex(null)} className="text-[10px] font-black text-white/30 hover:text-white px-2">FECHAR</button>
+                  </div>
+                  <div className="flex flex-col">
+                    {allPlayers.length > 0 ? (
+                      allPlayers.map(player => (
+                        <button
+                          key={player.id}
+                          onClick={() => {
+                            onPlayerSelect(player, index);
+                            setSelectingPlayerIndex(null);
+                          }}
+                          className="w-full text-left px-5 py-4 hover:bg-white/10 border-b border-white/5 transition-colors group flex items-center justify-between"
+                        >
+                          <span className="text-[14px] font-black text-white uppercase tracking-tight group-hover:text-emerald-400">{player.name}</span>
+                          <span className="text-[10px] font-bold text-white/10 group-hover:text-white/40">SELECIONAR</span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center text-white/20 text-[10px] font-black uppercase">Nenhum atleta cadastrado</div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
-
-        {/* Modal de Seleção de Atleta */}
-        <PlayerSelectModal 
-          isOpen={selectingPlayerIndex !== null}
-          onClose={() => setSelectingPlayerIndex(null)}
-          players={allPlayers}
-          teamName={teamName}
-          arenaColor={arenaColor}
-          onSelect={(player) => {
-            if (selectingPlayerIndex !== null) {
-              onPlayerSelect(player, selectingPlayerIndex);
-              setSelectingPlayerIndex(null);
-            }
-          }}
-        />
       </div>
     </div>
   );
