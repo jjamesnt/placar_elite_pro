@@ -366,38 +366,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     return () => clearInterval(interval);
   }, [activeMatch]);
 
-  // James: CRONÔMETRO LOCAL DE POSSE — a TV faz sua própria contagem regressiva
-  // Recebe o valor do tablet via broadcast e conta localmente para não depender do heartbeat de 3s
-  const [displayAttackTime, setDisplayAttackTime] = useState<number | null>(null);
-  const localAttackRef = useRef<number | null>(null);
-
-  // Sincroniza com o valor do tablet (reseta se diferença > 2s — sinal de reset real de posse)
-  useEffect(() => {
-    if (tvAttackTime === null) {
-      setDisplayAttackTime(null);
-      localAttackRef.current = null;
-      return;
-    }
-    const diff = Math.abs((localAttackRef.current ?? tvAttackTime) - tvAttackTime);
-    if (localAttackRef.current === null || diff > 2) {
-      localAttackRef.current = tvAttackTime;
-      setDisplayAttackTime(tvAttackTime);
-    }
-  }, [tvAttackTime]);
-
-  // Contagem regressiva local a cada 1s
-  useEffect(() => {
-    if (activeMatch?.status !== 'playing') return;
-    const interval = setInterval(() => {
-      setDisplayAttackTime(prev => {
-        if (prev === null || prev <= 0) return prev;
-        const next = prev - 1;
-        localAttackRef.current = next;
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [activeMatch?.status]);
+  // James: TV espelha exatamente o tablet — sem contagem local própria
+  // O tablet envia o valor a cada ~1s via broadcast; resets (ponto marcado) chegam imediatamente
+  const displayAttackTime = tvAttackTime;
 
   const stats = useMemo(() => tvData?.ranking || [], [tvData]);
   const historyMatches = useMemo(() => tvData?.history || [], [tvData]);
