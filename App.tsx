@@ -43,7 +43,8 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [currentView, setCurrentView] = useState<View>(() => {
     const params = new URLSearchParams(window.location.search);
-    return (params.get('view') === 'tv' || params.get('tv')) ? 'tv' : 'placar';
+    const isTvPath = window.location.pathname.startsWith('/tv');
+    return (params.get('view') === 'tv' || params.get('tv') || isTvPath) ? 'tv' : 'placar';
   });
   // James: ID MATEMATICAMENTE ÚNICO DO DISPOSITIVO (Impede Ghost Tabs e SSR caching collision)
   const senderId = useMemo(() => {
