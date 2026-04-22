@@ -22,6 +22,7 @@ interface ConfigProps {
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
   tvLayoutMirrored: boolean;
   setTvLayoutMirrored: (m: boolean) => void;
+  senderId: string;
 }
 
 const ARENA_COLORS: ArenaColor[] = ['indigo', 'blue', 'emerald', 'amber', 'rose', 'violet'];
@@ -31,7 +32,8 @@ const Config: React.FC<ConfigProps> = ({
   arenas, currentArenaId, setCurrentArenaId, onAddArena, onUpdateArena, onDeleteArena, onLogout, onSaveSettings,
   userLicense, onRefreshLicense, onGoToSubscription,
   showAlert, showConfirm,
-  tvLayoutMirrored, setTvLayoutMirrored
+  tvLayoutMirrored, setTvLayoutMirrored,
+  senderId
 }) => {
   const {
     winScore, setWinScore, attackTime, setAttackTime, soundEnabled, setSoundEnabled,
@@ -47,6 +49,9 @@ const Config: React.FC<ConfigProps> = ({
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponStatus, setCouponStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+  const [pairingPin, setPairingPin] = useState('');
+  const [isPairing, setIsPairing] = useState(false);
+  const [showPairingModal, setShowPairingModal] = useState(false);
 
   const currentArena = useMemo(() => arenas.find(a => a.id === currentArenaId), [arenas, currentArenaId]);
 
@@ -126,6 +131,30 @@ const Config: React.FC<ConfigProps> = ({
       setCouponStatus({ type: 'error', msg: err.message || 'Erro ao validar cupom.' });
     } finally {
       setCouponLoading(false);
+    }
+  };
+
+  const handlePairTV = async () => {
+    if (pairingPin.length !== 6) return;
+    setIsPairing(true);
+    try {
+        const channel = supabase.channel(`pairing_${pairingPin}`);
+        await channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await channel.send({
+                    type: 'broadcast',
+                    event: 'PAIRING_SUCCESS',
+                    payload: { masterId: senderId, arenaId: currentArenaId }
+                });
+                if (showAlert) showAlert("Sucesso!", "O monitor foi vinculado e já deve estar sintonizado.", 'success', 'check');
+                setShowPairingModal(false);
+                setPairingPin('');
+            }
+        });
+    } catch (err) {
+        if (showAlert) showAlert("Erro", "Não foi possível enviar o sinal de pareamento.", 'danger', 'alert');
+    } finally {
+        setIsPairing(false);
     }
   };
 
@@ -224,26 +253,34 @@ const Config: React.FC<ConfigProps> = ({
 
       {/* Link Simplificado para Monitoramento em TV */}
       <section className="bg-indigo-600/10 rounded-3xl p-6 border border-indigo-500/20 space-y-4">
-        <div className="flex items-center gap-3">
-          <MonitorIcon className="w-4 h-4 text-indigo-400" />
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Monitor Externo (TV)</h3>
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+            <MonitorIcon className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Monitor Externo (TV)</h3>
+            </div>
+            <button 
+                onClick={() => setShowPairingModal(true)}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all active:scale-95 shadow-lg shadow-indigo-900/20"
+            >
+                Vincular Nova TV
+            </button>
         </div>
         
         <p className="text-[9px] font-bold text-white/40 uppercase leading-relaxed">
-          UTILIZE O LINK REDUZIDO ABAIXO NA SUA SMART TV. O NOME DA SUA QUADRA CARREGARÁ O PLACAR AUTOMATICAMENTE.
+          UTILIZE O LINK REDUZIDO OU O PAREAMENTO POR PIN PARA CONECTAR SUA TV SEM PRECISAR DIGITAR IDs LONGOS.
         </p>
 
         <div className="flex gap-2">
           <div className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[10px] font-mono text-indigo-300 truncate select-all">
-            {`${window.location.origin}/?tv=${currentArena?.id || 'auto'}`}
+            {`${window.location.origin}/tv`}
           </div>
           <button
             onClick={() => {
-              const url = `${window.location.origin}/?tv=${currentArena?.id || 'auto'}`;
+              const url = `${window.location.origin}/tv`;
               navigator.clipboard.writeText(url);
-              if (showAlert) showAlert("Copiado!", "URL configurada com ID Único copiada.", 'info', 'check');
+              if (showAlert) showAlert("Copiado!", "Endereço simplificado da TV copiado.", 'info', 'check');
             }}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all active:scale-90"
+            className="bg-white/5 hover:bg-white/10 text-white p-3 rounded-xl transition-all active:scale-90 border border-white/5"
             title="Copiar Link"
           >
             <ClipboardListIcon className="w-4 h-4" />
@@ -476,6 +513,42 @@ const Config: React.FC<ConfigProps> = ({
                 <button onClick={() => setEditingArena(null)} className="flex-1 p-3 sm:p-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px]">Cancelar</button>
                 <button onClick={handleUpdate} className="flex-1 p-3 sm:p-4 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px]">Salvar</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPairingModal && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[120] flex items-center justify-center p-6" onClick={() => setShowPairingModal(false)}>
+          <div className="bg-[#090e1a] border border-white/10 rounded-[2rem] p-8 w-full max-w-sm shadow-[0_0_50px_rgba(99,102,241,0.2)]" onClick={e => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center gap-6">
+                <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center">
+                    <MonitorIcon className="w-8 h-8 text-indigo-400" />
+                </div>
+                <div className="space-y-2">
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight">Vincular Monitor</h2>
+                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Digite o código de 6 dígitos que aparece na sua TV.</p>
+                </div>
+
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={pairingPin}
+                  onChange={(e) => setPairingPin(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="000 000"
+                  className="w-full bg-black/40 border border-white/10 text-center text-5xl font-mono font-black text-indigo-400 py-6 rounded-3xl focus:outline-none focus:border-indigo-500 transition-all tracking-[0.2em]"
+                />
+
+                <div className="flex gap-3 w-full">
+                    <button onClick={() => setShowPairingModal(false)} className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-white/40 rounded-2xl font-black uppercase text-[10px] transition-all">Cancelar</button>
+                    <button 
+                        onClick={handlePairTV} 
+                        disabled={pairingPin.length !== 6 || isPairing}
+                        className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase text-[10px] transition-all disabled:opacity-50"
+                    >
+                        {isPairing ? 'Conectando...' : 'Vincular'}
+                    </button>
+                </div>
             </div>
           </div>
         </div>

@@ -55,6 +55,8 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   const [connected, setConnected] = useState(false);
   const [signalLost, setSignalLost] = useState(false); // James: Novo estado para queda temporária
   const [arenaColor, setArenaColor] = useState<string>('indigo');
+  const [pairingPin, setPairingPin] = useState<string | null>(null);
+  const [isPairingMode, setIsPairingMode] = useState(false);
 
   // James: ESCUDO ANTI-INTERFERÊNCIA V5 - Tranca no tablet principal usando REF para estabilidade total
   const lockedSenderId = useRef<string | null>(null);
@@ -69,9 +71,34 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   // 1. SINCRONISMO GLOBAL (AUTO-MIGRATE)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const masterId = params.get('m') || params.get('master'); // Suporta 'm' (curto) ou 'master' (longo)
-    const isAuto = params.get('tv') === 'auto';
+    const masterId = params.get('m') || params.get('master') || localStorage.getItem('tv_paired_master');
+    const isAuto = params.get('tv') === 'auto' || (localStorage.getItem('tv_paired_master') !== null && !params.get('tv'));
+    const isDirectTv = params.get('tv') && params.get('tv') !== 'auto';
     
+    // James: Se não tiver ID de arena nem comando master, entra em modo de pareamento
+    if (!isDirectTv && (!isAuto || !masterId)) {
+        setIsPairingMode(true);
+        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+        setPairingPin(pin);
+        
+        console.log("TV: Entrando em modo de pareamento. PIN:", pin);
+        const channel = supabase.channel(`pairing_${pin}`);
+        
+        channel.on('broadcast', { event: 'PAIRING_SUCCESS' }, ({ payload }) => {
+            console.log("TV: Pareamento bem sucedido! Master ID ->", payload.masterId);
+            localStorage.setItem('tv_paired_master', payload.masterId);
+            if (payload.arenaId) {
+                setInternalArenaId(payload.arenaId);
+                localStorage.setItem('tv_paired_arena', payload.arenaId);
+            }
+            setIsPairingMode(false);
+            window.location.reload(); // Recarrega para entrar no modo Auto limpo
+        });
+        
+        channel.subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }
+
     if (isAuto && masterId) {
       // James: Normaliza para 8 dígitos se for o ID completo
       const shortToken = masterId.replace(/-/g, '').substring(0, 8);
@@ -83,7 +110,6 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         console.log("TV: Recebido comando de migração para arena ->", payload.arenaId);
         if (payload.arenaId) {
           setInternalArenaId(prev => {
-            // James: Troca de arena silenciosa para evitar oscilação (não chama setConnected(false))
             if (prev !== payload.arenaId) {
               lockedSenderId.current = null;
               return payload.arenaId;
@@ -256,6 +282,35 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
   const stats = useMemo(() => tvData?.ranking || [], [tvData]);
   const historyMatches = useMemo(() => tvData?.history || [], [tvData]);
+
+  if (isPairingMode) {
+    return (
+      <div className="min-h-screen w-full bg-[#020617] flex flex-col items-center justify-center font-sans relative overflow-hidden">
+        <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 70%)' }}></div>
+        <div className="relative z-10 flex flex-col items-center gap-12 text-center px-6">
+           <div className="space-y-4">
+              <h1 className="text-4xl font-black uppercase tracking-[0.3em] text-white/40">Vincular Nova TV</h1>
+              <p className="text-xl font-bold text-white/60 uppercase tracking-widest max-w-md">
+                 Abra as configurações no seu Tablet e digite o código abaixo para conectar.
+              </p>
+           </div>
+           
+           <div className="flex gap-4">
+              {pairingPin?.split('').map((digit, i) => (
+                  <div key={i} className="w-20 h-28 md:w-24 md:h-32 bg-white/5 border-2 border-white/10 rounded-3xl flex items-center justify-center shadow-2xl backdrop-blur-xl">
+                      <span className="text-6xl md:text-7xl font-black text-indigo-400 drop-shadow-[0_0_20px_rgba(99,102,241,0.5)]">{digit}</span>
+                  </div>
+              ))}
+           </div>
+
+           <div className="mt-8 flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-b-2 border-indigo-500 rounded-full animate-spin"></div>
+              <p className="text-xs font-black uppercase tracking-[0.4em] text-white/20">Aguardando conexão...</p>
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!connected) {
     const targetId = internalArenaId || arenaId;
