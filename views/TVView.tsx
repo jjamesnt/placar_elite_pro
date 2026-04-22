@@ -285,6 +285,12 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
           if (status === 'SUBSCRIBED') {
             console.log('TV: Canal broadcast conectado:', broadcastChannelName);
             setSignalStatus('listening');
+            // James: Marca como conectado ao estabelecer o canal — não depende de dados do banco
+            // Os dados chegarão no próximo heartbeat do tablet (máx. 3s)
+            if (!connectedRef.current) {
+              setConnected(true);
+              connectedRef.current = true;
+            }
           }
         });
 
