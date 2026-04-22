@@ -385,9 +385,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     return () => clearInterval(interval);
   }, [activeMatch?.gameStartTime]);
 
-  // James: TV espelha exatamente o tablet — sem contagem local própria
-  // O tablet envia o valor a cada ~1s via broadcast; resets (ponto marcado) chegam imediatamente
-  const displayAttackTime = tvAttackTime;
+  // James: TV espelha exatamente o tablet — compensando 1s de lag de rede
+  // O tablet envia o valor a cada ~1s via broadcast; subtraímos 1 para alinhar visualmente com o tablet real
+  const displayAttackTime = tvAttackTime !== null ? Math.max(0, tvAttackTime - 1) : null;
 
   const stats = useMemo(() => tvData?.ranking || [], [tvData]);
   const historyMatches = useMemo(() => tvData?.history || [], [tvData]);
@@ -532,9 +532,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
       </div>
 
       <div className="flex-1 lg:grid lg:grid-cols-12 gap-8 h-full min-h-0 pt-2">
-        <div className="col-span-8 flex flex-col gap-6 h-full">
+        <div className="col-span-8 flex flex-col gap-4 h-full">
           {/* Main Scoreboard Area */}
-          <div className="bg-gray-900/60 border border-white/5 rounded-[3.5rem] p-10 flex flex-col justify-center relative shadow-2xl overflow-hidden min-h-[55vh]">
+          <div className="bg-gray-900/60 border border-white/5 rounded-[3.5rem] p-6 flex flex-col justify-center relative shadow-2xl overflow-hidden min-h-[50vh]">
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
 
             <div className="flex items-center justify-around gap-12 w-full mt-4">
@@ -577,9 +577,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
                        <div className="text-white/10 text-2xl font-black italic tracking-widest mb-2">VS</div>
 
-                       <div className={`px-12 py-8 rounded-[2.5rem] border-4 flex flex-col items-center justify-center transition-all duration-300 ${currentTheme.glow} ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black/90 border-white/10'}`}>
+                       <div className={`px-12 py-8 rounded-[2.5rem] border-4 flex flex-col items-center justify-center transition-all duration-300 ${currentTheme.glow} ${(tvAttackTime !== null && tvAttackTime <= 10) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black/90 border-white/10'}`}>
                           <span className="text-[14px] font-black uppercase tracking-[0.4em] text-white/40 mb-2">Posse</span>
-                        <span className={`text-9xl font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'text-red-500' : currentTheme.text}`}>
+                        <span className={`text-9xl font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 10) ? 'text-red-500' : currentTheme.text}`}>
                           {displayAttackTime ?? 24}
                         </span>
                      </div>
@@ -605,8 +605,8 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
             </div>
           </div>
 
-          {/* Ranking */}
-          <div className={`bg-gradient-to-br ${currentTheme.from} to-transparent border border-white/5 rounded-[3rem] p-8 flex flex-col shadow-2xl relative overflow-hidden flex-1 min-h-0`}>
+          {/* Ranking Compacto */}
+          <div className={`bg-gradient-to-br ${currentTheme.from} to-transparent border border-white/5 rounded-[3rem] p-6 flex flex-col shadow-2xl relative overflow-hidden flex-1 min-h-0`}>
               <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via ${currentTheme.via} to-transparent`}></div>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
