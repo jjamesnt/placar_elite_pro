@@ -208,13 +208,16 @@ export const useTVSync = ({
     };
   }, [currentArenaId, arenas, calculateSnapshot, senderId]);
 
-  // Transmissão Imediata (Triggered)
+  // Transmissão Imediata (Triggered) — DB + Broadcast em paralelo
   useEffect(() => {
+    const snap = calculateSnapshot();
+    // Banco de dados
     if (tvSyncChannelRef.current) {
-      tvSyncChannelRef.current.send({
-        type: 'broadcast', event: 'TV_SYNC',
-        payload: calculateSnapshot()
-      });
+      tvSyncChannelRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: snap });
+    }
+    // Broadcast direto (bypass RLS) — não depende do DB estar pronto
+    if (arenaBroadcastRef.current) {
+      arenaBroadcastRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: snap });
     }
   }, [teamA.score, teamB.score, servingTeam, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored, currentArenaId, lastInteractionTime]);
 
@@ -237,21 +240,17 @@ export const useTVSync = ({
         if (masterChannelRef.current) {
           const snap = snapshotRef.current();
           masterChannelRef.current.send({
-            type: 'broadcast',
-            event: 'TV_MIGRATE',
-            payload: { arenaId: snap.arenaId }
-          });
-        }
-        // Broadcast direto para a TV (bypass RLS para TV Box anônima)
-        if (arenaBroadcastRef.current) {
-          arenaBroadcastRef.current.send({
-            type: 'broadcast',
-            event: 'TV_SYNC',
-            payload: snapshotRef.current()
+            type: 'broadcast', event: 'TV_MIGRATE', payload: { arenaId: snap.arenaId }
           });
         }
       }
-    }, 3000); // Relaxado para 3 segundos em produção
+      // James: Broadcast é INDEPENDENTE do tvSyncChannelRef (não para se DB está indisponível)
+      if (arenaBroadcastRef.current) {
+        arenaBroadcastRef.current.send({
+          type: 'broadcast', event: 'TV_SYNC', payload: snapshotRef.current()
+        });
+      }
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 

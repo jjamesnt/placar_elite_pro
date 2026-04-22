@@ -365,6 +365,39 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     return () => clearInterval(interval);
   }, [activeMatch]);
 
+  // James: CRONÔMETRO LOCAL DE POSSE — a TV faz sua própria contagem regressiva
+  // Recebe o valor do tablet via broadcast e conta localmente para não depender do heartbeat de 3s
+  const [displayAttackTime, setDisplayAttackTime] = useState<number | null>(null);
+  const localAttackRef = useRef<number | null>(null);
+
+  // Sincroniza com o valor do tablet (reseta se diferença > 2s — sinal de reset real de posse)
+  useEffect(() => {
+    if (tvAttackTime === null) {
+      setDisplayAttackTime(null);
+      localAttackRef.current = null;
+      return;
+    }
+    const diff = Math.abs((localAttackRef.current ?? tvAttackTime) - tvAttackTime);
+    if (localAttackRef.current === null || diff > 2) {
+      localAttackRef.current = tvAttackTime;
+      setDisplayAttackTime(tvAttackTime);
+    }
+  }, [tvAttackTime]);
+
+  // Contagem regressiva local a cada 1s
+  useEffect(() => {
+    if (activeMatch?.status !== 'playing') return;
+    const interval = setInterval(() => {
+      setDisplayAttackTime(prev => {
+        if (prev === null || prev <= 0) return prev;
+        const next = prev - 1;
+        localAttackRef.current = next;
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeMatch?.status]);
+
   const stats = useMemo(() => tvData?.ranking || [], [tvData]);
   const historyMatches = useMemo(() => tvData?.history || [], [tvData]);
 
@@ -556,7 +589,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                        <div className={`px-12 py-8 rounded-[2.5rem] border-4 flex flex-col items-center justify-center transition-all duration-300 ${currentTheme.glow} ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black/90 border-white/10'}`}>
                           <span className="text-[14px] font-black uppercase tracking-[0.4em] text-white/40 mb-2">Posse</span>
                         <span className={`text-9xl font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 5) ? 'text-red-500' : currentTheme.text}`}>
-                          {tvAttackTime ?? 24}
+                          {displayAttackTime ?? 24}
                         </span>
                      </div>
                   </div>
