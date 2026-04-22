@@ -209,17 +209,16 @@ export const useTVSync = ({
   }, [currentArenaId, arenas, calculateSnapshot, senderId]);
 
   // Transmissão Imediata (Triggered) — DB + Broadcast em paralelo
+  // James: tvAttackTime incluído para broadcast a cada segundo do cronômetro de posse
   useEffect(() => {
     const snap = calculateSnapshot();
-    // Banco de dados
     if (tvSyncChannelRef.current) {
       tvSyncChannelRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: snap });
     }
-    // Broadcast direto (bypass RLS) — não depende do DB estar pronto
     if (arenaBroadcastRef.current) {
       arenaBroadcastRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: snap });
     }
-  }, [teamA.score, teamB.score, servingTeam, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored, currentArenaId, lastInteractionTime]);
+  }, [teamA.score, teamB.score, servingTeam, tvAttackTime, players, matches, calculateSnapshot, isSidesSwitched, tvLayoutMirrored, currentArenaId, lastInteractionTime]);
 
   // Batimento de Segurança (Heartbeat) V7
   const snapshotRef = useRef(calculateSnapshot);
@@ -250,7 +249,7 @@ export const useTVSync = ({
           type: 'broadcast', event: 'TV_SYNC', payload: snapshotRef.current()
         });
       }
-    }, 3000);
+    }, 1000); // James: Reduzido para 1s — mais responsivo durante o jogo
     return () => clearInterval(interval);
   }, []);
 

@@ -193,7 +193,8 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
         // Fingerprint para evitar flicker de reagendamento DOM
         const historyHash = payload.history?.length || 0;
-        const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.modals?.victoryData?.winner}|H${historyHash}`;
+        // James: attackTime incluído no fingerprint — timer de posse agora atualiza a TV em tempo real
+        const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.attackTime}|${payload.activeMatch?.modals?.victoryData?.winner}|H${historyHash}`;
         
         const colorChanged = payload.arenaColor && payload.arenaColor !== arenaColorRef.current;
         const dataChanged = newFinger !== fingerprintRef.current;
