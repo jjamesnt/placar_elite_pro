@@ -90,8 +90,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     const isAuto = autoMode;
     const isDirectTv = params.get('tv') && params.get('tv') !== 'auto';
     
-    // James: Se não tiver ID de arena nem comando master, entra em modo de pareamento
-    if (!isDirectTv && (!isAuto || !masterId)) {
+    // James: Se não tiver ID de arena nem comando master, OU se a arena for o ID genérico 'default', entra em modo de pareamento
+    const arenaIdIsInvalid = !internalArenaId || internalArenaId === 'default';
+    if (!isDirectTv && ((!isAuto || !masterId) || (arenaIdIsInvalid && !isAuto))) {
         setIsPairingMode(true);
         const pin = Math.floor(100000 + Math.random() * 900000).toString();
         setPairingPin(pin);
@@ -302,6 +303,16 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   const stats = useMemo(() => tvData?.ranking || [], [tvData]);
   const historyMatches = useMemo(() => tvData?.history || [], [tvData]);
 
+  const handleResetTV = () => {
+    try {
+      localStorage.removeItem('tv_paired_master');
+      localStorage.removeItem('tv_paired_arena');
+      window.location.href = '/tv';
+    } catch(e) {
+      window.location.reload();
+    }
+  };
+
   if (isPairingMode) {
     return (
       <div className="min-h-screen w-full bg-[#020617] flex flex-col items-center justify-center font-sans relative overflow-hidden">
@@ -323,14 +334,13 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
            </div>
 
            <div className="mt-8 flex flex-col items-center gap-6">
-              <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center gap-3">
                 <div className="w-12 h-12 border-b-2 border-indigo-500 rounded-full animate-spin"></div>
                 <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">Aguardando conexão...</p>
               </div>
-              
-              <button 
+              <button
                 onClick={handleResetTV}
-                className="mt-8 px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-white/40 transition-all"
+                className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-white/40 transition-all"
               >
                 Limpar Memória da TV
               </button>
@@ -355,27 +365,25 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
               </div>
            </div>
            <div className="text-center space-y-4">
-              <h1 className="text-4xl font-black uppercase tracking-[0.3em] text-white">
+              <h1 className="text-5xl font-black uppercase tracking-[0.3em] text-white">
                 {isWaitingMaster ? 'LINK INTELIGENTE ATIVO' : 'SINTONIZANDO PLACAR'}
               </h1>
               <p className="text-sm font-bold text-white/20 uppercase tracking-[0.3em] leading-relaxed">
                  {isWaitingMaster ? 'Aguardando comando do Tablet Mestre...' : `Sincronizando: ${targetId}`}
               </p>
            </div>
-           
-           <div className="flex flex-col items-center gap-6 mt-4">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 max-w-sm w-full text-center backdrop-blur-md">
-                  <code className="text-[10px] font-mono text-white/40 block bg-black/40 py-2 rounded-lg break-all px-4">
-                    MODO {isWaitingMaster ? 'AUTOMÁTICO' : 'SELETIVO'}
-                  </code>
-              </div>
-              
-              <button 
-                onClick={handleResetTV}
-                className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-white/40 transition-all"
-              >
-                Reiniciar Conexão
-              </button>
+           <div className="flex flex-col items-center gap-4 mt-4">
+             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 max-w-sm w-full text-center backdrop-blur-md">
+               <code className="text-[10px] font-mono text-white/40 block bg-black/40 py-2 rounded-lg break-all px-4">
+                 MODO {isWaitingMaster ? 'AUTOMÁTICO' : 'SELETIVO'}
+               </code>
+             </div>
+             <button
+               onClick={handleResetTV}
+               className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-white/40 transition-all"
+             >
+               Reiniciar Conexão
+             </button>
            </div>
         </div>
       </div>
