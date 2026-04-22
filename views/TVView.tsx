@@ -273,8 +273,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
           }
         });
 
-      // James: CANAL BROADCAST — recebe dados do tablet sem necessitar autenticação (bypass RLS)
-      // Prefixo de ambiente garante isolamento entre local e produção
+      // James: CANAL BROADCAST (NOVO) — tablets atualizados usam canal prefixado por ambiente
       const ENV_PREFIX = import.meta.env.DEV ? 'dev' : 'prod';
       const broadcastChannelName = `${ENV_PREFIX}_tv_live_${channelSafeId.substring(0, 20)}`;
       const broadcastChannel = supabase.channel(broadcastChannelName)
@@ -283,10 +282,25 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         })
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            console.log('TV: Canal broadcast conectado:', broadcastChannelName);
+            console.log('TV: Canal broadcast (novo) conectado:', broadcastChannelName);
             setSignalStatus('listening');
-            // James: Marca como conectado ao estabelecer o canal — não depende de dados do banco
-            // Os dados chegarão no próximo heartbeat do tablet (máx. 3s)
+            if (!connectedRef.current) {
+              setConnected(true);
+              connectedRef.current = true;
+            }
+          }
+        });
+
+      // James: CANAL BROADCAST LEGADO — tablets com versão antiga (cache do browser) usam canal sem prefixo
+      // O filtro de env no handleSync evita que dados do servidor local passem mesmo neste canal
+      const legacyChannelName = `tv_live_${channelSafeId.substring(0, 20)}`;
+      const legacyBroadcastChannel = supabase.channel(legacyChannelName)
+        .on('broadcast', { event: 'TV_SYNC' }, ({ payload }) => {
+          if (payload) handleSync(payload);
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('TV: Canal broadcast (legado) conectado:', legacyChannelName);
             if (!connectedRef.current) {
               setConnected(true);
               connectedRef.current = true;
@@ -297,6 +311,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
       return () => {
         supabase.removeChannel(channel);
         supabase.removeChannel(broadcastChannel);
+        supabase.removeChannel(legacyBroadcastChannel);
       };
     }, [internalArenaId, arenaId, reconnectCounter]);
 
