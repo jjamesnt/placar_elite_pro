@@ -166,3 +166,7 @@ export const ActivityIcon: React.FC<IconProps> = ({ className }) => (
 export const ClockIcon: React.FC<IconProps> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className || "w-6 h-6"} strokeWidth={2}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
+
+export const XIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className || "w-6 h-6"} strokeWidth={2.5}><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+);
