@@ -458,21 +458,31 @@ const Placar: React.FC<PlacarProps> = ({
       )}
 
       <div className="min-h-0 h-full overflow-hidden">
-        <ScoreCard
-          teamName={teamNameLeft}
-          teamData={teamLeft}
-          onScoreChange={(score) => handleScoreChange(teamLeftKey, score)}
-          onPlayerSelect={(player, index) => handlePlayerSelect(teamLeftKey, player, index)}
-          allPlayers={allPlayers}
-          isGameWon={isGameWon}
-          isLeft={true}
-          isServing={servingTeam === teamLeftKey}
-          arenaColor={currentArena.color}
-          isVaiATresActive={isVaiATresActive}
-          vaiATresScore={vaiATresScore[teamLeftKey]}
-          setsWon={teamLeft.sets}
-          matchMode={matchMode}
-        />
+        {(() => {
+          const allSelectedIds = [
+            ...teamLeft.players.map(p => p?.id),
+            ...teamRight.players.map(p => p?.id)
+          ].filter(Boolean) as string[];
+
+          return (
+            <ScoreCard
+              teamName={teamNameLeft}
+              teamData={teamLeft}
+              onScoreChange={(score) => handleScoreChange(teamLeftKey, score)}
+              onPlayerSelect={(player, index) => handlePlayerSelect(teamLeftKey, player, index)}
+              allPlayers={allPlayers}
+              isGameWon={isGameWon}
+              isLeft={true}
+              isServing={servingTeam === teamLeftKey}
+              arenaColor={currentArena.color}
+              isVaiATresActive={isVaiATresActive}
+              vaiATresScore={vaiATresScore[teamLeftKey]}
+              setsWon={teamLeft.sets}
+              matchMode={matchMode}
+              excludedPlayerIds={allSelectedIds}
+            />
+          );
+        })()}
       </div>
 
       <div className="w-full flex-shrink-0 flex items-center justify-center min-h-0 overflow-hidden relative z-20">
@@ -500,21 +510,31 @@ const Placar: React.FC<PlacarProps> = ({
       </div>
 
       <div className="min-h-0 h-full overflow-hidden">
-        <ScoreCard
-          teamName={teamNameRight}
-          teamData={teamRight}
-          onScoreChange={(score) => handleScoreChange(teamRightKey, score)}
-          onPlayerSelect={(player, index) => handlePlayerSelect(teamRightKey, player, index)}
-          allPlayers={allPlayers}
-          isGameWon={isGameWon}
-          isLeft={false}
-          isServing={servingTeam === teamRightKey}
-          arenaColor={currentArena.color}
-          isVaiATresActive={isVaiATresActive}
-          vaiATresScore={vaiATresScore[teamRightKey]}
-          setsWon={teamRight.sets}
-          matchMode={matchMode}
-        />
+        {(() => {
+          const allSelectedIds = [
+            ...teamLeft.players.map(p => p?.id),
+            ...teamRight.players.map(p => p?.id)
+          ].filter(Boolean) as string[];
+
+          return (
+            <ScoreCard
+              teamName={teamNameRight}
+              teamData={teamRight}
+              onScoreChange={(score) => handleScoreChange(teamRightKey, score)}
+              onPlayerSelect={(player, index) => handlePlayerSelect(teamRightKey, player, index)}
+              allPlayers={allPlayers}
+              isGameWon={isGameWon}
+              isLeft={false}
+              isServing={servingTeam === teamRightKey}
+              arenaColor={currentArena.color}
+              isVaiATresActive={isVaiATresActive}
+              vaiATresScore={vaiATresScore[teamRightKey]}
+              setsWon={teamRight.sets}
+              matchMode={matchMode}
+              excludedPlayerIds={allSelectedIds}
+            />
+          );
+        })()}
       </div>
 
       {toastMessage && (

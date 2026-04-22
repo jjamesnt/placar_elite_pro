@@ -17,6 +17,7 @@ interface ScoreCardProps {
   vaiATresScore?: number;
   setsWon?: number;
   matchMode?: MatchMode;
+  excludedPlayerIds?: string[];
 }
 
 const THEME_CONFIG: Record<ArenaColor, { gradient: string; border: string; text: string; shadow: string; bg: string }> = {
@@ -41,7 +42,7 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
   teamName, teamData, onScoreChange, onPlayerSelect, allPlayers, 
   isGameWon, isLeft, isServing, arenaColor = 'indigo', 
   isVaiATresActive = false, vaiATresScore = 0, setsWon = 0,
-  matchMode = 'casual'
+  matchMode = 'casual', excludedPlayerIds = []
 }) => {
   const [animate, setAnimate] = useState(false);
   const [selectingPlayerIndex, setSelectingPlayerIndex] = useState<number | null>(null);
@@ -174,19 +175,39 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
                   </div>
                   <div className="flex flex-col">
                     {allPlayers.length > 0 ? (
-                      allPlayers.map(player => (
-                        <button
-                          key={player.id}
-                          onClick={() => {
-                            onPlayerSelect(player, index);
-                            setSelectingPlayerIndex(null);
-                          }}
-                          className="w-full text-left px-5 py-4 hover:bg-white/10 border-b border-white/5 transition-colors group flex items-center justify-between"
-                        >
-                          <span className="text-[14px] font-black text-white uppercase tracking-tight group-hover:text-emerald-400">{player.name}</span>
-                          <span className="text-[10px] font-bold text-white/10 group-hover:text-white/40">SELECIONAR</span>
-                        </button>
-                      ))
+                      allPlayers.map(player => {
+                        const isCurrent = teamData.players[index]?.id === player.id;
+                        const isBusy = excludedPlayerIds.includes(player.id) && !isCurrent;
+
+                        return (
+                          <button
+                            key={player.id}
+                            disabled={isBusy}
+                            onClick={() => {
+                              onPlayerSelect(player, index);
+                              setSelectingPlayerIndex(null);
+                            }}
+                            className={`w-full text-left px-5 py-4 border-b border-white/5 transition-colors group flex items-center justify-between ${
+                              isBusy ? 'opacity-20 cursor-not-allowed bg-black' : 
+                              isCurrent ? 'bg-emerald-500/20 border-l-4 border-l-emerald-500' : 'hover:bg-white/10'
+                            }`}
+                          >
+                            <div className="flex flex-col">
+                              <span className={`text-[14px] font-black uppercase tracking-tight ${
+                                isBusy ? 'text-white/40' : isCurrent ? 'text-emerald-400' : 'text-white'
+                              }`}>
+                                {player.name}
+                              </span>
+                              {isBusy && <span className="text-[8px] font-bold text-white/20 uppercase tracking-widest mt-0.5">Em Quadra</span>}
+                              {isCurrent && <span className="text-[8px] font-bold text-emerald-500/50 uppercase tracking-widest mt-0.5">Selecionado</span>}
+                            </div>
+                            <div className="flex items-center gap-2">
+                               {isCurrent && <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>}
+                               {!isBusy && !isCurrent && <span className="text-[10px] font-bold text-white/10 group-hover:text-white/40">SELECIONAR</span>}
+                            </div>
+                          </button>
+                        );
+                      })
                     ) : (
                       <div className="p-8 text-center text-white/20 text-[10px] font-black uppercase">Nenhum atleta cadastrado</div>
                     )}
