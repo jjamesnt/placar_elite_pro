@@ -99,6 +99,7 @@ export const useTVSync = ({
 
       return {
         senderId, 
+        env: import.meta.env.DEV ? 'dev' : 'prod', // James: Identifica o ambiente para evitar cross-env
         arenaId: cA?.toLowerCase(),
         arenaSlug: normalize(curArena?.name || ''),
         arenaName: curArena?.name || 'ARENA',

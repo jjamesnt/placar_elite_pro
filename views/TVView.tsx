@@ -165,6 +165,10 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
       console.log(`TV: Sintonizando Banco de Dados para a arena: ${targetId}`);
 
       const handleSync = (payload: any) => {
+        // James: FILTRO DE AMBIENTE — ignora dados do ambiente errado (ex: servidor local → TV produção)
+        const currentEnv = import.meta.env.DEV ? 'dev' : 'prod';
+        if (payload.env && payload.env !== currentEnv) return;
+
         // James: BALA DE PRATA - RELÓGIO MONOTÔNICO TEMPORAL
         const incomingTime = payload.lastInteractionTime || 0;
         if (incomingTime < lastInteractionRef.current) return;
