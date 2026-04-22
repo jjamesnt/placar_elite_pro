@@ -13,8 +13,8 @@ export default defineConfig(({ mode }) => {
       plugins: [
         react(),
         legacy({
-          // James: Suporte ultra-amplo para TV Boxes (Chrome 50+, Android 5+)
-          targets: ['chrome >= 50', 'android >= 5', 'safari >= 10'],
+          // James: Suporte ultra-amplo para TV Boxes (Chrome 40+, Android 4.4+)
+          targets: ['chrome >= 40', 'android >= 4.4', 'safari >= 10'],
           additionalLegacyPolyfills: ['intersection-observer', 'resize-observer-polyfill'],
         }),
       ],

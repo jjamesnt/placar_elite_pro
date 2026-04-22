@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-[#030712] overflow-hidden;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Animations from index.html moved here */
+@keyframes hazard-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-hazard-pulse {
+  animation: hazard-pulse 1.5s ease-in-out infinite;
+}
+
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@media screen and (min-width: 768px) and (min-height: 600px) {
+  .tablet-jumbo-select {
+    @apply py-[0.8rem] px-[1.5rem] text-[18px] rounded-[1.2rem] text-center;
+    text-align-last: center !important;
+  }
+
+  .tablet-jumbo-gap {
+    @apply gap-2 mt-1;
+  }
+}
