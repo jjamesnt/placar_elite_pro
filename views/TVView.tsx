@@ -576,66 +576,84 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
             <div className={`absolute inset-0 opacity-10 bg-radial-gradient from-${arenaColor}-500/20 to-transparent pointer-events-none`}></div>
 
             <div className="flex items-center justify-around gap-12 w-full mt-4">
-              {/* Lógica de Espelhamento (Lado da Quadra) - James: Inverte os blocos se isSidesSwitched ou layoutMirrored forem true (XOR) */}
               {(() => {
-                const isSwitched = activeMatch?.isSidesSwitched !== activeMatch?.layoutMirrored; // James: XOR para inversão independente na TV
+                const isSwitched = activeMatch?.isSidesSwitched !== activeMatch?.layoutMirrored;
                 const leftTeam = isSwitched ? activeMatch?.teamB : activeMatch?.teamA;
                 const rightTeam = isSwitched ? activeMatch?.teamA : activeMatch?.teamB;
-                const leftServing = isSwitched ? activeMatch?.servingTeam === 'B' : activeMatch?.servingTeam === 'A';
+                                const leftServing = isSwitched ? activeMatch?.servingTeam === 'B' : activeMatch?.servingTeam === 'A';
                 const rightServing = isSwitched ? activeMatch?.servingTeam === 'A' : activeMatch?.servingTeam === 'B';
                 const leftColor = isSwitched ? "text-red-500" : "text-blue-400";
                 const rightColor = isSwitched ? "text-blue-400" : "text-red-500";
+                
+                const getTeamTheme = (color: string) => {
+                  if (color.includes('blue')) return 'blue';
+                  if (color.includes('red') || color.includes('rose')) return 'rose';
+                  return 'indigo';
+                };
 
                 return (
                   <>
-                    {/* Time da ESQUERDA */}
-                    <div className="flex-1 text-center flex flex-col items-center">
-                      <div className="h-[4vh] mb-2 flex items-center justify-center">
-                        {leftServing && <div className="w-10 h-10 bg-white rounded-full animate-pulse shadow-[0_0_60px_rgba(255,255,255,0.8),0_0_20px_rgba(255,255,255,0.4)] border-4 border-white/20"></div>}
+                    {/* James: Ambient Glows Dinâmicos */}
+                    {leftServing && (
+                       <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-[40%] h-[80%] bg-radial-gradient from-${getTeamTheme(isSwitched ? 'red' : 'blue') === 'rose' ? 'rose' : 'blue'}-500/10 to-transparent blur-3xl ambient-glow`}></div>
+                    )}
+                    {rightServing && (
+                       <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-[40%] h-[80%] bg-radial-gradient from-${getTeamTheme(isSwitched ? 'blue' : 'red') === 'rose' ? 'rose' : 'red'}-500/10 to-transparent blur-3xl ambient-glow`}></div>
+                    )}
+
+                    {/* Time Esquerdo */}
+                    <div className="flex-1 flex flex-col items-center relative z-10">
+                      <div className="flex items-center gap-4 mb-4">
+                        {leftServing && (
+                          <div className="w-5 h-5 rounded-full bg-white shadow-[0_0_25px_white] animate-pulse"></div>
+                        )}
+                        <h3 className={`text-[1.5vw] font-black uppercase tracking-[0.3em] ${leftServing ? 'text-white' : 'text-white/20'}`}>TIME A</h3>
                       </div>
-                      <div className="h-[8vh] flex flex-col justify-center mb-4">
+                      <div className="h-[9vh] flex flex-col justify-center mb-6">
                         {(leftTeam?.players || []).map((p: any, idx: number) => (
-                          <div key={idx} className={`text-[2vw] font-black uppercase tracking-tighter leading-tight drop-shadow-lg ${leftColor}`}>
+                           <div key={idx} className={`text-[2.2vw] font-black uppercase tracking-tighter leading-tight drop-shadow-2xl ${leftColor}`}>
                             {typeof p === 'string' ? p : (p?.name || '---')}
                           </div>
                         ))}
                       </div>
-                      <div key={`score-left-${leftTeam?.score}`} className="text-[clamp(10rem,19vw,26rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_30px_60px_rgba(0,0,0,0.7)] text-white score-change">{leftTeam?.score || 0}</div>
+                      <div key={`score-left-${leftTeam?.score}`} className="text-[clamp(10rem,19vw,26rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] text-white score-change">{leftTeam?.score || 0}</div>
                     </div>
 
-                    {/* CRONÔMETRO CENTRAL (PARTIDA + ATAQUE/POSSE) */}
-                    <div className="flex flex-col items-center justify-center gap-2 min-w-[15vw]">
-                       {/* Tempo de Jogo Integrado ao Placar */}
-                       <div className="bg-white/5 px-6 py-2 rounded-xl border border-white/5 flex items-center gap-3 mb-2">
-                          <ClockIcon className="w-4 h-4 text-white/40" />
-                          <span className="text-4xl font-mono font-black tabular-nums text-white/80">
-                            {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, '0')}
-                          </span>
+                    {/* James: CRONÔMETRO CENTRAL INTEGRADO */}
+                    <div className="flex flex-col items-center gap-8 relative z-10 px-8">
+                       <div className="flex flex-col items-center gap-2">
+                          <div className="bg-white/5 px-6 py-2 rounded-xl border border-white/5 flex items-center gap-3">
+                             <span className="text-3xl font-mono font-black tabular-nums text-white/80">
+                               {Math.floor((activeMatch?.matchTime || 0) / 60)}:{((activeMatch?.matchTime || 0) % 60).toString().padStart(2, '0')}
+                             </span>
+                          </div>
+                          <div className="text-[10px] font-black text-white/10 italic tracking-[0.4em] uppercase">Partida</div>
                        </div>
 
-                       <div className="text-white/10 text-2xl font-black italic tracking-widest mb-2">VS</div>
-
-                       <div className={`px-[clamp(2rem,5vw,5rem)] py-[clamp(1rem,3vh,4rem)] rounded-[2.5rem] border-4 flex flex-col items-center justify-center transition-all duration-300 ${currentTheme.glow} ${(tvAttackTime !== null && tvAttackTime <= 10) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black/90 border-white/10'}`}>
+                       <div className={`px-[clamp(2rem,5vw,5rem)] py-[clamp(1rem,3vh,4rem)] rounded-[3rem] border-4 flex flex-col items-center justify-center transition-all duration-300 ${currentTheme.glow} ${(tvAttackTime !== null && tvAttackTime <= 10) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black/90 border-white/10'}`}>
                           <span className="text-[clamp(0.8rem,1vw,1.2rem)] font-black uppercase tracking-[0.4em] text-white/40 mb-2">Posse</span>
-                        <span className={`text-[clamp(5rem,10vw,12rem)] font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 10) ? 'text-red-500' : currentTheme.text}`}>
-                          {displayAttackTime ?? 24}
-                        </span>
-                     </div>
-                  </div>
+                          <span className={`text-[clamp(5rem,10vw,12rem)] font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 10) ? 'text-red-500' : currentTheme.text}`}>
+                            {displayAttackTime ?? 24}
+                          </span>
+                       </div>
+                    </div>
 
-                    {/* Time da DIREITA */}
-                    <div className="flex-1 text-center flex flex-col items-center">
-                      <div className="h-[4vh] mb-2 flex items-center justify-center">
-                        {rightServing && <div className="w-10 h-10 bg-white rounded-full animate-pulse shadow-[0_0_60px_rgba(255,255,255,0.8),0_0_20px_rgba(255,255,255,0.4)] border-4 border-white/20"></div>}
+                    {/* Time Direito */}
+                    <div className="flex-1 flex flex-col items-center relative z-10">
+                      <div className="flex items-center gap-4 mb-4">
+                        <h3 className={`text-[1.5vw] font-black uppercase tracking-[0.3em] ${rightServing ? 'text-white' : 'text-white/20'}`}>TIME B</h3>
+                        {rightServing && (
+                          <div className="w-5 h-5 rounded-full bg-white shadow-[0_0_25px_white] animate-pulse"></div>
+                        )}
                       </div>
-                      <div className="h-[8vh] flex flex-col justify-center mb-4">
+                      <div className="h-[9vh] flex flex-col justify-center mb-6">
                         {(rightTeam?.players || []).map((p: any, idx: number) => (
-                          <div key={idx} className={`text-[2vw] font-black uppercase tracking-tighter leading-tight drop-shadow-lg ${rightColor}`}>
+                          <div key={idx} className={`text-[2.2vw] font-black uppercase tracking-tighter leading-tight drop-shadow-2xl ${rightColor} text-right`}>
                             {typeof p === 'string' ? p : (p?.name || '---')}
                           </div>
                         ))}
                       </div>
-                      <div key={`score-right-${rightTeam?.score}`} className="text-[clamp(10rem,19vw,26rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_30px_60px_rgba(0,0,0,0.7)] text-white score-change">{rightTeam?.score || 0}</div>
+                      <div key={`score-right-${rightTeam?.score}`} className="text-[clamp(10rem,19vw,26rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] text-white score-change">{rightTeam?.score || 0}</div>
                     </div>
                   </>
                 );
@@ -692,44 +710,57 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         
         @keyframes scrollList {
                   0% { transform: translateY(0); }
-                  85% { transform: translateY(calc(-100% + 55vh)); }
+                  90% { transform: translateY(calc(-100% + 60vh)); }
                   100% { transform: translateY(0); }
                 }
                 .auto-scroll-list {
-                  animation: scrollList ${historyMatches.length > 4 ? historyMatches.length * 5 : 0}s ease-in-out infinite;
+                  animation: scrollList ${historyMatches.length > 5 ? historyMatches.length * 4 : 0}s ease-in-out infinite;
                 }
                 .auto-scroll-list:hover {
-                  animation-play-state: paused;
+                   animation-play-state: paused;
+                }
+
+                @keyframes ambient-pulse {
+                  0% { transform: scale(1); opacity: 0.3; }
+                  50% { transform: scale(1.1); opacity: 0.5; }
+                  100% { transform: scale(1); opacity: 0.3; }
+                }
+                .ambient-glow {
+                  animation: ambient-pulse 3s ease-in-out infinite;
                 }
               `}</style>
+
               
-              <div className={`${historyMatches.length > 4 ? 'auto-scroll-list' : ''} flex flex-col gap-3 py-2 px-1`}>
-                {historyMatches.map((m: any) => (
-                  <div key={m.id} className={`bg-gray-800/40 border border-white/10 rounded-[2rem] p-6 flex flex-col gap-2 transition-all hover:${currentTheme.bg} shadow-lg`}>
-                    <div className="flex items-center justify-between w-full">
-                        <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Partida Finalizada</span>
-                        <div className="h-px flex-1 mx-4 bg-white/5"></div>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                       <div className="flex-1 flex flex-col">
-                          <p className={`text-sm font-black uppercase truncate tracking-tighter ${m.winner === 'A' ? 'text-white' : 'text-white/40'}`}>
-                            {Array.isArray(m.teamA?.players) ? m.teamA.players.filter(Boolean).join(' & ') : '---'}
-                          </p>
-                          <div className={`mt-1 h-1 w-full rounded-full ${m.winner === 'A' ? 'bg-blue-600' : 'bg-white/5'}`}></div>
-                       </div>
-                       <div className={`text-2xl font-black w-12 text-center py-1 rounded-xl shadow-inner ${m.winner === 'A' ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/20'}`}>{m.teamA?.score || 0}</div>
-                       <div className="text-[10px] font-bold text-white/10">X</div>
-                       <div className={`text-2xl font-black w-12 text-center py-1 rounded-xl shadow-inner ${m.winner === 'B' ? 'bg-red-600 text-white' : 'bg-white/5 text-white/20'}`}>{m.teamB?.score || 0}</div>
-                       <div className="flex-1 flex flex-col text-right">
-                          <p className={`text-sm font-black uppercase truncate tracking-tighter ${m.winner === 'B' ? 'text-white' : 'text-white/40'}`}>
-                            {Array.isArray(m.teamB?.players) ? m.teamB.players.filter(Boolean).join(' & ') : '---'}
-                          </p>
-                          <div className={`mt-1 h-1 w-full rounded-full ${m.winner === 'B' ? 'bg-red-600' : 'bg-white/5'}`}></div>
-                       </div>
-                    </div>
+              <div className={`${historyMatches.length > 5 ? 'auto-scroll-list' : ''} flex flex-col gap-2 py-2 px-1`}>
+                {historyMatches.map((m: any, idx: number) => (
+                  <div key={m.id} className={`flex items-center justify-between gap-4 p-4 rounded-2xl transition-all border group ${idx % 2 === 0 ? 'bg-white/[0.03] border-white/5' : 'bg-transparent border-transparent'}`}>
+                     <div className="flex flex-col flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                           <span className={`text-[10px] font-black uppercase tracking-tighter truncate ${m.winner === 'A' ? 'text-white' : 'text-white/20'}`}>
+                             {Array.isArray(m.teamA?.players) ? m.teamA.players.filter(Boolean).join(' / ') : '---'}
+                           </span>
+                        </div>
+                        <div className={`h-[2px] w-full rounded-full ${m.winner === 'A' ? (m.teamA?.color === 'rose' ? 'bg-rose-600' : 'bg-blue-600') : 'bg-white/5'}`}></div>
+                     </div>
+
+                     <div className="flex items-center gap-1.5 px-3 py-1 bg-black/40 rounded-lg border border-white/5 shadow-inner">
+                        <span className={`text-lg font-black tabular-nums ${m.winner === 'A' ? 'text-white' : 'text-white/20'}`}>{m.teamA?.score || 0}</span>
+                        <span className="text-[8px] font-black text-white/5 italic">vs</span>
+                        <span className={`text-lg font-black tabular-nums ${m.winner === 'B' ? 'text-white' : 'text-white/20'}`}>{m.teamB?.score || 0}</span>
+                     </div>
+
+                     <div className="flex flex-col flex-1 min-w-0 text-right">
+                        <div className="flex items-center gap-2 mb-1 justify-end">
+                           <span className={`text-[10px] font-black uppercase tracking-tighter truncate ${m.winner === 'B' ? 'text-white' : 'text-white/20'}`}>
+                             {Array.isArray(m.teamB?.players) ? m.teamB.players.filter(Boolean).join(' / ') : '---'}
+                           </span>
+                        </div>
+                        <div className={`h-[2px] w-full rounded-full ${m.winner === 'B' ? (m.teamB?.color === 'rose' ? 'bg-rose-600' : 'bg-red-600') : 'bg-white/5'}`}></div>
+                     </div>
                   </div>
                 ))}
               </div>
+
             </div>
 
             {/* Status Footer */}
