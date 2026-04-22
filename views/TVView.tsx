@@ -609,17 +609,17 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                         )}
                         <h3 className={`text-[1.2vw] font-black uppercase tracking-[0.3em] ${leftServing ? 'text-white' : 'text-white/20'}`}>TIME A</h3>
                       </div>
-                      <div className="h-[8vh] flex flex-col justify-center gap-2 mb-4">
+                      <div className="flex flex-col justify-center gap-3 mb-8">
                         {(leftTeam?.players || []).map((p: any, idx: number) => (
-                           <div key={idx} className={`bg-white/[0.04] border border-white/5 backdrop-blur-md px-4 py-2 rounded-xl flex items-center gap-3 w-full max-w-[22vw] shadow-lg transition-all`}>
-                             <div className={`w-1 h-5 rounded-full ${leftServing ? 'bg-white shadow-[0_0_10px_white]' : 'bg-white/10'}`}></div>
-                             <span className={`text-[clamp(0.9rem,1.3vw,1.8vw)] font-black uppercase tracking-tighter leading-none ${leftColor} truncate flex-1`}>
+                           <div key={idx} className={`bg-white/[0.04] border border-white/5 backdrop-blur-md px-5 py-2.5 rounded-2xl flex items-center gap-4 w-full max-w-[20vw] shadow-xl transition-all`}>
+                             <div className={`w-1.5 h-5 rounded-full ${leftServing ? 'bg-white shadow-[0_0_15px_white]' : 'bg-white/10'}`}></div>
+                             <span className={`text-[clamp(0.9rem,1.2vw,1.6vw)] font-black uppercase tracking-tighter leading-none ${leftColor} truncate flex-1`}>
                                {typeof p === 'string' ? p : (p?.name || '---')}
                              </span>
                            </div>
                         ))}
                       </div>
-                      <div key={`score-left-${leftTeam?.score}`} className="text-[clamp(8rem,17vw,22rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] text-white score-change">{leftTeam?.score || 0}</div>
+                      <div key={`score-left-${leftTeam?.score}`} className="text-[clamp(8rem,17vw,20rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] text-white score-change">{leftTeam?.score || 0}</div>
                     </div>
 
                     {/* James: CRONÔMETRO CENTRAL INTEGRADO */}
@@ -643,23 +643,23 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
                     {/* Time Direito */}
                     <div className="flex-1 flex flex-col items-center relative z-10">
-                      <div className="flex items-center gap-4 mb-2">
+                      <div className="flex items-center gap-4 mb-3">
                         <h3 className={`text-[1.2vw] font-black uppercase tracking-[0.3em] ${rightServing ? 'text-white' : 'text-white/20'}`}>TIME B</h3>
                         {rightServing && (
                           <div className="w-5 h-5 rounded-full bg-white shadow-[0_0_25px_white] animate-pulse"></div>
                         )}
                       </div>
-                      <div className="h-[8vh] flex flex-col justify-center gap-2 mb-4">
+                      <div className="flex flex-col justify-center gap-3 mb-8">
                         {(rightTeam?.players || []).map((p: any, idx: number) => (
-                           <div key={idx} className={`bg-white/[0.04] border border-white/5 backdrop-blur-md px-4 py-2 rounded-xl flex flex-row-reverse items-center gap-3 w-full max-w-[22vw] shadow-lg transition-all`}>
-                             <div className={`w-1 h-5 rounded-full ${rightServing ? 'bg-white shadow-[0_0_10px_white]' : 'bg-white/10'}`}></div>
-                             <span className={`text-[clamp(0.9rem,1.3vw,1.8vw)] font-black uppercase tracking-tighter leading-none ${rightColor} text-right truncate flex-1`}>
+                           <div key={idx} className={`bg-white/[0.04] border border-white/5 backdrop-blur-md px-5 py-2.5 rounded-2xl flex flex-row-reverse items-center gap-4 w-full max-w-[20vw] shadow-xl transition-all`}>
+                             <div className={`w-1.5 h-5 rounded-full ${rightServing ? 'bg-white shadow-[0_0_15px_white]' : 'bg-white/10'}`}></div>
+                             <span className={`text-[clamp(0.9rem,1.2vw,1.6vw)] font-black uppercase tracking-tighter leading-none ${rightColor} text-right truncate flex-1`}>
                                {typeof p === 'string' ? p : (p?.name || '---')}
                              </span>
                            </div>
                         ))}
                       </div>
-                      <div key={`score-right-${rightTeam?.score}`} className="text-[clamp(8rem,17vw,22rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] text-white score-change">{rightTeam?.score || 0}</div>
+                      <div key={`score-right-${rightTeam?.score}`} className="text-[clamp(8rem,17vw,20rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] text-white score-change">{rightTeam?.score || 0}</div>
                     </div>
                   </>
                 );
