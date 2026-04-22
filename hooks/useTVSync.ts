@@ -40,6 +40,7 @@ export const useTVSync = ({
 }: TVSyncProps) => {
   const [channelStatus, setChannelStatus] = useState<'connecting' | 'online' | 'offline'>('offline');
   const tvSyncChannelRef = useRef<any>(null);
+  const masterChannelRef = useRef<any>(null); // James: Canal mestre persistente para Follow-Me
   const initializedArenaId = useRef<string | null>(null);
 
   const calculateSnapshot = useCallback(() => {
@@ -164,15 +165,29 @@ export const useTVSync = ({
       }
     };
     
-    // Puxada inicial
-    if (currentArenaId !== 'default') {
-      tvSyncChannelRef.current.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
+    // James: CANAL MESTRE PERSISTENTE — criado uma única vez para o Follow-Me da TV
+    // Em vez de criar/destruir a cada 3s (que não garante entrega), mantém um canal vivo.
+    if (!masterChannelRef.current) {
+      const shortToken = senderId.replace(/-/g, '').substring(0, 8);
+      const mc = supabase.channel(`master_control_${shortToken}`);
+      mc.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Tablet: Canal mestre Follow-Me conectado:', shortToken);
+          // Manda o comando imediatamente ao conectar
+          mc.send({
+            type: 'broadcast',
+            event: 'TV_MIGRATE',
+            payload: { arenaId: currentArenaId }
+          });
+        }
+      });
+      masterChannelRef.current = mc;
     }
 
     return () => { 
        // James: Não removemos o canal no Cleanup para manter a rádio viva
     };
-  }, [currentArenaId, arenas, calculateSnapshot]);
+  }, [currentArenaId, arenas, calculateSnapshot, senderId]);
 
   // Transmissão Imediata (Triggered)
   useEffect(() => {
@@ -199,21 +214,15 @@ export const useTVSync = ({
           payload: snapshotRef.current()
         });
 
-        // James: MASTER COMMAND (Follow-Me)
-        // Envia o comando de migração para o canal mestre para TVs em modo Automático
-        const shortToken = senderId.replace(/-/g, '').substring(0, 8);
-        const masterChannel = supabase.channel(`master_control_${shortToken}`);
-        masterChannel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                masterChannel.send({
-                    type: 'broadcast',
-                    event: 'TV_MIGRATE',
-                    payload: { arenaId: currentArenaId }
-                }).then(() => {
-                    supabase.removeChannel(masterChannel);
-                });
-            }
-        });
+        // James: MASTER COMMAND (Follow-Me) — usa o canal persistente, não cria um novo a cada tick
+        if (masterChannelRef.current) {
+          const snap = snapshotRef.current();
+          masterChannelRef.current.send({
+            type: 'broadcast',
+            event: 'TV_MIGRATE',
+            payload: { arenaId: snap.arenaId }
+          });
+        }
       }
     }, 3000); // Relaxado para 3 segundos em produção
     return () => clearInterval(interval);
