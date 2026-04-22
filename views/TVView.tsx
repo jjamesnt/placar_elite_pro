@@ -603,20 +603,20 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
                     {/* Time Esquerdo */}
                     <div className="flex-1 flex flex-col items-center relative z-10">
-                      <div className="flex items-center gap-4 mb-4">
+                      <div className="flex items-center gap-4 mb-2">
                         {leftServing && (
                           <div className="w-5 h-5 rounded-full bg-white shadow-[0_0_25px_white] animate-pulse"></div>
                         )}
-                        <h3 className={`text-[1.5vw] font-black uppercase tracking-[0.3em] ${leftServing ? 'text-white' : 'text-white/20'}`}>TIME A</h3>
+                        <h3 className={`text-[1.2vw] font-black uppercase tracking-[0.3em] ${leftServing ? 'text-white' : 'text-white/20'}`}>TIME A</h3>
                       </div>
-                      <div className="h-[9vh] flex flex-col justify-center mb-6">
+                      <div className="h-[7vh] flex flex-col justify-center mb-4">
                         {(leftTeam?.players || []).map((p: any, idx: number) => (
-                           <div key={idx} className={`text-[2.2vw] font-black uppercase tracking-tighter leading-tight drop-shadow-2xl ${leftColor}`}>
+                           <div key={idx} className={`text-[clamp(1rem,1.7vw,2.2vw)] font-black uppercase tracking-tighter leading-[1.1] drop-shadow-2xl ${leftColor} truncate max-w-[25vw]`}>
                             {typeof p === 'string' ? p : (p?.name || '---')}
                           </div>
                         ))}
                       </div>
-                      <div key={`score-left-${leftTeam?.score}`} className="text-[clamp(10rem,19vw,26rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] text-white score-change">{leftTeam?.score || 0}</div>
+                      <div key={`score-left-${leftTeam?.score}`} className="text-[clamp(8rem,18vw,24rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] text-white score-change">{leftTeam?.score || 0}</div>
                     </div>
 
                     {/* James: CRONÔMETRO CENTRAL INTEGRADO */}
@@ -640,20 +640,20 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
                     {/* Time Direito */}
                     <div className="flex-1 flex flex-col items-center relative z-10">
-                      <div className="flex items-center gap-4 mb-4">
-                        <h3 className={`text-[1.5vw] font-black uppercase tracking-[0.3em] ${rightServing ? 'text-white' : 'text-white/20'}`}>TIME B</h3>
+                      <div className="flex items-center gap-4 mb-2">
+                        <h3 className={`text-[1.2vw] font-black uppercase tracking-[0.3em] ${rightServing ? 'text-white' : 'text-white/20'}`}>TIME B</h3>
                         {rightServing && (
                           <div className="w-5 h-5 rounded-full bg-white shadow-[0_0_25px_white] animate-pulse"></div>
                         )}
                       </div>
-                      <div className="h-[9vh] flex flex-col justify-center mb-6">
+                      <div className="h-[7vh] flex flex-col justify-center mb-4">
                         {(rightTeam?.players || []).map((p: any, idx: number) => (
-                          <div key={idx} className={`text-[2.2vw] font-black uppercase tracking-tighter leading-tight drop-shadow-2xl ${rightColor} text-right`}>
+                          <div key={idx} className={`text-[clamp(1rem,1.7vw,2.2vw)] font-black uppercase tracking-tighter leading-[1.1] drop-shadow-2xl ${rightColor} text-right truncate max-w-[25vw]`}>
                             {typeof p === 'string' ? p : (p?.name || '---')}
                           </div>
                         ))}
                       </div>
-                      <div key={`score-right-${rightTeam?.score}`} className="text-[clamp(10rem,19vw,26rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] text-white score-change">{rightTeam?.score || 0}</div>
+                      <div key={`score-right-${rightTeam?.score}`} className="text-[clamp(8rem,18vw,24rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] text-white score-change">{rightTeam?.score || 0}</div>
                     </div>
                   </>
                 );
