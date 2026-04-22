@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, memo } from 'react';
 import { Player, Team, ArenaColor, MatchMode } from '../types';
-import { PlusIcon, MinusIcon, ZapIcon } from './icons';
+import { PlusIcon, MinusIcon, ZapIcon, UsersIcon } from './icons';
+import PlayerSelectModal from './PlayerSelectModal';
 
 interface ScoreCardProps {
   teamName: string;
@@ -44,6 +45,7 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
   matchMode = 'casual'
 }) => {
   const [animate, setAnimate] = useState(false);
+  const [selectingPlayerIndex, setSelectingPlayerIndex] = useState<number | null>(null);
   const theme = THEME_CONFIG[arenaColor];
 
   useEffect(() => {
@@ -156,23 +158,32 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
         <div className="flex flex-col gap-1.5 lg:gap-2 tablet-jumbo-gap">
           {[0, 1].map(index => (
             <div key={index} className="relative w-full">
-              <select
-                value={teamData.players[index]?.id || ''}
-                onChange={(e) => {
-                  const selectedPlayer = allPlayers.find(p => p.id === e.target.value);
-                  if (selectedPlayer) onPlayerSelect(selectedPlayer, index);
-                }}
+              <button
                 disabled={isGameWon}
-                className="w-full px-2 py-2 lg:py-3.5 lg:px-4 bg-black/60 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-[11px] font-black appearance-none border border-white/5 focus:outline-none focus:border-indigo-500/50 transition-all uppercase tracking-tighter truncate tablet-jumbo-select text-center"
+                onClick={() => setSelectingPlayerIndex(index)}
+                className="w-full px-2 py-2 lg:py-3.5 lg:px-4 bg-black/60 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-[11px] font-black border border-white/5 hover:border-white/20 active:scale-95 transition-all uppercase tracking-tighter truncate text-center flex items-center justify-center gap-2"
               >
-                <option value="" disabled>{`Atleta ${index + 1}`}</option>
-                {allPlayers.map(player => (
-                  <option key={player.id} value={player.id}>{player.name}</option>
-                ))}
-              </select>
+                <UsersIcon className="w-2 h-2 lg:w-3 lg:h-3 opacity-40" />
+                {teamData.players[index]?.name || `Selecionar Atleta ${index + 1}`}
+              </button>
             </div>
           ))}
         </div>
+
+        {/* Modal de Seleção de Atleta */}
+        <PlayerSelectModal 
+          isOpen={selectingPlayerIndex !== null}
+          onClose={() => setSelectingPlayerIndex(null)}
+          players={allPlayers}
+          teamName={teamName}
+          arenaColor={arenaColor}
+          onSelect={(player) => {
+            if (selectingPlayerIndex !== null) {
+              onPlayerSelect(player, selectingPlayerIndex);
+              setSelectingPlayerIndex(null);
+            }
+          }}
+        />
       </div>
     </div>
   );
