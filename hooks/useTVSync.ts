@@ -41,6 +41,7 @@ export const useTVSync = ({
   const [channelStatus, setChannelStatus] = useState<'connecting' | 'online' | 'offline'>('offline');
   const tvSyncChannelRef = useRef<any>(null);
   const masterChannelRef = useRef<any>(null); // James: Canal mestre persistente para Follow-Me
+  const arenaBroadcastRef = useRef<any>(null); // James: Canal broadcast para TVs sem autenticação
   const initializedArenaId = useRef<string | null>(null);
 
   const calculateSnapshot = useCallback(() => {
@@ -165,6 +166,23 @@ export const useTVSync = ({
       }
     };
     
+    // James: CANAL BROADCAST PERSISTENTE — funciona sem autenticação (TV Box anônima)
+    // Complementa o postgres_changes para garantir entrega mesmo com RLS bloqueando anon reads
+    const safeArenaId = currentArenaId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '');
+    const broadcastChannelName = `tv_live_${safeArenaId.substring(0, 20)}`;
+    if (arenaBroadcastRef.current) {
+      try { supabase.removeChannel(arenaBroadcastRef.current); } catch(e) {}
+    }
+    const broadcastCh = supabase.channel(broadcastChannelName);
+    broadcastCh.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('Tablet: Canal broadcast TV ativo:', broadcastChannelName);
+        // Envia o snapshot imediatamente ao conectar
+        broadcastCh.send({ type: 'broadcast', event: 'TV_SYNC', payload: calculateSnapshot() });
+      }
+    });
+    arenaBroadcastRef.current = broadcastCh;
+
     // James: CANAL MESTRE PERSISTENTE — criado uma única vez para o Follow-Me da TV
     // Em vez de criar/destruir a cada 3s (que não garante entrega), mantém um canal vivo.
     if (!masterChannelRef.current) {
@@ -173,7 +191,6 @@ export const useTVSync = ({
       mc.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('Tablet: Canal mestre Follow-Me conectado:', shortToken);
-          // Manda o comando imediatamente ao conectar
           mc.send({
             type: 'broadcast',
             event: 'TV_MIGRATE',
@@ -214,13 +231,21 @@ export const useTVSync = ({
           payload: snapshotRef.current()
         });
 
-        // James: MASTER COMMAND (Follow-Me) — usa o canal persistente, não cria um novo a cada tick
+        // James: MASTER COMMAND + BROADCAST DUAL — canal mestre + canal broadcast persistência
         if (masterChannelRef.current) {
           const snap = snapshotRef.current();
           masterChannelRef.current.send({
             type: 'broadcast',
             event: 'TV_MIGRATE',
             payload: { arenaId: snap.arenaId }
+          });
+        }
+        // Broadcast direto para a TV (bypass RLS para TV Box anônima)
+        if (arenaBroadcastRef.current) {
+          arenaBroadcastRef.current.send({
+            type: 'broadcast',
+            event: 'TV_SYNC',
+            payload: snapshotRef.current()
           });
         }
       }

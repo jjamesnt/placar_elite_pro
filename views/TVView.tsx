@@ -269,7 +269,23 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
           }
         });
 
-      return () => { supabase.removeChannel(channel); };
+      // James: CANAL BROADCAST — recebe dados do tablet sem necessitar autenticação (bypass RLS)
+      const broadcastChannelName = `tv_live_${channelSafeId.substring(0, 20)}`;
+      const broadcastChannel = supabase.channel(broadcastChannelName)
+        .on('broadcast', { event: 'TV_SYNC' }, ({ payload }) => {
+          if (payload) handleSync(payload);
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('TV: Canal broadcast conectado:', broadcastChannelName);
+            setSignalStatus('listening');
+          }
+        });
+
+      return () => {
+        supabase.removeChannel(channel);
+        supabase.removeChannel(broadcastChannel);
+      };
     }, [internalArenaId, arenaId, reconnectCounter]);
 
   // James: DETECTOR DE DESPERTAR — quando a TV acorda, força reconexão (com debounce para evitar loops)
