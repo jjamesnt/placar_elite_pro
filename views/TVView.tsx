@@ -44,7 +44,7 @@ interface TVViewProps {
 const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   const [tvData, setTvData] = useState<any>(null);
   const [activeMatch, setActiveMatch] = useState<any>(null);
-  const [internalArenaId, setInternalArenaId] = useState<string>(arenaId); // James: ID que pode ser trocado or comando mestre
+  const [internalArenaId, setInternalArenaId] = useState<string>(() => arenaId || localStorage.getItem('tv_paired_arena') || ''); // James: ID que pode ser trocado or comando mestre
   const [customArenaName, setCustomArenaName] = useState<string>('');
   const [tvAttackTime, setTvAttackTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);

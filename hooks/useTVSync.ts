@@ -198,6 +198,22 @@ export const useTVSync = ({
           type: 'broadcast', event: 'TV_SYNC',
           payload: snapshotRef.current()
         });
+
+        // James: MASTER COMMAND (Follow-Me)
+        // Envia o comando de migração para o canal mestre para TVs em modo Automático
+        const shortToken = senderId.replace(/-/g, '').substring(0, 8);
+        const masterChannel = supabase.channel(`master_control_${shortToken}`);
+        masterChannel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                masterChannel.send({
+                    type: 'broadcast',
+                    event: 'TV_MIGRATE',
+                    payload: { arenaId: currentArenaId }
+                }).then(() => {
+                    supabase.removeChannel(masterChannel);
+                });
+            }
+        });
       }
     }, 3000); // Relaxado para 3 segundos em produção
     return () => clearInterval(interval);
