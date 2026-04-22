@@ -86,6 +86,14 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         mId = params.get('m') || params.get('master');
         autoMode = params.get('tv') === 'auto';
     }
+
+    // James: Se já temos a arena salva do pareamento anterior, conecta direto sem esperar TV_MIGRATE
+    // Isso elimina o "LINK INTELIGENTE ATIVO" preso quando o tablet demora a enviar o sinal
+    let savedArena: string | null = null;
+    try { savedArena = localStorage.getItem('tv_paired_arena'); } catch(e) {}
+    if (savedArena && savedArena !== 'default' && !internalArenaId) {
+      setInternalArenaId(savedArena);
+    }
     const masterId = mId;
     const isAuto = autoMode;
     const isDirectTv = params.get('tv') && params.get('tv') !== 'auto';
