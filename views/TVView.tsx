@@ -270,7 +270,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         });
 
       // James: CANAL BROADCAST — recebe dados do tablet sem necessitar autenticação (bypass RLS)
-      const broadcastChannelName = `tv_live_${channelSafeId.substring(0, 20)}`;
+      // Prefixo de ambiente garante isolamento entre local e produção
+      const ENV_PREFIX = import.meta.env.DEV ? 'dev' : 'prod';
+      const broadcastChannelName = `${ENV_PREFIX}_tv_live_${channelSafeId.substring(0, 20)}`;
       const broadcastChannel = supabase.channel(broadcastChannelName)
         .on('broadcast', { event: 'TV_SYNC' }, ({ payload }) => {
           if (payload) handleSync(payload);

@@ -167,9 +167,10 @@ export const useTVSync = ({
     };
     
     // James: CANAL BROADCAST PERSISTENTE — funciona sem autenticação (TV Box anônima)
-    // Complementa o postgres_changes para garantir entrega mesmo com RLS bloqueando anon reads
+    // Prefixo de ambiente evita que o servidor local interfira na produção
+    const ENV_PREFIX = import.meta.env.DEV ? 'dev' : 'prod';
     const safeArenaId = currentArenaId.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '');
-    const broadcastChannelName = `tv_live_${safeArenaId.substring(0, 20)}`;
+    const broadcastChannelName = `${ENV_PREFIX}_tv_live_${safeArenaId.substring(0, 20)}`;
     if (arenaBroadcastRef.current) {
       try { supabase.removeChannel(arenaBroadcastRef.current); } catch(e) {}
     }
