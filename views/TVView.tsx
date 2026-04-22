@@ -193,8 +193,11 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
         // Fingerprint para evitar flicker de reagendamento DOM
         const historyHash = payload.history?.length || 0;
-        // James: attackTime incluído no fingerprint — timer de posse agora atualiza a TV em tempo real
-        const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${payload.activeMatch?.attackTime}|${payload.activeMatch?.modals?.victoryData?.winner}|H${historyHash}`;
+        // James: players, attackTime (incluindo null=pausado) e nomes garantem que toda mudança chega na TV
+        const teamAPlayers = (payload.activeMatch?.teamA?.players || []).map((p: any) => p?.id || p?.name || '').join(',');
+        const teamBPlayers = (payload.activeMatch?.teamB?.players || []).map((p: any) => p?.id || p?.name || '').join(',');
+        const attackStr = payload.activeMatch?.attackTime === null ? 'null' : String(payload.activeMatch?.attackTime ?? 'null');
+        const newFinger = `${payload.arenaColor}|${payload.activeMatch?.teamA?.score}|${payload.activeMatch?.teamB?.score}|${payload.activeMatch?.servingTeam}|${attackStr}|${payload.activeMatch?.modals?.victoryData?.winner}|H${historyHash}|${teamAPlayers}|${teamBPlayers}`;
         
         const colorChanged = payload.arenaColor && payload.arenaColor !== arenaColorRef.current;
         const dataChanged = newFinger !== fingerprintRef.current;
@@ -350,21 +353,31 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     return () => clearInterval(checkInterval);
   }, [lastSignalTime]);
 
-  // Cronômetro do Placar
+  // James: RELÓGIO DE PARTIDA — espelha o tablet: só conta quando o cronômetro de posse está ativo
+  // Congela quando a posse é pausada/resetada (tvAttackTime === null)
+  // Reinicia acumulação quando começa nova partida (gameStartTime muda)
+  const elapsedAccumRef = useRef<number>(0);
+
+  // Reseta ao começar nova partida
+  const prevGameStartRef = useRef<any>(null);
   useEffect(() => {
-    let interval: any;
-    if (activeMatch?.status === 'playing' && activeMatch?.gameStartTime) {
-      const update = () => {
-        const start = new Date(activeMatch.gameStartTime).getTime();
-        setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
-      };
-      update();
-      interval = setInterval(update, 1000);
-    } else {
+    const gst = activeMatch?.gameStartTime;
+    if (gst && gst !== prevGameStartRef.current) {
+      prevGameStartRef.current = gst;
+      elapsedAccumRef.current = 0;
       setElapsedSeconds(0);
     }
+  }, [activeMatch?.gameStartTime]);
+
+  // Só conta quando attack timer está rodando
+  useEffect(() => {
+    if (tvAttackTime === null || !activeMatch?.gameStartTime) return;
+    const interval = setInterval(() => {
+      elapsedAccumRef.current += 1;
+      setElapsedSeconds(elapsedAccumRef.current);
+    }, 1000);
     return () => clearInterval(interval);
-  }, [activeMatch]);
+  }, [tvAttackTime, activeMatch?.gameStartTime]);
 
   // James: TV espelha exatamente o tablet — sem contagem local própria
   // O tablet envia o valor a cada ~1s via broadcast; resets (ponto marcado) chegam imediatamente
