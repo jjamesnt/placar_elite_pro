@@ -322,9 +322,18 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
               ))}
            </div>
 
-           <div className="mt-8 flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-b-2 border-indigo-500 rounded-full animate-spin"></div>
-              <p className="text-xs font-black uppercase tracking-[0.4em] text-white/20">Aguardando conexão...</p>
+           <div className="mt-8 flex flex-col items-center gap-6">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 border-b-2 border-indigo-500 rounded-full animate-spin"></div>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">Aguardando conexão...</p>
+              </div>
+              
+              <button 
+                onClick={handleResetTV}
+                className="mt-8 px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-white/40 transition-all"
+              >
+                Limpar Memória da TV
+              </button>
            </div>
         </div>
       </div>
@@ -333,7 +342,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
   if (!connected) {
     const targetId = internalArenaId || arenaId;
-    const isWaitingMaster = targetId === 'auto';
+    const isWaitingMaster = targetId === 'auto' || !targetId || targetId === 'default';
 
     return (
       <div className="min-h-screen w-full bg-[#020617] flex flex-col items-center justify-center font-sans relative overflow-hidden">
@@ -346,17 +355,27 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
               </div>
            </div>
            <div className="text-center space-y-4">
-              <h1 className="text-5xl font-black uppercase tracking-[0.3em] text-white">
-                {isWaitingMaster ? 'LINK INTELIGENTE ATIVO' : 'SINTONIZANDO RÁDIO'}
+              <h1 className="text-4xl font-black uppercase tracking-[0.3em] text-white">
+                {isWaitingMaster ? 'LINK INTELIGENTE ATIVO' : 'SINTONIZANDO PLACAR'}
               </h1>
               <p className="text-sm font-bold text-white/20 uppercase tracking-[0.3em] leading-relaxed">
                  {isWaitingMaster ? 'Aguardando comando do Tablet Mestre...' : `Sincronizando: ${targetId}`}
               </p>
            </div>
-           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 max-w-sm w-full text-center backdrop-blur-md mt-4">
-              <code className="text-xs font-mono text-white/40 block bg-black/40 py-2 rounded-lg break-all px-4">
-                MODO {isWaitingMaster ? 'AUTOMÁTICO' : 'SELETIVO'}
-              </code>
+           
+           <div className="flex flex-col items-center gap-6 mt-4">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 max-w-sm w-full text-center backdrop-blur-md">
+                  <code className="text-[10px] font-mono text-white/40 block bg-black/40 py-2 rounded-lg break-all px-4">
+                    MODO {isWaitingMaster ? 'AUTOMÁTICO' : 'SELETIVO'}
+                  </code>
+              </div>
+              
+              <button 
+                onClick={handleResetTV}
+                className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-white/40 transition-all"
+              >
+                Reiniciar Conexão
+              </button>
            </div>
         </div>
       </div>
