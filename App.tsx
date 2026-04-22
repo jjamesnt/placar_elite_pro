@@ -78,7 +78,10 @@ const App: React.FC = () => {
   const [arenas, setArenas] = useState<Arena[]>([]);
   const [currentArenaId, setCurrentArenaId] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('arena') || params.get('tv') || 'default';
+    const tvParam = params.get('tv');
+    // James: 'auto' é um comando de modo, não um ID de arena
+    const arenaFromUrl = params.get('arena') || (tvParam && tvParam !== 'auto' ? tvParam : null);
+    return arenaFromUrl || 'default';
   });
   const currentArena: Arena = useMemo(() => arenas.find(a => a.id === currentArenaId) || arenas[0] || ({ id: 'default', name: 'Carregando...', color: 'indigo' as ArenaColor }), [arenas, currentArenaId]);
   

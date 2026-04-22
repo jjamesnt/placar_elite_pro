@@ -46,11 +46,16 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   const [activeMatch, setActiveMatch] = useState<any>(null);
   const [internalArenaId, setInternalArenaId] = useState<string>(() => {
     try {
-        return arenaId || localStorage.getItem('tv_paired_arena') || '';
+        const INVALID = ['', 'auto', 'default'];
+        const saved = localStorage.getItem('tv_paired_arena');
+        const savedIsReal = saved && !INVALID.includes(saved);
+        const propIsReal = arenaId && !INVALID.includes(arenaId);
+        return (savedIsReal ? saved! : null) || (propIsReal ? arenaId : '') || '';
     } catch(e) {
-        return arenaId || '';
+        const INVALID = ['', 'auto', 'default'];
+        return (arenaId && !INVALID.includes(arenaId)) ? arenaId : '';
     }
-  }); // James: ID que pode ser trocado or comando mestre
+  }); // James: ID real da arena — nunca 'auto' ou 'default'
   const [customArenaName, setCustomArenaName] = useState<string>('');
   const [tvAttackTime, setTvAttackTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
