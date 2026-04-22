@@ -5,36 +5,56 @@ import VictoryModal from '../components/VictoryModal';
 import VaiATresModal from '../components/VaiATresModal';
 import { ArenaColor } from '../types';
 
-// James: Componente de Fundo Dinâmico (Sincronizado com o Placar)
+// James: Componente de Fundo Dinâmico de Alta Performance (Broadcast 2.0)
 const Background: React.FC<{ color: any }> = memo(({ color }) => {
   const bgMap: Record<string, string> = {
-    indigo: '#0f172a', blue: '#0f172a', emerald: '#064e3b', amber: '#451a03', rose: '#4c0519', violet: '#2e1065'
+    indigo: '#030712', blue: '#020617', emerald: '#022c22', amber: '#451a03', rose: '#450519', violet: '#1e1b4b'
   };
   const glowMap: Record<string, string> = {
-    indigo: 'rgba(99, 102, 241, 0.45)', blue: 'rgba(59, 130, 246, 0.45)', emerald: 'rgba(16, 185, 129, 0.65)',
-    amber: 'rgba(245, 158, 11, 0.6)', rose: 'rgba(244, 63, 94, 0.65)', violet: 'rgba(139, 92, 246, 0.65)'
+    indigo: 'rgba(99, 102, 241, 0.4)', blue: 'rgba(59, 130, 246, 0.4)', emerald: 'rgba(16, 185, 129, 0.5)',
+    amber: 'rgba(245, 158, 11, 0.5)', rose: 'rgba(244, 63, 94, 0.5)', violet: 'rgba(139, 92, 246, 0.5)'
   };
   
-  // James: Se for Verde (emerald), o fundo já começa com um tom verde escuro, não azul.
   const baseBg = bgMap[color] || bgMap.indigo;
   const glowColor = glowMap[color] || glowMap.indigo;
 
   return (
-    <div className="fixed inset-0 -z-10 transition-colors duration-1000 ease-in-out" style={{ backgroundColor: baseBg }}>
-      <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-transparent to-black/40"></div>
-      <div className="absolute inset-0 transition-all duration-1000" style={{ background: `radial-gradient(circle at 50% 50%, ${glowColor} 0%, transparent 80%)` }}></div>
-      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
+    <div className="fixed inset-0 -z-10 bg-black overflow-hidden">
+      <style>{`
+        @keyframes float {
+          0% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-2%, 2%) scale(1.05); }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        .bg-float { animation: float 20s ease-in-out infinite; }
+      `}</style>
+      
+      {/* Camada Base */}
+      <div className="absolute inset-0 transition-colors duration-1000" style={{ backgroundColor: baseBg }}></div>
+      
+      {/* Gradientes Animados para Profundidade */}
+      <div className="absolute inset-0 bg-float opacity-40" style={{ 
+        background: `radial-gradient(circle at 20% 30%, ${glowColor} 0%, transparent 70%),
+                     radial-gradient(circle at 80% 70%, ${glowColor} 0%, transparent 70%)` 
+      }}></div>
+      
+      {/* Textura e Vinheta */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-black via-transparent to-black/60"></div>
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }}></div>
+      
+      {/* Grid Sutil */}
+      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
     </div>
   );
 });
 
 const TEMAS: Record<string, any> = {
-  indigo: { text: 'text-indigo-400', border: 'border-indigo-500', from: 'from-indigo-900/40', via: 'via-indigo-500/50', bg: 'bg-indigo-500/10', glow: 'shadow-[0_0_20px_rgba(99,102,241,0.3)]' },
-  blue: { text: 'text-blue-400', border: 'border-blue-500', from: 'from-blue-900/40', via: 'via-blue-500/50', bg: 'bg-blue-500/10', glow: 'shadow-[0_0_20px_rgba(59,130,246,0.3)]' },
-  emerald: { text: 'text-emerald-400', border: 'border-emerald-500', from: 'from-emerald-900/40', via: 'via-emerald-500/50', bg: 'bg-emerald-500/10', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.3)]' },
-  amber: { text: 'text-amber-400', border: 'border-amber-500', from: 'from-amber-900/40', via: 'via-amber-500/50', bg: 'bg-amber-500/10', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]' },
-  rose: { text: 'text-rose-400', border: 'border-rose-500', from: 'from-rose-900/40', via: 'via-rose-500/50', bg: 'bg-rose-500/10', glow: 'shadow-[0_0_20px_rgba(244,63,94,0.3)]' },
-  violet: { text: 'text-violet-400', border: 'border-violet-500', from: 'from-violet-900/40', via: 'via-violet-500/50', bg: 'bg-violet-500/10', glow: 'shadow-[0_0_20px_rgba(139,92,246,0.3)]' },
+  indigo: { text: 'text-indigo-400', border: 'border-indigo-500/50', from: 'from-indigo-900/40', via: 'via-indigo-500/20', bg: 'bg-indigo-500/10', glow: 'shadow-[0_0_30px_rgba(99,102,241,0.2)]' },
+  blue: { text: 'text-blue-400', border: 'border-blue-500/50', from: 'from-blue-900/40', via: 'via-blue-500/20', bg: 'bg-blue-500/10', glow: 'shadow-[0_0_30_rgba(59,130,246,0.2)]' },
+  emerald: { text: 'text-emerald-400', border: 'border-emerald-500/50', from: 'from-emerald-900/40', via: 'via-emerald-500/20', bg: 'bg-emerald-500/10', glow: 'shadow-[0_0_30px_rgba(16,185,129,0.2)]' },
+  amber: { text: 'text-amber-400', border: 'border-amber-500/50', from: 'from-amber-900/40', via: 'via-amber-500/20', bg: 'bg-amber-500/10', glow: 'shadow-[0_0_30px_rgba(245,158,11,0.2)]' },
+  rose: { text: 'text-rose-400', border: 'border-rose-500/50', from: 'from-rose-900/40', via: 'via-rose-500/20', bg: 'bg-rose-500/10', glow: 'shadow-[0_0_30px_rgba(244,63,94,0.2)]' },
+  violet: { text: 'text-violet-400', border: 'border-violet-500/50', from: 'from-violet-900/40', via: 'via-violet-500/20', bg: 'bg-violet-500/10', glow: 'shadow-[0_0_30px_rgba(139,92,246,0.2)]' },
 };
 
 interface TVViewProps {
@@ -353,14 +373,48 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     return () => clearInterval(checkInterval);
   }, [lastSignalTime]);
 
-  // James: RELÓGIO DE PARTIDA — conta tempo total de jogo ativo (pausa junto com a posse)
+  // James: RELÓGIO DE PARTIDA E POSSE (Sincronia de Fase Precision Clock)
+  const [displayAttackTime, setDisplayAttackTime] = useState<number | null>(null);
   const elapsedAccumRef = useRef<number>(0);
-  const attackRunningRef = useRef<boolean>(false);
   const prevGameStartRef = useRef<any>(null);
+  const localTickTimeoutRef = useRef<any>(null);
 
-  // Atualiza ref de posse sem recriar o interval
+  // James: Lógica de Sincronia de Posse (Remove o "pulo" e o lag)
   useEffect(() => {
-    attackRunningRef.current = tvAttackTime !== null;
+    // Para o timer local se o tablet pausar (null)
+    if (tvAttackTime === null) {
+      setDisplayAttackTime(null);
+      if (localTickTimeoutRef.current) clearTimeout(localTickTimeoutRef.current);
+      return;
+    }
+
+    // Sincroniza IMEDIATAMENTE com o valor do tablet
+    setDisplayAttackTime(tvAttackTime);
+
+    // Inicia um "Local Tick" — se o próximo sinal do tablet atrasar, a TV conta sozinha
+    // Isso mantém a fluidez e elimina a sensação de estar "atrás"
+    if (localTickTimeoutRef.current) clearTimeout(localTickTimeoutRef.current);
+    
+    // Agendamos o próximo decremento local para daqui a 1000ms
+    // Se um novo sinal do tablet chegar antes, este timeout é cancelado e resetado
+    const scheduleLocalTick = () => {
+      localTickTimeoutRef.current = setTimeout(() => {
+        setDisplayAttackTime(prev => {
+          if (prev === null || prev <= 0) return prev;
+          // Incrementa o relógio de partida junto com o tick da posse
+          elapsedAccumRef.current += 1;
+          setElapsedSeconds(elapsedAccumRef.current);
+          return prev - 1;
+        });
+        scheduleLocalTick();
+      }, 1000);
+    };
+    
+    scheduleLocalTick();
+
+    return () => {
+      if (localTickTimeoutRef.current) clearTimeout(localTickTimeoutRef.current);
+    };
   }, [tvAttackTime]);
 
   // Reseta ao começar nova partida
@@ -372,22 +426,6 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
       setElapsedSeconds(0);
     }
   }, [activeMatch?.gameStartTime]);
-
-  // Interval único — só increm enta quando attack está rodando (via ref)
-  useEffect(() => {
-    if (!activeMatch?.gameStartTime) return;
-    const interval = setInterval(() => {
-      if (attackRunningRef.current) {
-        elapsedAccumRef.current += 1;
-        setElapsedSeconds(elapsedAccumRef.current);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [activeMatch?.gameStartTime]);
-
-  // James: TV espelha exatamente o tablet — compensando 1s de lag de rede
-  // O tablet envia o valor a cada ~1s via broadcast; subtraímos 1 para alinhar visualmente com o tablet real
-  const displayAttackTime = tvAttackTime !== null ? Math.max(0, tvAttackTime - 1) : null;
 
   const stats = useMemo(() => tvData?.ranking || [], [tvData]);
   const historyMatches = useMemo(() => tvData?.history || [], [tvData]);
@@ -533,9 +571,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
       <div className="flex-1 lg:grid lg:grid-cols-12 gap-8 h-full min-h-0 pt-2">
         <div className="col-span-8 flex flex-col gap-4 h-full">
-          {/* Main Scoreboard Area */}
-          <div className="bg-gray-900/60 border border-white/5 rounded-[3.5rem] p-6 flex flex-col justify-center relative shadow-2xl overflow-hidden min-h-[50vh]">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+          {/* Main Scoreboard Area - James: Glassmorphism Ultra Premium */}
+          <div className="bg-black/30 backdrop-blur-2xl border border-white/10 rounded-[4rem] p-6 flex flex-col justify-center relative shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] overflow-hidden min-h-[50vh]">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
 
             <div className="flex items-center justify-around gap-12 w-full mt-4">
               {/* Lógica de Espelhamento (Lado da Quadra) - James: Inverte os blocos se isSidesSwitched ou layoutMirrored forem true (XOR) */}
@@ -553,7 +591,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                     {/* Time da ESQUERDA */}
                     <div className="flex-1 text-center flex flex-col items-center">
                       <div className="h-[4vh] mb-2 flex items-center justify-center">
-                        {leftServing && <div className="w-8 h-8 bg-white rounded-full animate-pulse shadow-[0_0_40px_white]"></div>}
+                        {leftServing && <div className="w-10 h-10 bg-white rounded-full animate-pulse shadow-[0_0_60px_rgba(255,255,255,0.8),0_0_20px_rgba(255,255,255,0.4)] border-4 border-white/20"></div>}
                       </div>
                       <div className="h-[8vh] flex flex-col justify-center mb-4">
                         {(leftTeam?.players || []).map((p: any, idx: number) => (
@@ -562,7 +600,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                           </div>
                         ))}
                       </div>
-                      <div className="text-[20vw] leading-[0.6] font-black tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">{leftTeam?.score || 0}</div>
+                      <div key={`score-left-${leftTeam?.score}`} className="text-[20vw] leading-[0.6] font-black tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] score-change">{leftTeam?.score || 0}</div>
                     </div>
 
                     {/* CRONÔMETRO CENTRAL (PARTIDA + ATAQUE/POSSE) */}
@@ -588,7 +626,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                     {/* Time da DIREITA */}
                     <div className="flex-1 text-center flex flex-col items-center">
                       <div className="h-[4vh] mb-2 flex items-center justify-center">
-                        {rightServing && <div className="w-8 h-8 bg-white rounded-full animate-pulse shadow-[0_0_40px_white]"></div>}
+                        {rightServing && <div className="w-10 h-10 bg-white rounded-full animate-pulse shadow-[0_0_60px_rgba(255,255,255,0.8),0_0_20px_rgba(255,255,255,0.4)] border-4 border-white/20"></div>}
                       </div>
                       <div className="h-[8vh] flex flex-col justify-center mb-4">
                         {(rightTeam?.players || []).map((p: any, idx: number) => (
@@ -597,7 +635,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                           </div>
                         ))}
                       </div>
-                      <div className="text-[20vw] leading-[0.6] font-black tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">{rightTeam?.score || 0}</div>
+                      <div key={`score-right-${rightTeam?.score}`} className="text-[20vw] leading-[0.6] font-black tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] score-change">{rightTeam?.score || 0}</div>
                     </div>
                   </>
                 );
@@ -605,9 +643,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
             </div>
           </div>
 
-          {/* Ranking Compacto */}
-          <div className={`bg-gradient-to-br ${currentTheme.from} to-transparent border border-white/5 rounded-[3rem] p-6 flex flex-col shadow-2xl relative overflow-hidden flex-1 min-h-0`}>
-              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via ${currentTheme.via} to-transparent`}></div>
+          {/* Ranking Compacto - James: Glassmorphism */}
+          <div className={`bg-black/30 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-6 flex flex-col shadow-2xl relative overflow-hidden flex-1 min-h-0`}>
+              <div className={`absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent`}></div>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <TrophyIcon className="w-8 h-8 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]" />
@@ -637,7 +675,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
         {/* Auditoria Sidebar Right - FULL HEIGHT WITH AUTO-SCROLL */}
         <div className="col-span-4 flex flex-col gap-6 h-full min-h-0">
-          <div className="flex-1 bg-gray-900/40 border border-white/5 rounded-[3.5rem] p-8 flex flex-col shadow-inner relative overflow-hidden h-full">
+          <div className="flex-1 bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] p-8 flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden h-full">
             <div className="flex items-center gap-4 mb-6 border-b border-white/5 pb-4">
               <h2 className="text-lg font-black uppercase tracking-widest text-white/40">Auditoria de partidas</h2>
             </div>
@@ -645,7 +683,14 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
             {/* James: SISTEMA DE AUTO-SCROLL INDUSTRIAL - Mais lento e suave para produção */}
             <div className="flex-1 relative overflow-hidden">
               <style>{`
-                @keyframes scrollList {
+                @keyframes score-bounce {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.15); filter: brightness(1.5); }
+          100% { transform: scale(1); }
+        }
+        .score-change { animation: score-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        @keyframes scrollList {
                   0% { transform: translateY(0); }
                   85% { transform: translateY(calc(-100% + 55vh)); }
                   100% { transform: translateY(0); }

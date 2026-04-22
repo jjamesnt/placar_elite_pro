@@ -40,12 +40,12 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
   const loserNames = losingTeam.players.map(p => p?.name || 'Atleta').join(' & ');
 
   return (
-    <div className={`victory-modal fixed inset-0 bg-black/95 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300 ${isTV ? 'cursor-default' : ''}`} onClick={onClose}>
+    <div className={`victory-modal fixed inset-0 bg-black/60 backdrop-blur-2xl z-[110] flex items-center justify-center p-4 animate-in fade-in duration-500 ${isTV ? 'cursor-default' : ''}`} onClick={onClose}>
       <div
-        className={`bg-[#030712] border ${isCapote ? 'border-rose-500/30' : theme.border} rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-12 ${isTV ? 'w-[90vw] max-w-[1200px] py-16 sm:py-20' : 'w-full max-w-sm sm:max-w-md'} shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden max-h-[95vh] overflow-y-auto`}
+        className={`bg-black/80 backdrop-blur-3xl border ${isCapote ? 'border-rose-500/50' : 'border-white/10'} rounded-[4rem] p-6 sm:p-12 ${isTV ? 'w-[92vw] max-w-[1400px] py-20 sm:py-24 shadow-[0_0_100px_rgba(0,0,0,1)]' : 'w-full max-w-sm sm:max-w-md'} shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden max-h-[95vh] overflow-y-auto`}
         onClick={e => e.stopPropagation()}
       >
-        <div className={`absolute -top-1/4 -right-1/4 ${isTV ? 'w-[600px] h-[600px]' : 'w-96 h-96'} ${isCapote ? 'bg-rose-600/20' : theme.bg}/20 rounded-full blur-[120px] -z-10`}></div>
+        <div className={`absolute -top-1/4 -right-1/4 ${isTV ? 'w-[800px] h-[800px]' : 'w-96 h-96'} ${isCapote ? 'bg-rose-600/30' : theme.bg}/30 rounded-full blur-[150px] -z-10`}></div>
 
         <div className="flex flex-col items-center text-center">
           <div className={`${isTV ? 'w-32 h-32 mb-8' : 'w-12 h-12 sm:w-14 sm:h-14 mb-3 sm:mb-4'} rounded-[2.5rem] flex items-center justify-center border ${isCapote ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : `${theme.bg}/10 ${theme.border} ${theme.text}`}`}>
