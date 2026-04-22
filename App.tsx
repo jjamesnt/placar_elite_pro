@@ -337,7 +337,7 @@ const App: React.FC = () => {
 
   return (
     <>
-      <OrientationLock />
+      {currentView !== 'tv' && <OrientationLock />}
       {activeModal === 'welcome' && <WelcomeModal onConfirm={handleCloseWelcome} />}
       <Background color={(currentArena.color || 'indigo') as ArenaColor} />
       <div className="h-screen w-screen flex flex-col text-white font-sans overflow-hidden bg-transparent">
