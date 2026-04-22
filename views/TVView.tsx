@@ -552,12 +552,11 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         />
       )}
       
-      {/* Header com TV Safe Area */}
-      <div className="flex justify-between items-end border-b border-white/10 pb-6">
+      <div className="flex justify-between items-end border-b border-white/10 pb-6 relative">
          <div className="flex items-center gap-6">
-            <div className="w-5 h-5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_20px_#10b981]"></div>
-            <h1 className="text-[clamp(2rem,4vw,3.5rem)] font-black uppercase tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-              LIVE <span className={`${currentTheme.text} drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]`}>{customArenaName || 'ARENA'}</span>
+            <div className="w-5 h-5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_30px_#10b981,0_0_10px_white]"></div>
+            <h1 className="text-[clamp(2.2rem,4.5vw,4rem)] font-black uppercase tracking-tighter drop-shadow-[0_0_20px_rgba(255,255,255,0.15)] leading-none">
+              LIVE <span className={`${currentTheme.text} drop-shadow-[0_0_15px_rgba(0,0,0,0.8)] bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent`}>{customArenaName || 'ARENA'}</span>
             </h1>
          </div>
 
@@ -571,9 +570,10 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
       <div className="flex-1 lg:grid lg:grid-cols-12 gap-[max(2vw,24px)] h-full min-h-0 pt-2">
         <div className="col-span-8 flex flex-col gap-[max(2vh,16px)] h-full">
-          {/* Main Scoreboard Area - James: Glassmorphism e Safe Area Interna */}
-          <div className="bg-black/30 backdrop-blur-2xl border border-white/10 rounded-[4rem] p-[clamp(1.5rem,3vw,3rem)] flex flex-col justify-center relative shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] overflow-hidden min-h-[50vh]">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+          {/* Main Scoreboard Area - James: Estética 10ft UI Premium */}
+          <div className="bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[4rem] p-[clamp(1.5rem,3vw,3rem)] flex flex-col justify-center relative shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden min-h-[52vh]">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none opacity-50"></div>
+            <div className={`absolute inset-0 opacity-10 bg-radial-gradient from-${arenaColor}-500/20 to-transparent pointer-events-none`}></div>
 
             <div className="flex items-center justify-around gap-12 w-full mt-4">
               {/* Lógica de Espelhamento (Lado da Quadra) - James: Inverte os blocos se isSidesSwitched ou layoutMirrored forem true (XOR) */}
@@ -600,7 +600,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                           </div>
                         ))}
                       </div>
-                      <div key={`score-left-${leftTeam?.score}`} className="text-[clamp(10rem,18vw,25rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] score-change">{leftTeam?.score || 0}</div>
+                      <div key={`score-left-${leftTeam?.score}`} className="text-[clamp(10rem,19vw,26rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_30px_60px_rgba(0,0,0,0.7)] text-white score-change">{leftTeam?.score || 0}</div>
                     </div>
 
                     {/* CRONÔMETRO CENTRAL (PARTIDA + ATAQUE/POSSE) */}
@@ -635,7 +635,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                           </div>
                         ))}
                       </div>
-                      <div key={`score-right-${rightTeam?.score}`} className="text-[clamp(10rem,18vw,25rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] score-change">{rightTeam?.score || 0}</div>
+                      <div key={`score-right-${rightTeam?.score}`} className="text-[clamp(10rem,19vw,26rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_30px_60px_rgba(0,0,0,0.7)] text-white score-change">{rightTeam?.score || 0}</div>
                     </div>
                   </>
                 );
@@ -643,9 +643,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
             </div>
           </div>
 
-          {/* Ranking Compacto - James: Glassmorphism */}
-          <div className={`bg-black/30 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-6 flex flex-col shadow-2xl relative overflow-hidden flex-1 min-h-0`}>
-              <div className={`absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent`}></div>
+          {/* Ranking Compacto - James: Glassmorphism Premium */}
+          <div className={`bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] p-8 flex flex-col shadow-2xl relative overflow-hidden flex-1 min-h-0`}>
+              <div className={`absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent`}></div>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <TrophyIcon className="w-8 h-8 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]" />
