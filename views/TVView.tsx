@@ -520,7 +520,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
   const currentTheme = TEMAS[arenaColor as ArenaColor] || TEMAS.indigo;
 
   return (
-    <div className="min-h-screen w-full bg-[#020617] text-white p-8 font-sans overflow-hidden flex flex-col gap-8 relative">
+    <div className="min-h-screen w-full bg-[#020617] text-white font-sans overflow-hidden flex flex-col relative px-[max(5vw,24px)] py-[max(4vh,20px)] gap-[max(2vh,16px)]">
       <Background color={arenaColor} />
       
       {/* Indicadores de Status Invisíveis / Diagnóstico */}
@@ -552,27 +552,27 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         />
       )}
       
-      {/* Header com Design Limpo */}
-      <div className="flex justify-between items-start border-b border-white/5 pb-4">
-         <div className="flex items-center gap-4">
-            <div className="w-4 h-4 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_15px_#10b981]"></div>
-            <h1 className="text-4xl font-black uppercase tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+      {/* Header com TV Safe Area */}
+      <div className="flex justify-between items-end border-b border-white/10 pb-6">
+         <div className="flex items-center gap-6">
+            <div className="w-5 h-5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_20px_#10b981]"></div>
+            <h1 className="text-[clamp(2rem,4vw,3.5rem)] font-black uppercase tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
               LIVE <span className={`${currentTheme.text} drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]`}>{customArenaName || 'ARENA'}</span>
             </h1>
          </div>
 
         <div className="text-right">
-          <div className="text-5xl font-black tracking-tighter tabular-nums text-white/90 leading-tight">
+          <div className="text-[clamp(3rem,6vw,5rem)] font-black tracking-tighter tabular-nums text-white/90 leading-none">
             {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
           </div>
-          <div className="text-sm font-bold text-white/20 uppercase tracking-[0.3em] font-mono">Placar Elite Pro</div>
+          <div className="text-[clamp(0.7rem,1vw,1rem)] font-black text-white/20 uppercase tracking-[0.4em] font-mono mt-2">Placar Elite Pro</div>
         </div>
       </div>
 
-      <div className="flex-1 lg:grid lg:grid-cols-12 gap-8 h-full min-h-0 pt-2">
-        <div className="col-span-8 flex flex-col gap-4 h-full">
-          {/* Main Scoreboard Area - James: Glassmorphism Ultra Premium */}
-          <div className="bg-black/30 backdrop-blur-2xl border border-white/10 rounded-[4rem] p-6 flex flex-col justify-center relative shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] overflow-hidden min-h-[50vh]">
+      <div className="flex-1 lg:grid lg:grid-cols-12 gap-[max(2vw,24px)] h-full min-h-0 pt-2">
+        <div className="col-span-8 flex flex-col gap-[max(2vh,16px)] h-full">
+          {/* Main Scoreboard Area - James: Glassmorphism e Safe Area Interna */}
+          <div className="bg-black/30 backdrop-blur-2xl border border-white/10 rounded-[4rem] p-[clamp(1.5rem,3vw,3rem)] flex flex-col justify-center relative shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] overflow-hidden min-h-[50vh]">
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
 
             <div className="flex items-center justify-around gap-12 w-full mt-4">
@@ -600,7 +600,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                           </div>
                         ))}
                       </div>
-                      <div key={`score-left-${leftTeam?.score}`} className="text-[20vw] leading-[0.6] font-black tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] score-change">{leftTeam?.score || 0}</div>
+                      <div key={`score-left-${leftTeam?.score}`} className="text-[clamp(10rem,18vw,25rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] score-change">{leftTeam?.score || 0}</div>
                     </div>
 
                     {/* CRONÔMETRO CENTRAL (PARTIDA + ATAQUE/POSSE) */}
@@ -615,9 +615,9 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
                        <div className="text-white/10 text-2xl font-black italic tracking-widest mb-2">VS</div>
 
-                       <div className={`px-12 py-8 rounded-[2.5rem] border-4 flex flex-col items-center justify-center transition-all duration-300 ${currentTheme.glow} ${(tvAttackTime !== null && tvAttackTime <= 10) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black/90 border-white/10'}`}>
-                          <span className="text-[14px] font-black uppercase tracking-[0.4em] text-white/40 mb-2">Posse</span>
-                        <span className={`text-9xl font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 10) ? 'text-red-500' : currentTheme.text}`}>
+                       <div className={`px-[clamp(2rem,5vw,5rem)] py-[clamp(1rem,3vh,4rem)] rounded-[2.5rem] border-4 flex flex-col items-center justify-center transition-all duration-300 ${currentTheme.glow} ${(tvAttackTime !== null && tvAttackTime <= 10) ? 'bg-red-600/30 border-red-500 animate-pulse scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black/90 border-white/10'}`}>
+                          <span className="text-[clamp(0.8rem,1vw,1.2rem)] font-black uppercase tracking-[0.4em] text-white/40 mb-2">Posse</span>
+                        <span className={`text-[clamp(5rem,10vw,12rem)] font-mono font-black tabular-nums leading-none ${(tvAttackTime !== null && tvAttackTime <= 10) ? 'text-red-500' : currentTheme.text}`}>
                           {displayAttackTime ?? 24}
                         </span>
                      </div>
@@ -635,7 +635,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                           </div>
                         ))}
                       </div>
-                      <div key={`score-right-${rightTeam?.score}`} className="text-[20vw] leading-[0.6] font-black tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] score-change">{rightTeam?.score || 0}</div>
+                      <div key={`score-right-${rightTeam?.score}`} className="text-[clamp(10rem,18vw,25rem)] leading-[0.6] font-black tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] score-change">{rightTeam?.score || 0}</div>
                     </div>
                   </>
                 );
