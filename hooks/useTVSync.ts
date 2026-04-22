@@ -116,7 +116,7 @@ export const useTVSync = ({
         history,
         lastInteractionTime
       };
-  }, [tvModals, matches, arenas, players, teamA, teamB, servingTeam, gameStartTime, currentArenaId, senderId, isSidesSwitched, tvLayoutMirrored, lastInteractionTime]);
+  }, [tvModals, matches, arenas, players, teamA, teamB, servingTeam, gameStartTime, currentArenaId, senderId, isSidesSwitched, tvLayoutMirrored, lastInteractionTime, tvAttackTime]);
 
   useEffect(() => {
     if (currentArenaId === 'default') return;

@@ -353,13 +353,17 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     return () => clearInterval(checkInterval);
   }, [lastSignalTime]);
 
-  // James: RELÓGIO DE PARTIDA — espelha o tablet: só conta quando o cronômetro de posse está ativo
-  // Congela quando a posse é pausada/resetada (tvAttackTime === null)
-  // Reinicia acumulação quando começa nova partida (gameStartTime muda)
+  // James: RELÓGIO DE PARTIDA — conta tempo total de jogo ativo (pausa junto com a posse)
   const elapsedAccumRef = useRef<number>(0);
+  const attackRunningRef = useRef<boolean>(false);
+  const prevGameStartRef = useRef<any>(null);
+
+  // Atualiza ref de posse sem recriar o interval
+  useEffect(() => {
+    attackRunningRef.current = tvAttackTime !== null;
+  }, [tvAttackTime]);
 
   // Reseta ao começar nova partida
-  const prevGameStartRef = useRef<any>(null);
   useEffect(() => {
     const gst = activeMatch?.gameStartTime;
     if (gst && gst !== prevGameStartRef.current) {
@@ -369,15 +373,17 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
     }
   }, [activeMatch?.gameStartTime]);
 
-  // Só conta quando attack timer está rodando
+  // Interval único — só increm enta quando attack está rodando (via ref)
   useEffect(() => {
-    if (tvAttackTime === null || !activeMatch?.gameStartTime) return;
+    if (!activeMatch?.gameStartTime) return;
     const interval = setInterval(() => {
-      elapsedAccumRef.current += 1;
-      setElapsedSeconds(elapsedAccumRef.current);
+      if (attackRunningRef.current) {
+        elapsedAccumRef.current += 1;
+        setElapsedSeconds(elapsedAccumRef.current);
+      }
     }, 1000);
     return () => clearInterval(interval);
-  }, [tvAttackTime, activeMatch?.gameStartTime]);
+  }, [activeMatch?.gameStartTime]);
 
   // James: TV espelha exatamente o tablet — sem contagem local própria
   // O tablet envia o valor a cada ~1s via broadcast; resets (ponto marcado) chegam imediatamente
