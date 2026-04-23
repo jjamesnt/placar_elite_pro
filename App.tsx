@@ -12,12 +12,16 @@ import Admin from './views/Admin';
 import TVView from './views/TVView';
 import ClubManagement from './views/ClubManagement';
 import Login from './views/Login';
+import ResetPassword from './views/ResetPassword';
 import { MatchAPI, ArenaAPI, PlayerAPI } from './lib/api';
 import { supabase } from './lib/supabase';
 import { Player, Team, Match, Arena, ArenaColor, UserProfile, UserLicense } from './types';
-import { warmUpAudioContext } from './hooks';
-import { useTVSync } from './hooks/useTVSync';
-import { useMatchEngine, setupArenaConfig } from './hooks/useMatchEngine';
+import { 
+  warmUpAudioContext, 
+  useTVSync, 
+  useMatchEngine, 
+  setupArenaConfig 
+} from './hooks';
 
 // James, normalize fora do componente para ser estável e não resetar o rádio
 const normalize = (str: string) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '').trim();
@@ -69,6 +73,7 @@ const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [userLicense, setUserLicense] = useState<UserLicense | null>(null);
   const [activeModal, setActiveModal] = useState<'none' | 'welcome' | 'expiry'>('none');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const modalFlowHandled = useRef(false);
   const [globalModal, setGlobalModal] = useState<{ isOpen: boolean; title: string; message: string; type?: ModalType; icon?: any; confirmLabel?: string; showCancel?: boolean; onConfirm?: () => void; }>({ isOpen: false, title: '', message: '', type: 'info' });
 
@@ -161,7 +166,12 @@ const App: React.FC = () => {
       } else setLoading(false);
     };
     supabase.auth.getSession().then(({ data: { session } }) => handleSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => handleSession(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsResettingPassword(true);
+      }
+      handleSession(session);
+    });
     return () => subscription.unsubscribe();
   }, [checkLicense]);
 
@@ -336,6 +346,7 @@ const App: React.FC = () => {
   }, [userLicense]);
 
   if (loading) return <div className="h-screen w-screen flex items-center justify-center bg-[#030712]"><div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
+  if (isResettingPassword) return <ResetPassword onComplete={() => setIsResettingPassword(false)} />;
   if (!session && currentView !== 'tv') return <><Background color="indigo" /><Login onLogin={() => { }} /></>;
 
   return (

@@ -4,7 +4,7 @@ import { SoundScheme } from '../types';
 import { Arena, ArenaColor, MatchMode } from '../types';
 import { Trash2Icon, PlusIcon, UsersIcon, EditIcon, UploadCloudIcon, ZapIcon, MonitorIcon, ClipboardListIcon } from '../components/icons';
 import { supabase } from '../lib/supabase';
-import { useMatchEngine } from '../hooks/useMatchEngine';
+import { useMatchEngine } from '../hooks';
 
 interface ConfigProps {
   arenas: Arena[];

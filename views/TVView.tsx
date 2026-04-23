@@ -568,10 +568,10 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
         </div>
       </div>
 
-      <div className="flex-1 lg:grid lg:grid-cols-12 gap-[max(2vw,24px)] h-full min-h-0 pt-2">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-[max(2vw,16px)] h-full min-h-0 pt-2 overflow-hidden">
         <div className="col-span-8 flex flex-col gap-[max(2vh,16px)] h-full">
           {/* Main Scoreboard Area - James: Estética 10ft UI Premium */}
-          <div className="bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[4rem] p-[clamp(1.5rem,3vw,3rem)] flex flex-col justify-center relative shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden min-h-[52vh]">
+          <div className="bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[4rem] p-[clamp(1.2rem,2.5vw,2.5rem)] flex flex-col justify-center relative shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden min-h-[45vh] lg:min-h-[50vh]">
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none opacity-50"></div>
             <div className={`absolute inset-0 opacity-10 bg-radial-gradient from-${arenaColor}-500/20 to-transparent pointer-events-none`}></div>
 
@@ -682,7 +682,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                 )}
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                  {stats.slice(0, 10).map((s: any, i: number) => (
+                  {stats.length > 0 ? stats.slice(0, 10).map((s: any, i: number) => (
                       <div key={`rank-${i}-${s.name}`} className={`flex flex-col gap-2 p-4 rounded-2xl border transition-all ${i === 0 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-white/5 border-white/5'}`}>
                           <div className="flex items-center justify-between">
                             <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs ${i === 0 ? 'bg-yellow-500 text-black' : 'bg-white/10 text-white'}`}>
@@ -692,7 +692,11 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                           </div>
                           <p className="text-sm font-black uppercase truncate tracking-tighter">{s.name}</p>
                       </div>
-                  ))}
+                  )) : (
+                    <div className="col-span-full py-4 text-center text-white/10 font-black uppercase tracking-[0.3em] text-xs">
+                      Aguardando partidas de hoje...
+                    </div>
+                  )}
               </div>
           </div>
         </div>
@@ -738,7 +742,7 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
 
               
               <div className={`${historyMatches.length > 5 ? 'auto-scroll-list' : ''} flex flex-col gap-2 py-2 px-1`}>
-                {historyMatches.map((m: any, idx: number) => (
+                {historyMatches.length > 0 ? historyMatches.map((m: any, idx: number) => (
                   <div key={m.id} className={`flex items-center justify-between gap-4 p-4 rounded-2xl transition-all border group ${idx % 2 === 0 ? 'bg-white/[0.03] border-white/5' : 'bg-transparent border-transparent'}`}>
                      <div className="flex flex-col flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -764,7 +768,12 @@ const TVView: React.FC<TVViewProps> = ({ arenaId }) => {
                         <div className={`h-[2px] w-full rounded-full ${m.winner === 'B' ? (m.teamB?.color === 'rose' ? 'bg-rose-600' : 'bg-red-600') : 'bg-white/5'}`}></div>
                      </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="flex flex-col items-center justify-center h-40 opacity-20 gap-4">
+                    <ClockIcon className="w-12 h-12" />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Nenhuma partida finalizada</p>
+                  </div>
+                )}
               </div>
 
             </div>

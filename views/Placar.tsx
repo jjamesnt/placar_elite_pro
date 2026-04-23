@@ -3,14 +3,19 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Player, Team, Match, Arena } from '../types';
 import { supabase } from '../lib/supabase';
 import { SoundScheme } from '../types';
-import { useAttackTimer, useMatchTimer, useSensoryFeedback } from '../hooks';
+import { 
+  useAttackTimer, 
+  useMatchTimer, 
+  useSensoryFeedback,
+  useMatchEngine 
+} from '../hooks';
 import ScoreCard from '../components/ScoreCard';
 import CenterConsole from '../components/CenterConsole';
 import VictoryModal from '../components/VictoryModal';
 import VaiATresModal from '../components/VaiATresModal';
 import { RefreshCwIcon, ZapIcon } from '../components/icons';
 import { MatchMode } from '../types';
-import { useMatchEngine } from '../hooks/useMatchEngine';
+import PlayerModal from '../components/PlayerModal';
 
 interface PlacarProps {
   allPlayers: Player[];
@@ -50,6 +55,7 @@ const Placar: React.FC<PlacarProps> = ({
   const [isVaiATresActive, setIsVaiATresActive] = useState(false);
   const [vaiATresScore, setVaiATresScore] = useState<{ A: number; B: number }>({ A: 0, B: 0 });
   const [setResults, setSetResults] = useState<{ A: number; B: number }[]>([]);
+  const [selectingPlayer, setSelectingPlayer] = useState<{ team: 'A' | 'B', index: number } | null>(null);
 
   const { playSound, vibrate } = useSensoryFeedback({ soundEnabled, vibrationEnabled, soundScheme });
   const attackTimer = useAttackTimer(attackTime);
@@ -299,6 +305,10 @@ const Placar: React.FC<PlacarProps> = ({
   }, [history, playSound, vibrate, setTeamA, setTeamB, setServingTeam, setHistory]);
 
   const handlePlayerSelect = useCallback((team: 'A' | 'B', player: Player, index: number) => {
+    if (!player) {
+      setSelectingPlayer({ team, index });
+      return;
+    }
     const setter = team === 'A' ? setTeamA : setTeamB;
     setter(prev => {
       const newPlayers = [...prev.players];
@@ -352,9 +362,6 @@ const Placar: React.FC<PlacarProps> = ({
     if (attackTimer.isActive) {
       attackTimer.pause();
       if (matchMode === 'oficial') matchTimer.pause();
-    } else if (attackTimer.isPaused) {
-      attackTimer.resume();
-      if (matchMode === 'oficial') matchTimer.resume();
     } else {
       const isStartOfMatch = teamA.score === 0 && teamB.score === 0;
       const athletesMissing = !teamA.players.every(p => p) || !teamB.players.every(p => p);
@@ -363,10 +370,19 @@ const Placar: React.FC<PlacarProps> = ({
         setShowAtletasAlert(true);
         return;
       }
-      if (!gameStartTime) setGameStartTime(new Date());
-      attackTimer.start();
-      if (matchMode === 'oficial') matchTimer.start();
+      
+      // James: Disparar som IMEDIATAMENTE no início ou resumo
       playSound('timerStartBeep', isVaiATresActive);
+      
+      if (!gameStartTime) setGameStartTime(new Date());
+      
+      if (attackTimer.isPaused) {
+        attackTimer.resume();
+        if (matchMode === 'oficial') matchTimer.resume();
+      } else {
+        attackTimer.start();
+        if (matchMode === 'oficial') matchTimer.start();
+      }
     }
   }, [attackTimer, matchTimer, matchMode, playSound, teamA.players, teamB.players, atletasAlertShown, isVaiATresActive]);
 
@@ -489,13 +505,7 @@ const Placar: React.FC<PlacarProps> = ({
         <CenterConsole
           timeLeft={attackTimer.timeLeft}
           isTimerActive={attackTimer.isActive}
-          onToggleTimer={() => {
-            if (!attackTimer.isActive) {
-               if (!checkAthletes()) return; // James: Proteção mantida
-            }
-            if (attackTimer.isActive) attackTimer.pause();
-            else attackTimer.start();
-          }}
+          onToggleTimer={handleToggleTimer}
           onResetTimer={attackTimer.reset}
           onResetGame={() => setShowResetConfirm(true)}
           onSaveGame={saveGame}
@@ -560,6 +570,25 @@ const Placar: React.FC<PlacarProps> = ({
           </div>
         </div>
       )}
+
+      {/* James: MODAL CENTRALIZADO DE SELEÇÃO DE ATLETAS */}
+      <PlayerModal
+        isOpen={selectingPlayer !== null}
+        onClose={() => setSelectingPlayer(null)}
+        onSelect={(player) => {
+          if (selectingPlayer) {
+            handlePlayerSelect(selectingPlayer.team, player, selectingPlayer.index);
+          }
+        }}
+        allPlayers={allPlayers}
+        excludedPlayerIds={[
+          ...teamA.players.map(p => p?.id),
+          ...teamB.players.map(p => p?.id)
+        ].filter(Boolean) as string[]}
+        currentPlayerId={selectingPlayer ? (selectingPlayer.team === 'A' ? teamA : teamB).players[selectingPlayer.index]?.id : undefined}
+        title={selectingPlayer ? `Atleta ${selectingPlayer.index + 1} - ${selectingPlayer.team === 'A' ? 'Time A' : 'Time B'}` : ''}
+        arenaColor={currentArena.color}
+      />
     </div>
   );
 };

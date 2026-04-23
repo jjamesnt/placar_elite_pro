@@ -14,6 +14,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setSuccess('');
 
     try {
-      if (isSignUp) {
+      if (isForgotPassword) {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+          redirectTo: window.location.origin,
+        });
+        if (resetError) throw resetError;
+        setSuccess('E-MAIL DE RECUPERAÇÃO ENVIADO!');
+        setTimeout(() => setIsForgotPassword(false), 3000);
+      } else if (isSignUp) {
         const { error: signUpError } = await supabase.auth.signUp({ 
           email: email.trim().toLowerCase(), 
           password 
@@ -62,20 +70,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   return (
     <div className="h-screen w-full flex items-center justify-center p-4 bg-[#030712] relative overflow-hidden">
-      <div className={`absolute w-[600px] h-[600px] rounded-full blur-[140px] opacity-10 transition-all duration-1000 -z-10 ${isSignUp ? 'bg-emerald-500 -top-20 -right-20' : 'bg-indigo-500 -bottom-20 -left-20'}`}></div>
+      <div className={`absolute w-[600px] h-[600px] rounded-full blur-[140px] opacity-10 transition-all duration-1000 -z-10 ${isSignUp ? 'bg-emerald-500 -top-20 -right-20' : isForgotPassword ? 'bg-amber-500 -top-20 -left-20' : 'bg-indigo-500 -bottom-20 -left-20'}`}></div>
 
-      <div className={`w-full max-w-sm bg-[#090e1a]/80 backdrop-blur-3xl border rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl transition-all duration-500 ${isSignUp ? 'border-emerald-500/30 shadow-emerald-500/20' : 'border-indigo-500/20 shadow-indigo-500/10'}`}>
+      <div className={`w-full max-w-sm bg-[#090e1a]/80 backdrop-blur-3xl border rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl transition-all duration-500 ${isSignUp ? 'border-emerald-500/30 shadow-emerald-500/20' : isForgotPassword ? 'border-amber-500/30 shadow-amber-500/20' : 'border-indigo-500/20 shadow-indigo-500/10'}`}>
         
         <div className="flex flex-col items-center mb-8">
-          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-6 border shadow-2xl transition-all duration-500 ${isSignUp ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 scale-110 shadow-emerald-500/20' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500'}`}>
-            {isSignUp ? <UserPlusIcon className="w-8 h-8" /> : <ShieldIcon className="w-8 h-8" />}
+          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-6 border shadow-2xl transition-all duration-500 ${isSignUp ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 scale-110 shadow-emerald-500/20' : isForgotPassword ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 scale-110 shadow-amber-500/20' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500'}`}>
+            {isSignUp ? <UserPlusIcon className="w-8 h-8" /> : isForgotPassword ? <ZapIcon className="w-8 h-8" /> : <ShieldIcon className="w-8 h-8" />}
           </div>
           
           <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-white text-center leading-none">
-            {isSignUp ? 'Nova Conta' : 'Placar Elite Pro'}
+            {isSignUp ? 'Nova Conta' : isForgotPassword ? 'Recuperar' : 'Placar Elite Pro'}
           </h1>
-          <p className={`text-[10px] font-black uppercase tracking-[0.5em] mt-3 ${isSignUp ? 'text-emerald-500' : 'text-indigo-400/50'}`}>
-            {isSignUp ? 'SOLICITAR ACESSO À ARENA' : 'PROFESSIONAL SCOREBOARD'}
+          <p className={`text-[10px] font-black uppercase tracking-[0.5em] mt-3 ${isSignUp ? 'text-emerald-500' : isForgotPassword ? 'text-amber-500' : 'text-indigo-400/50'}`}>
+            {isSignUp ? 'SOLICITAR ACESSO À ARENA' : isForgotPassword ? 'REDEFINIR SUA SENHA' : 'PROFESSIONAL SCOREBOARD'}
           </p>
         </div>
 
@@ -84,19 +92,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Seu E-mail</label>
             <input 
               type="email" value={email} onChange={e => setEmail(e.target.value)}
-              className={`w-full bg-white/[0.03] border rounded-xl sm:rounded-2xl py-3 px-5 text-sm text-white focus:outline-none transition-all placeholder:text-white/5 ${isSignUp ? 'focus:border-emerald-500 border-white/10' : 'focus:border-indigo-500 border-white/10'}`}
+              className={`w-full bg-white/[0.03] border rounded-xl sm:rounded-2xl py-3 px-5 text-sm text-white focus:outline-none transition-all placeholder:text-white/5 ${isSignUp ? 'focus:border-emerald-500 border-white/10' : isForgotPassword ? 'focus:border-amber-500 border-white/10' : 'focus:border-indigo-500 border-white/10'}`}
               placeholder="exemplo@gmail.com" required
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Sua Senha</label>
-            <input 
-              type="password" value={password} onChange={e => setPassword(e.target.value)}
-              className={`w-full bg-white/[0.03] border rounded-xl sm:rounded-2xl py-3 px-5 text-sm text-white focus:outline-none transition-all placeholder:text-white/5 ${isSignUp ? 'focus:border-emerald-500 border-white/10' : 'focus:border-indigo-500 border-white/10'}`}
-              placeholder="••••••••" required
-            />
-          </div>
+          {!isForgotPassword && (
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Sua Senha</label>
+              <input 
+                type="password" value={password} onChange={e => setPassword(e.target.value)}
+                className={`w-full bg-white/[0.03] border rounded-xl sm:rounded-2xl py-3 px-5 text-sm text-white focus:outline-none transition-all placeholder:text-white/5 ${isSignUp ? 'focus:border-emerald-500 border-white/10' : 'focus:border-indigo-500 border-white/10'}`}
+                placeholder="••••••••" required
+              />
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center animate-in fade-in slide-in-from-top-2">
@@ -113,18 +123,28 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="space-y-3 pt-2">
             <button 
               type="submit" disabled={loading}
-              className={`w-full py-4 rounded-xl sm:rounded-2xl font-black uppercase text-[11px] sm:text-[12px] tracking-widest shadow-2xl active:scale-[0.96] transition-all disabled:opacity-50 text-white flex items-center justify-center gap-3 ${isSignUp ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/40' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/40'}`}
+              className={`w-full py-4 rounded-xl sm:rounded-2xl font-black uppercase text-[11px] sm:text-[12px] tracking-widest shadow-2xl active:scale-[0.96] transition-all disabled:opacity-50 text-white flex items-center justify-center gap-3 ${isSignUp ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/40' : isForgotPassword ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/40' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/40'}`}
             >
-              {loading ? <LoaderIcon className="w-5 h-5 animate-spin" /> : (isSignUp ? 'Enviar Solicitação' : 'Entrar na Arena')}
+              {loading ? <LoaderIcon className="w-5 h-5 animate-spin" /> : (isSignUp ? 'Enviar Solicitação' : isForgotPassword ? 'Enviar Link' : 'Entrar na Arena')}
             </button>
             
             <div className="flex flex-col gap-2">
+              {!isForgotPassword && (
+                <button 
+                  type="button" 
+                  onClick={() => { setIsSignUp(!isSignUp); setError(''); setSuccess(''); }} 
+                  className={`w-full text-[10px] font-black uppercase tracking-[0.2em] py-2 transition-all rounded-xl border ${isSignUp ? 'text-white/40 border-transparent hover:text-white' : 'text-emerald-500/60 border-emerald-500/5 hover:border-emerald-500/20 hover:text-emerald-400'}`}
+                >
+                  {isSignUp ? 'Já possui conta? Fazer Login' : 'Novo por aqui? Criar Conta'}
+                </button>
+              )}
+
               <button 
                 type="button" 
-                onClick={() => { setIsSignUp(!isSignUp); setError(''); setSuccess(''); }} 
-                className={`w-full text-[10px] font-black uppercase tracking-[0.2em] py-2 transition-all rounded-xl border ${isSignUp ? 'text-white/40 border-transparent hover:text-white' : 'text-emerald-500/60 border-emerald-500/5 hover:border-emerald-500/20 hover:text-emerald-400'}`}
+                onClick={() => { setIsForgotPassword(!isForgotPassword); setIsSignUp(false); setError(''); setSuccess(''); }} 
+                className="w-full text-[10px] font-black uppercase tracking-[0.2em] py-2 text-white/40 hover:text-white transition-all"
               >
-                {isSignUp ? 'Já possui conta? Fazer Login' : 'Novo por aqui? Criar Conta'}
+                {isForgotPassword ? 'Voltar para o Login' : 'Esqueceu sua senha?'}
               </button>
 
               <a 
@@ -140,6 +160,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </form>
       </div>
     </div>
+
   );
 };
 
