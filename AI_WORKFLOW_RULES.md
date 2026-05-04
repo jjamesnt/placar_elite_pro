@@ -24,8 +24,9 @@ A partir da criação deste arquivo, TODAS as interações da IA com este reposi
 
 ## 5. Deploy e Atualizações em Produção (Rigor Absoluto)
 *   A IA é **terminantemente proibida** de executar rotinas de build, merge para a branch principal (main/master) ou rodar qualquer script de deploy para produção por vontade própria.
+*   **REGRA DE OURO PARA PRODUÇÃO:** Ao receber a ordem explícita para subir para produção, a IA deve enviar o código **obrigatoriamente e diretamente para a branch principal (main)**. 
+*   É proibido o envio para branches intermediárias (ex: `develop`) no momento do deploy final, para evitar a geração de banners de "Compare & pull request" no GitHub e garantir a atualização imediata da Vercel.
 *   A promoção de qualquer código para o ambiente de Produção só pode ocorrer mediante uma **ordem explícita e inequívoca** do usuário (Ex: "Pode subir para produção").
-*   Na dúvida, a IA deve pressupor que as alterações são apenas para o ambiente de desenvolvimento/teste local.
 
 ## 6. Recomendação de Agentes/Modelos por Complexidade
 *   Antes de iniciar uma tarefa, a IA deve avaliar a complexidade técnica e o risco da mesma.

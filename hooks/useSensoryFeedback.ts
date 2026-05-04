@@ -229,12 +229,13 @@ export const useSensoryFeedback = ({ soundEnabled, vibrationEnabled, soundScheme
     gainNode.connect(masterGain!);
     const params = scheme[type as keyof typeof scheme] || scheme['point'];
 
-    oscillator.frequency.value = isEmergency ? params.freq * 0.8 : params.freq;
-    oscillator.type = isEmergency ? 'square' : params.type;
+    oscillator.frequency.value = isEmergency ? params.freq * 0.75 : params.freq;
+    oscillator.type = isEmergency ? 'sine' : params.type;
 
     gainNode.gain.setValueAtTime(0.0001, now);
-    gainNode.gain.linearRampToValueAtTime(isEmergency ? 0.8 : 0.5, now + 0.005);
-    gainNode.gain.setTargetAtTime(0.0001, now + 0.01, params.duration / 2);
+    // James: Reduzido de 0.8 para 0.4 e suavizado o ataque para evitar estalos (clicks)
+    gainNode.gain.linearRampToValueAtTime(isEmergency ? 0.4 : 0.5, now + 0.01);
+    gainNode.gain.setTargetAtTime(0.0001, now + 0.015, params.duration / 2.5);
 
     oscillator.start(now);
     oscillator.stop(now + params.duration + 0.1);

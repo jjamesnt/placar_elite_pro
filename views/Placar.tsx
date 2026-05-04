@@ -7,7 +7,8 @@ import {
   useAttackTimer, 
   useMatchTimer, 
   useSensoryFeedback,
-  useMatchEngine 
+  useMatchEngine,
+  warmUpAudioContext
 } from '../hooks';
 import ScoreCard from '../components/ScoreCard';
 import CenterConsole from '../components/CenterConsole';
@@ -56,20 +57,26 @@ const Placar: React.FC<PlacarProps> = ({
   const [vaiATresScore, setVaiATresScore] = useState<{ A: number; B: number }>({ A: 0, B: 0 });
   const [setResults, setSetResults] = useState<{ A: number; B: number }[]>([]);
   const [selectingPlayer, setSelectingPlayer] = useState<{ team: 'A' | 'B', index: number } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const { playSound, vibrate } = useSensoryFeedback({ soundEnabled, vibrationEnabled, soundScheme });
   const attackTimer = useAttackTimer(attackTime);
   const matchTimer = useMatchTimer(matchTime);
 
-  // James: SINCRO DO CRONÔMETRO DE POSSE (24S) PARA A TV
   useEffect(() => {
-    setTvAttackTime(attackTimer.isActive ? attackTimer.timeLeft : null);
-  }, [attackTimer.timeLeft, attackTimer.isActive, setTvAttackTime]);
+    // James: Sincronia estrita - Envia o tempo real mesmo pausado ou zerado
+    setTvAttackTime(attackTimer.timeLeft);
+  }, [attackTimer.timeLeft, setTvAttackTime]);
 
   // James, sincronizando os modais locais com o estado global da TV
   useEffect(() => {
-    setTvModals({ victoryData, showVaiATres: showVaiATresModal });
-  }, [victoryData, showVaiATresModal, setTvModals]);
+    setTvModals({ 
+      victoryData, 
+      showVaiATres: showVaiATresModal,
+      showAtletasAlert,
+      showResetConfirm
+    });
+  }, [victoryData, showVaiATresModal, showAtletasAlert, showResetConfirm, setTvModals]);
 
   // James: Alerta de Atletas Proativo (Bloqueia o início dos tempos se faltar gente)
   const checkAthletes = useCallback(() => {
@@ -305,6 +312,10 @@ const Placar: React.FC<PlacarProps> = ({
   }, [history, playSound, vibrate, setTeamA, setTeamB, setServingTeam, setHistory]);
 
   const handlePlayerSelect = useCallback((team: 'A' | 'B', player: Player, index: number) => {
+    // James: Ativa o contexto de áudio na primeira interação (seleção de atleta)
+    // para garantir que o beep da primeira partida funcione sem bloqueio do navegador.
+    warmUpAudioContext();
+    
     if (!player) {
       setSelectingPlayer({ team, index });
       return;
@@ -331,6 +342,9 @@ const Placar: React.FC<PlacarProps> = ({
   };
 
   const saveGame = useCallback(() => {
+    if (isSaving) return;
+    setIsSaving(true);
+
     const duration = gameStartTime ? Math.round((new Date().getTime() - gameStartTime.getTime()) / 60000) : 0;
 
     const matchData = {
@@ -346,12 +360,16 @@ const Placar: React.FC<PlacarProps> = ({
     } as Omit<Match, 'id' | 'timestamp'>;
 
     onSaveGame(matchData);
-    matchTimer.reset();
-    setSetResults([]);
+    
+    // James: Limpa tudo e prepara nova partida
+    handleConfirmReset(true);
+    
     setToastMessage("Vitória registrada! Nova partida iniciada.");
-    setVictoryData(null);
-    setVictoryConfirmed(true);
-  }, [isGameWon, teamA, teamB, onSaveGame, gameStartTime, isCapoteWin, winScore]);
+    
+    // Pequeno delay antes de permitir novo save para garantir estabilidade do DB
+    setTimeout(() => setIsSaving(false), 1000);
+  }, [isSaving, isGameWon, teamA, teamB, onSaveGame, gameStartTime, isCapoteWin, winScore, matchMode, setResults, handleConfirmReset]);
+
 
   const switchSides = useCallback(() => {
     setIsSidesSwitched(prev => !prev);
@@ -372,6 +390,7 @@ const Placar: React.FC<PlacarProps> = ({
       }
       
       // James: Disparar som IMEDIATAMENTE no início ou resumo
+      warmUpAudioContext();
       playSound('timerStartBeep', isVaiATresActive);
       
       if (!gameStartTime) setGameStartTime(new Date());
@@ -392,6 +411,7 @@ const Placar: React.FC<PlacarProps> = ({
     if (!gameStartTime) setGameStartTime(new Date());
     attackTimer.start();
     if (matchMode === 'oficial') matchTimer.start();
+    warmUpAudioContext();
     playSound('timerStartBeep', isVaiATresActive);
   };
 
@@ -440,20 +460,16 @@ const Placar: React.FC<PlacarProps> = ({
           victoryData={victoryData}
           onClose={() => {
             setVictoryData(null);
-            setTvModals(prev => ({ ...prev, victoryData: null })); // Sincroniza fechamento na TV
           }}
           onSave={() => {
             saveGame();
-            setTvModals(prev => ({ ...prev, victoryData: null })); // Sincroniza fechamento na TV
           }}
           onNewGame={() => {
             handleConfirmReset(true);
-            setTvModals(prev => ({ ...prev, victoryData: null })); // Sincroniza fechamento na TV
           }}
           onUndo={() => {
             handleUndo();
             setVictoryData(null);
-            setTvModals(prev => ({ ...prev, victoryData: null })); // Sincroniza fechamento na TV
           }}
           arenaColor={currentArena.color}
         />
@@ -463,12 +479,10 @@ const Placar: React.FC<PlacarProps> = ({
         <VaiATresModal
           onClose={() => {
             setShowVaiATresModal(false);
-            setTvModals(prev => ({ ...prev, showVaiATres: false })); // Sincroniza fechamento na TV
           }}
           onUndo={() => {
             handleUndo();
             setShowVaiATresModal(false);
-            setTvModals(prev => ({ ...prev, showVaiATres: false })); // Sincroniza fechamento na TV
           }}
         />
       )}
@@ -516,6 +530,7 @@ const Placar: React.FC<PlacarProps> = ({
           arenaColor={currentArena.color}
           matchTimeLeft={matchTimer.timeLeft}
           matchMode={matchMode}
+          isSaving={isSaving}
         />
       </div>
 

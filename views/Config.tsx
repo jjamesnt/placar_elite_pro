@@ -22,6 +22,7 @@ interface ConfigProps {
   showConfirm?: (title: string, message: string, onConfirm: () => void, type?: any, icon?: any) => void;
   tvLayoutMirrored: boolean;
   setTvLayoutMirrored: (m: boolean) => void;
+  forceSync: () => void;
   senderId: string;
 }
 
@@ -33,6 +34,7 @@ const Config: React.FC<ConfigProps> = ({
   userLicense, onRefreshLicense, onGoToSubscription,
   showAlert, showConfirm,
   tvLayoutMirrored, setTvLayoutMirrored,
+  forceSync,
   senderId
 }) => {
   const {
@@ -299,7 +301,7 @@ const Config: React.FC<ConfigProps> = ({
             </div>
           </div>
           <button 
-            onClick={() => setTvLayoutMirrored(!tvLayoutMirrored)} 
+            onClick={() => { setTvLayoutMirrored(!tvLayoutMirrored); forceSync(); }} 
             className={`px-4 py-2 text-[8px] font-black uppercase rounded-lg transition-all ${tvLayoutMirrored ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 text-white/30'}`}
           >
             {tvLayoutMirrored ? 'ATIVADO' : 'OFF'}

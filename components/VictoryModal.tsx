@@ -39,6 +39,8 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
   const winnerNames = winningTeam.players.map(p => p?.name || 'Atleta').join(' & ');
   const loserNames = losingTeam.players.map(p => p?.name || 'Atleta').join(' & ');
 
+  const [isSaving, setIsSaving] = React.useState(false);
+
   return (
     <div className={`victory-modal fixed inset-0 bg-black/60 backdrop-blur-2xl z-[110] flex items-center justify-center p-4 animate-in fade-in duration-500 ${isTV ? 'cursor-default' : ''}`} onClick={onClose}>
       <div
@@ -90,25 +92,35 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ victoryData, onClose, onSav
           {!isTV && (
             <>
               <div className="w-full flex space-x-2 sm:space-x-3">
-                <button onClick={onNewGame} className="flex-1 py-3 sm:py-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-colors hover:text-white">
+                <button 
+                  onClick={onNewGame} 
+                  disabled={isSaving}
+                  className="flex-1 py-3 sm:py-4 bg-white/5 text-white/40 rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-colors hover:text-white disabled:opacity-50"
+                >
                   Nova Partida
                 </button>
                 <button
-                  onClick={onSave}
-                  className={`flex-1 py-3 sm:py-4 ${theme.bg} hover:opacity-90 text-white rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] shadow-xl ${theme.shadow}`}
+                  onClick={() => {
+                    setIsSaving(true);
+                    onSave();
+                  }}
+                  disabled={isSaving}
+                  className={`flex-1 py-3 sm:py-4 ${theme.bg} hover:opacity-90 text-white rounded-xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] shadow-xl ${theme.shadow} disabled:opacity-50 disabled:cursor-wait`}
                 >
-                  Salvar e Zerar
+                  {isSaving ? 'Salvando...' : 'Salvar e Zerar'}
                 </button>
               </div>
 
               <button
                 onClick={onUndo}
-                className="mt-3 w-full py-2 sm:py-3 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition-colors border border-red-500/20"
+                disabled={isSaving}
+                className="mt-3 w-full py-2 sm:py-3 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition-colors border border-red-500/20 disabled:opacity-50"
               >
                 Voltar (Desfazer Vitória)
               </button>
             </>
           )}
+
         </div>
       </div>
     </div>
